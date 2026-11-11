@@ -50,6 +50,7 @@ const FIELD_LABELS: Record<keyof AdminProjectUpdateBody, string> = {
   cohort: '기수',
   slug: 'slug',
   thumbnailImageId: '썸네일',
+  logoImageId: '로고',
   githubRepositoryUrl: 'GitHub URL',
   deploymentUrl: '배포 URL',
   descriptionMd: '상세 설명',

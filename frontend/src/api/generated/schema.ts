@@ -24,6 +24,8 @@ export interface AdminJobPostingDetailSuccessResponse {
     deadline?: string | null;
     /** 고용 형태 */
     employmentType?: string | null;
+    /** 숨긴 시각. 숨기지 않았으면 null */
+    hiddenAt?: string | null;
     /** 채용공고 ID */
     jobPostingId: number;
     /** 직무 */
@@ -44,8 +46,45 @@ export interface AdminJobPostingDetailSuccessResponse {
       category: "REQUIRED" | "PREFERRED" | "DUTY_OR_STACK";
       /** 표시 순서(1부터) */
       displayOrder: number;
+      /** 마지막 분석 실패 이유. 없으면 null. status가 PENDING이나 PROCESSING이면 재시도 중인 직전 실패 이유이고, 최종 실패는 status가 FAILED일 때다. */
+      lastError?:
+        | "SEARCH_FAILED"
+        | "JUDGE_FAILED"
+        | "INVALID_QUERY"
+        | "NO_CANDIDATES"
+        | "UNEXPECTED"
+        | "ATTEMPTS_EXHAUSTED"
+        | null;
       /** 역량 이름 */
       name: string;
+      /** 판정한 자료 목록. 분석 전이거나 후보가 없으면 빈 배열 */
+      recommendations: {
+        /** 카드에 보여 줄 설명. NOT_MATCH면 null */
+        description?: string | null;
+        /** 판정할 때 LLM에게 보여 준 조각의 복사본 */
+        evidence: {
+          /** 조각 유형 */
+          kind: "EXPERIENCE" | "INTRO";
+          /** 조각의 검색 점수 */
+          similarityScore: number;
+          /** 조각 내용 */
+          text: string;
+        }[];
+        /** 출처 안에서 자료를 가리키는 키 */
+        externalKey: string;
+        /** 판정 이유 */
+        reason: string;
+        /** 검색 점수 */
+        similarityScore: number;
+        /** 자료 출처 */
+        source: string;
+        /** 자료 제목. 자료가 없거나 삭제됐으면 null */
+        title?: string | null;
+        /** 자료 링크. 자료가 없거나 삭제됐으면 null */
+        url?: string | null;
+        /** 판정 등급 */
+        verdict: "MATCH" | "PARTIAL" | "NOT_MATCH";
+      }[];
       /** 역량 ID */
       requirementId: number;
       /** 자료 분석 상태 */
@@ -120,6 +159,10 @@ export interface AdminJobPostingFindAllSuccessResponse {
     companyName: string;
     /** 등록 시각 */
     createdAt: string;
+    /** 최종 실패한 역량 수. 다시 시도할 예정인 역량은 세지 않는다 */
+    failedRequirementCount: number;
+    /** 숨긴 시각. 숨기지 않았으면 null */
+    hiddenAt?: string | null;
     /** 채용공고 ID */
     jobPostingId: number;
     /** 직무 */
@@ -145,6 +188,27 @@ export interface AdminJobPostingFindAllSuccessResponse {
     nextCursor?: string | null;
     /** 전체 채용공고 수 */
     totalCount: number;
+  };
+  /** 응답 상태 */
+  status: string;
+}
+
+/** AdminJobPostingReanalysisRequest */
+export interface AdminJobPostingReanalysisRequest {
+  /** 다시 분석할 범위. FAILED는 실패한 역량만, ALL은 모든 역량 */
+  scope: "FAILED" | "ALL";
+}
+
+/** AdminJobPostingReanalysisSuccessResponse */
+export interface AdminJobPostingReanalysisSuccessResponse {
+  /** 다시 분석을 받은 채용공고 */
+  data: {
+    /** 채용공고 ID */
+    jobPostingId: number;
+    /** 다시 분석 대기로 되돌린 역량 수 */
+    reanalyzedRequirementCount: number;
+    /** 자료 분석 상태. 항상 PENDING */
+    status: string;
   };
   /** 응답 상태 */
   status: string;
@@ -197,6 +261,42 @@ export interface AdminJobPostingSaveSuccessResponse {
     jobPostingId: number;
     /** 자료 분석 상태 */
     status: "PENDING" | "PROCESSING" | "READY" | "FAILED";
+  };
+  /** 응답 상태 */
+  status: string;
+}
+
+/** AdminJobPostingUpdateSuccessResponse */
+export interface AdminJobPostingUpdateSuccessResponse {
+  /** 변경한 채용공고 */
+  data: {
+    /** 채용공고 ID */
+    jobPostingId: number;
+    /** 공고 글이 바뀌어 역량을 바꾸고 다시 분석하면 true. false면 요청의 역량은 반영되지 않았다. */
+    reanalyzed: boolean;
+    /** 변경 후 자료 분석 상태 */
+    status: "PENDING" | "PROCESSING" | "READY" | "FAILED";
+  };
+  /** 응답 상태 */
+  status: string;
+}
+
+/** AdminJobPostingVisibilityUpdateRequest */
+export interface AdminJobPostingVisibilityUpdateRequest {
+  /** 숨기려면 true, 해제하려면 false */
+  hidden: boolean;
+}
+
+/** AdminJobPostingVisibilityUpdateSuccessResponse */
+export interface AdminJobPostingVisibilityUpdateSuccessResponse {
+  /** 바뀐 숨김 상태 */
+  data: {
+    /** 숨김 여부 */
+    hidden: boolean;
+    /** 처음 숨긴 시각. 숨기지 않았으면 null */
+    hiddenAt?: string | null;
+    /** 채용공고 ID */
+    jobPostingId: number;
   };
   /** 응답 상태 */
   status: string;
@@ -391,6 +491,8 @@ export interface AdminProjectMigrationUpdateRequest {
   descriptionMd?: string | null;
   /** GitHub 저장소 URL */
   githubRepositoryUrl?: string | null;
+  /** 로고 미디어 ID. null 허용 */
+  logoImageId?: number | null;
   /** 서비스 상태 */
   serviceStatus?: "OPERATING" | "CLOSED" | null;
   /** 프로젝트 slug */
@@ -1754,6 +1856,144 @@ export interface HomeStatisticsSuccessResponse {
   status: string;
 }
 
+/** JobPostingDetailSuccessResponse */
+export interface JobPostingDetailSuccessResponse {
+  /** 채용공고 상세 */
+  data: {
+    /** 경력 조건 */
+    careerRequirement?: string | null;
+    /** 회사명 */
+    companyName: string;
+    /** 마감일(yyyy-MM-dd). 없으면 null이고 상시 채용 */
+    deadline?: string | null;
+    /** 고용 형태 */
+    employmentType?: string | null;
+    /** 채용공고 ID */
+    jobPostingId: number;
+    /** 직군 */
+    jobRole:
+      | "BACKEND"
+      | "FRONTEND"
+      | "ANDROID"
+      | "IOS"
+      | "DEVOPS"
+      | "DATA"
+      | "AI"
+      | "ETC";
+    /** 역량 목록. 공고에 적힌 순서대로 */
+    requirements: {
+      /** 역량 구분 */
+      category: "REQUIRED" | "PREFERRED" | "DUTY_OR_STACK";
+      /** 공고에 적힌 순서(1부터) */
+      displayOrder: number;
+      /** 역량 이름 */
+      name: string;
+      /** 추천 자료 수. 없으면 0 */
+      recommendationCount: number;
+      /** 역량 ID */
+      requirementId: number;
+      /** 역량 한 줄 설명 */
+      summary: string;
+    }[];
+    /** 공고 원문 주소 */
+    sourceUrl: string;
+    /** 공고 제목 */
+    title: string;
+  };
+  /** 응답 상태 */
+  status: string;
+}
+
+/** JobPostingFindAllSuccessResponse */
+export interface JobPostingFindAllSuccessResponse {
+  /** 채용공고 목록 */
+  data: {
+    /** 경력 조건 */
+    careerRequirement?: string | null;
+    /** 회사명 */
+    companyName: string;
+    /** 마감일(yyyy-MM-dd). 없으면 null이고 상시 채용 */
+    deadline?: string | null;
+    /** 고용 형태 */
+    employmentType?: string | null;
+    /** 채용공고 ID */
+    jobPostingId: number;
+    /** 직군 */
+    jobRole:
+      | "BACKEND"
+      | "FRONTEND"
+      | "ANDROID"
+      | "IOS"
+      | "DEVOPS"
+      | "DATA"
+      | "AI"
+      | "ETC";
+    /** 역량 수 */
+    requirementCount: number;
+    /** 역량 이름. 역량 순서대로 앞 3개 */
+    requirementNames: (object | boolean | string | number)[];
+    /** 공고 제목 */
+    title: string;
+  }[];
+  /** 페이지네이션과 직군별 개수 */
+  meta: {
+    /** 직군 조건을 뺀 전체 공고 수 */
+    allCount: number;
+    /** 다음 페이지 존재 여부 */
+    hasNext: boolean;
+    /** 직군별 공고 수. 모든 직군을 담고 공고가 없으면 0 */
+    jobRoleCounts: {
+      /** 공고 수 */
+      count: number;
+      /** 직군 */
+      jobRole:
+        | "BACKEND"
+        | "FRONTEND"
+        | "ANDROID"
+        | "IOS"
+        | "DEVOPS"
+        | "DATA"
+        | "AI"
+        | "ETC";
+    }[];
+    /** 다음 페이지 커서. 마지막 페이지면 null */
+    nextCursor?: string | null;
+    /** 지금 고른 직군의 공고 수. 직군을 고르지 않았으면 allCount와 같다 */
+    totalCount: number;
+  };
+  /** 응답 상태 */
+  status: string;
+}
+
+/** JobRequirementRecommendationsSuccessResponse */
+export interface JobRequirementRecommendationsSuccessResponse {
+  /** 추천 자료 목록 */
+  data: {
+    /** 작성자 표시 이름. 없으면 null */
+    authorDisplay?: string | null;
+    /** 자료 성격. 없으면 null(블로그·테코톡은 항상 null). problem_solving(문제 해결), tech_decision(기술 결정), implementation(구현), chore(잡무), design(설계), operation(운영), experiment(실험), convention(컨벤션), plan(계획), other(기타) */
+    contentType?: string | null;
+    /** 이 자료가 역량과 어떻게 이어지는지 설명 */
+    description: string;
+    /** ISO-8601 작성 시각. 모르면 null */
+    publishedAt?: string | null;
+    /** 자료 ID. 자료 상세 조회에 쓴다 */
+    resourceId: number;
+    /** 출처. github-pr(PR), github-teamdoc(팀 문서), github-wiki(위키), github-discussion(디스커션), blog-post(블로그 글), youtube-tekotalk(테코톡) */
+    source: string;
+    /** 팀 이름. 연결된 프로젝트가 없거나 삭제됐으면 null */
+    teamName?: string | null;
+    /** 자료 제목 */
+    title: string;
+    /** 자료 주소 */
+    url: string;
+    /** 판정. MATCH(딱 맞는 자료), PARTIAL(함께 보면 좋은 자료) */
+    verdict: string;
+  }[];
+  /** 응답 상태 */
+  status: string;
+}
+
 /** MagazineAdminResponse */
 export interface MagazineAdminResponse {
   data?: {
@@ -2188,6 +2428,27 @@ export interface MediaStatusSuccessResponse {
   status: string;
 }
 
+/** MyResourceReportFindSuccessResponse */
+export interface MyResourceReportFindSuccessResponse {
+  /** 내가 보낸 제보. 최신순 */
+  data: {
+    /** ISO-8601 제보 시각 */
+    createdAt: string;
+    /** 제보 종류. REMOVE는 필요 없어요, ADD는 추가해 주세요 */
+    kind: "REMOVE" | "ADD";
+    /** 제보 ID */
+    reportId: number;
+    /** 필요 없어요 제보가 가리키는 자료 ID. 추가해 주세요 제보이거나 자료가 내려갔으면 null */
+    resourceId?: number | null;
+    /** 처리 상태 */
+    status: "OPEN" | "ACCEPTED" | "REJECTED";
+    /** 추가해 주세요 제보로 알려 준 주소. 필요 없어요 제보이면 null */
+    url?: string | null;
+  }[];
+  /** 응답 상태 */
+  status: string;
+}
+
 /** NewsDeleteSuccessResponse */
 export interface NewsDeleteSuccessResponse {
   /** 삭제 결과 */
@@ -2594,6 +2855,73 @@ export interface OAuthSignupSuccessResponse {
   status: string;
 }
 
+/** PopularKeywordsSuccessResponse */
+export interface PopularKeywordsSuccessResponse {
+  /** 인기 검색어. 항상 8개 */
+  data: {
+    /** 칩에 보여줄 검색어 */
+    keyword: string;
+  }[];
+  /** 응답 상태 */
+  status: string;
+}
+
+/** ProjectCareerCardsSuccessResponse */
+export interface ProjectCareerCardsSuccessResponse {
+  /** 경력 카드. 직군 BE, FE, AN 순, 직군 안에서는 sort_order 순. 카드가 없으면 빈 배열 */
+  data: {
+    /** 경력 카드 ID */
+    cardId: number;
+    /** 분류(예: 장애 대응, 쿼리 최적화) */
+    category: string;
+    /** 직군. BE, FE, AN */
+    jobRole: string;
+    /** 이력서 문장 */
+    resumeBullets: (object | boolean | string | number)[];
+    /** 포트폴리오 글. template별 소제목 순서이고 빈 칸은 빠진다 */
+    sections: {
+      /** 본문. 고려한 방법은 방법들을 쉼표로 이어 붙인다 */
+      body: string;
+      /** 소제목 */
+      heading: string;
+    }[];
+    /** 근거 자료. source_order 순(PR, 팀 문서, 블로그). PR 번호는 PR 주소 끝(/pull/{번호})에서 읽는다 */
+    sources: {
+      /** 블로그 플랫폼. 블로그가 아니면 null */
+      platform?: string | null;
+      /** ISO-8601 원문 게시 시각. 없으면 null */
+      publishedAt?: string | null;
+      /** 자료 ID. 자료 상세 조회와 필요 없는 자료 제보에 쓴다 */
+      resourceId: number;
+      /** 자료 원천. blog-post, github-pr, github-teamdoc, github-wiki, github-discussion, youtube-tekotalk */
+      source: string;
+      /** 한 줄 소개. 없으면 null */
+      summary?: string | null;
+      /** 자료를 만든 팀. 테코톡처럼 팀이 없거나 팀을 알 수 없으면 null */
+      team?: {
+        /** 프로젝트 로고 미디어 ID. 등록 전이거나 로고가 없으면 null */
+        logoMediaId?: number | null;
+        /** 팀 로고 이미지 주소(작은 크기). logoMediaId가 없거나 이미지가 준비되지 않았으면 null */
+        logoUrl?: string | null;
+        /** 등록된 프로젝트면 팀 이름, 등록 전 팀이면 수집 때 저장한 팀 이름 */
+        name?: string | null;
+        /** 등록된 프로젝트의 slug. 등록 전이면 null */
+        projectSlug?: string | null;
+      };
+      /** 자료 제목 */
+      title: string;
+      /** 원문 주소 */
+      url: string;
+    }[];
+    /** 카드에 쓴 기술. 이력서 머리의 기술 태그는 프로젝트 기술 스택 중 그 직군 카드들의 기술과 이름이 겹치는 것을 프론트가 고른다(겹치는 게 없으면 전부) */
+    techs: (object | boolean | string | number)[];
+    /** 카드 제목 */
+    title: string;
+  }[];
+  /** 응답 상태 */
+  status: string;
+}
+
 /** ProjectCommentCreateRequest */
 export interface ProjectCommentCreateRequest {
   /** 앞뒤 공백을 제거한 뒤 저장하는 댓글 내용 (1~500자, Unicode code point 기준) */
@@ -2824,6 +3152,8 @@ export interface ProjectCreateRequest {
   descriptionMd?: string | null;
   /** https://github.com/woowacourse-teams/{repo} 형식 (2,048자 이하). 다른 owner의 리포지토리는 400이다. 리포지토리 이름 뒤의 .git, /, 경로(/tree/main), 쿼리(?tab=readme), 앵커(#readme)는 허용하고 버린 뒤 저장한다. 리포지토리 이름으로 slug를 만든다. */
   githubRepositoryUrl: string;
+  /** 본인이 업로드한 PROJECT_LOGO 용도의 처리 완료 이미지 ID. 자료 카드 팀 이름 앞에 작게 보여 주는 팀 로고(파비콘)다 */
+  logoImageId?: number | null;
   /** @[A-Za-z0-9_-]{2,30} 형식의 팀원 handle 목록 (1명 이상). 등록자를 포함할 수 있으며, 활동 중인 우아한테크코스 크루 또는 코치여야 하며, 대소문자만 다른 handle도 같은 사용자로 본다. 배열 순서가 표시 순서가 된다. 각 handle의 앞뒤 공백은 자르며, 공백만 있는 handle은 400이다. */
   memberHandles: string[];
   /** 서비스 운영 상태. deploymentUrl이 없으면 CLOSED만 보낼 수 있으며, 어기면 400을 반환한다. 이때 오류 응답의 details.field는 serviceStatusValid다. */
@@ -3004,6 +3334,10 @@ export interface ProjectFindDetailSuccessResponse {
     likeCount: number;
     /** 요청자의 좋아요 여부. 비로그인이면 false다. */
     likedByMe: boolean;
+    /** 프로젝트 로고 미디어 ID. 없으면 null */
+    logoImageId?: number | null;
+    /** 프로젝트 로고 공개 이미지 URL. 로고가 없거나 이미지가 준비되지 않았으면 null */
+    logoUrl?: string | null;
     /** 팀원 목록. 저장된 순서대로 반환한다. */
     members: {
       /** 프로필 이미지 URL. 가입한 팀원은 CloudFront 공개 이미지 URL을 우선하고, 없으면 연결된 GitHub 프로필 이미지 URL을 사용하며, 가입하지 않은 이관 팀원은 저장된 GitHub 프로필 이미지 URL을 사용한다. */
@@ -3076,6 +3410,47 @@ export interface ProjectReactionSuccessResponse {
   status: string;
 }
 
+/** ProjectResourceTopicsSuccessResponse */
+export interface ProjectResourceTopicsSuccessResponse {
+  /** 기술 이야기 탭의 자료 수와 주제 목록 */
+  data: {
+    /** 고른 직군 탭에 보일 주제를 분야로 묶은 것. 자료가 많은 분야부터 */
+    fields: {
+      /** 분야 이름 */
+      name: string;
+      /** 분야 안 주제. 자료가 많은 순, 같으면 이름순 */
+      topics: {
+        /** 그 주제의 자료 수 */
+        count: number;
+        /** 주제 이름 */
+        name: string;
+        /** 주제 id. 주제별 자료 조회의 topicId로 쓴다 */
+        topicId: string;
+      }[];
+    }[];
+    /** 직군 탭. ALL은 늘 있고 BE, FE, AN은 그 직군 자료가 있을 때만 있다 */
+    jobRoles: {
+      /** 그 탭에 보이는 자료 수. 공통 자료는 여러 탭에 들어가 합이 전체보다 클 수 있다 */
+      count: number;
+      /** 직군 */
+      jobRole: "ALL" | "BE" | "FE" | "AN";
+    }[];
+    /** 직군과 상관없는 종류별 자료 수 */
+    kindCounts: {
+      /** 블로그 수 */
+      blog: number;
+      /** PR 수 */
+      pr: number;
+      /** 팀 문서 수. 레포 문서, Wiki, Discussion을 합한 수 */
+      teamDoc: number;
+    };
+    /** 직군과 상관없는 이 프로젝트 자료 수 */
+    totalCount: number;
+  };
+  /** 응답 상태 */
+  status: string;
+}
+
 /** ProjectRestoreSuccessResponse */
 export interface ProjectRestoreSuccessResponse {
   /** 복구 결과 */
@@ -3093,6 +3468,137 @@ export interface ProjectRestoreSuccessResponse {
   status: string;
 }
 
+/** ProjectTopicResourcesSuccessResponse */
+export interface ProjectTopicResourcesSuccessResponse {
+  /** 고른 주제의 자료 */
+  data: {
+    /** 같은 주제의 다른 팀 자료. 점수 높은 순(점수가 없으면 85점) 상위 20건 */
+    otherTeamResources: {
+      /** 블로그 플랫폼. 블로그가 아니면 null */
+      platform?: string | null;
+      /** ISO-8601 원문 게시 시각. 없으면 null */
+      publishedAt?: string | null;
+      /** 자료 ID. 자료 상세 조회와 필요 없는 자료 제보에 쓴다 */
+      resourceId: number;
+      /** 자료 원천. blog-post, github-pr, github-teamdoc, github-wiki, github-discussion, youtube-tekotalk */
+      source: string;
+      /** 한 줄 소개. 없으면 null */
+      summary?: string | null;
+      /** 자료를 만든 팀. 테코톡처럼 팀이 없거나 팀을 알 수 없으면 null */
+      team?: {
+        /** 프로젝트 로고 미디어 ID. 등록 전이거나 로고가 없으면 null */
+        logoMediaId?: number | null;
+        /** 팀 로고 이미지 주소(작은 크기). logoMediaId가 없거나 이미지가 준비되지 않았으면 null */
+        logoUrl?: string | null;
+        /** 등록된 프로젝트면 팀 이름, 등록 전 팀이면 수집 때 저장한 팀 이름 */
+        name?: string | null;
+        /** 등록된 프로젝트의 slug. 등록 전이면 null */
+        projectSlug?: string | null;
+      };
+      /** 자료 제목 */
+      title: string;
+      /** 원문 주소 */
+      url: string;
+    }[];
+    /** 이 팀 자료 전부. 블로그 먼저, 그다음 점수 높은 순, 같으면 최신순 */
+    resources: {
+      /** 블로그 플랫폼. 블로그가 아니면 null */
+      platform?: string | null;
+      /** ISO-8601 원문 게시 시각. 없으면 null */
+      publishedAt?: string | null;
+      /** 자료 ID. 자료 상세 조회와 필요 없는 자료 제보에 쓴다 */
+      resourceId: number;
+      /** 자료 원천. blog-post, github-pr, github-teamdoc, github-wiki, github-discussion, youtube-tekotalk */
+      source: string;
+      /** 한 줄 소개. 없으면 null */
+      summary?: string | null;
+      /** 자료를 만든 팀. 테코톡처럼 팀이 없거나 팀을 알 수 없으면 null */
+      team?: {
+        /** 프로젝트 로고 미디어 ID. 등록 전이거나 로고가 없으면 null */
+        logoMediaId?: number | null;
+        /** 팀 로고 이미지 주소(작은 크기). logoMediaId가 없거나 이미지가 준비되지 않았으면 null */
+        logoUrl?: string | null;
+        /** 등록된 프로젝트면 팀 이름, 등록 전 팀이면 수집 때 저장한 팀 이름 */
+        name?: string | null;
+        /** 등록된 프로젝트의 slug. 등록 전이면 null */
+        projectSlug?: string | null;
+      };
+      /** 자료 제목 */
+      title: string;
+      /** 원문 주소 */
+      url: string;
+    }[];
+    /** 그 주제의 테코톡 전부. 최신 발표순 */
+    talks: {
+      /** 블로그 플랫폼. 블로그가 아니면 null */
+      platform?: string | null;
+      /** ISO-8601 원문 게시 시각. 없으면 null */
+      publishedAt?: string | null;
+      /** 자료 ID. 자료 상세 조회와 필요 없는 자료 제보에 쓴다 */
+      resourceId: number;
+      /** 자료 원천. blog-post, github-pr, github-teamdoc, github-wiki, github-discussion, youtube-tekotalk */
+      source: string;
+      /** 한 줄 소개. 없으면 null */
+      summary?: string | null;
+      /** 자료를 만든 팀. 테코톡처럼 팀이 없거나 팀을 알 수 없으면 null */
+      team?: {
+        /** 프로젝트 로고 미디어 ID. 등록 전이거나 로고가 없으면 null */
+        logoMediaId?: number | null;
+        /** 팀 로고 이미지 주소(작은 크기). logoMediaId가 없거나 이미지가 준비되지 않았으면 null */
+        logoUrl?: string | null;
+        /** 등록된 프로젝트면 팀 이름, 등록 전 팀이면 수집 때 저장한 팀 이름 */
+        name?: string | null;
+        /** 등록된 프로젝트의 slug. 등록 전이면 null */
+        projectSlug?: string | null;
+      };
+      /** 자료 제목 */
+      title: string;
+      /** 원문 주소 */
+      url: string;
+    }[];
+    /** 고른 주제 */
+    topic: {
+      /** 주제 이름 */
+      name: string;
+      /** 주제 id */
+      topicId: string;
+    };
+  };
+  /** 응답 상태 */
+  status: string;
+}
+
+/** ProjectTopicsSuccessResponse */
+export interface ProjectTopicsSuccessResponse {
+  /** 기술 주제 목록 */
+  data: {
+    /** 직군 묶음. COMMON, BE, FE, AN 순이고 주제가 없는 묶음은 빠진다 */
+    groups: {
+      /** 묶음 코드 */
+      code: "COMMON" | "BE" | "FE" | "AN";
+      /** 묶음 이름. 공통, 백엔드, 프론트엔드, 안드로이드 */
+      name: string;
+      /** 그 묶음 주제를 하나라도 다룬 프로젝트 수 */
+      projectCount: number;
+      /** 짧은 이름. 공통, BE, FE, AN */
+      shortName: string;
+      /** 묶음 안 주제. 프로젝트가 많은 순, 같으면 이름순 */
+      topics: {
+        /** 주제 이름 */
+        name: string;
+        /** 그 주제를 다룬 프로젝트 수. 1 이상 */
+        projectCount: number;
+        /** 주제 id. 프로젝트 목록 조회의 topicId 조건으로 쓴다 */
+        topicId: string;
+      }[];
+    }[];
+    /** 주제가 하나라도 있는 공개 프로젝트 수 */
+    totalCount: number;
+  };
+  /** 응답 상태 */
+  status: string;
+}
+
 /** ProjectUpdateRequest */
 export interface ProjectUpdateRequest {
   /** 우아한테크코스 기수 (1~8) */
@@ -3103,6 +3609,8 @@ export interface ProjectUpdateRequest {
   descriptionMd?: string | null;
   /** https://github.com/woowacourse-teams/{repo} 형식 (2,048자 이하). 다른 owner의 리포지토리는 400이다. 리포지토리 이름 뒤의 .git, /, 경로(/tree/main), 쿼리(?tab=readme), 앵커(#readme)는 허용하고 버린 뒤 저장한다. 바꿀 수 있지만 다른 프로젝트가 등록한 리포지토리로는 바꿀 수 없다. slug는 등록 시점 값으로 고정이라 따라 바뀌지 않는다. */
   githubRepositoryUrl: string;
+  /** PROJECT_LOGO 용도의 처리 완료 이미지 ID. 필드를 생략하면 기존 로고를 유지하고, null을 보내면 제거한다. 지금 로고 ID와 다를 때만 본인이 올린 이미지인지 검사한다 */
+  logoImageId?: number | null;
   /** 팀원 handle 전체 목록 (1명 이상). 등록자를 포함할 수 있으며, 통째로 교체하며 배열 순서가 표시 순서가 된다. 이미 팀원인 사용자는 탈퇴했어도 그대로 둘 수 있다. 각 handle의 앞뒤 공백은 자르며, 공백만 있는 handle은 400이다. */
   memberHandles: string[];
   /** 서비스 운영 상태. deploymentUrl이 없으면 CLOSED만 보낼 수 있으며, 어기면 400을 반환한다. 이때 오류 응답의 details.field는 serviceStatusValid다. */
@@ -3143,6 +3651,356 @@ export interface ProjectViewRecordSuccessResponse {
   };
   /** 메타 정보 */
   meta?: object | null;
+  /** 응답 상태 */
+  status: string;
+}
+
+/** ResourceAdditionReportRequest */
+export interface ResourceAdditionReportRequest {
+  /** 왜 들어가면 좋은지. 공백 제거 후 500자 이하 */
+  memo?: string | null;
+  /** 빠진 PR이나 팀 문서의 GitHub 주소. 이 프로젝트 리포지토리 아래, 500자 이하 */
+  url: string;
+}
+
+/** ResourceAdditionReportSuccessResponse */
+export interface ResourceAdditionReportSuccessResponse {
+  /** 접수한 제보 */
+  data: {
+    /** 제보 ID. 이미 보낸 주소면 처음 제보 ID */
+    reportId: number;
+  };
+  /** 응답 상태 */
+  status: string;
+}
+
+/** ResourceDetailSuccessResponse */
+export interface ResourceDetailSuccessResponse {
+  /** 자료 상세 */
+  data: {
+    /** PR과 팀 문서의 종류(problem_solving, tech_decision, implementation, chore, design, operation, experiment, convention, plan, other). 블로그와 테코톡은 null */
+    contentType?: string | null;
+    /** 어떤 문제를 어떻게 풀었나. 없으면 빈 배열 */
+    experiences: {
+      /** 원인 */
+      cause?: string | null;
+      /** 문제 */
+      problem: string;
+      /** 결과 */
+      result?: string | null;
+      /** 해결 */
+      solution: string;
+      /** 쓴 기술. 없으면 빈 배열 */
+      techs: string[];
+    }[];
+    /** 이 자료에서 배울 점. 없으면 빈 배열 */
+    keyPoints: string[];
+    /** 원문 링크 미리보기. 아직 모으지 못했거나 실패했으면 null */
+    linkPreview?: {
+      /** 원문 설명(og:description) */
+      description?: string | null;
+      /** 썸네일 주소(og:image) */
+      imageUrl?: string | null;
+      /** 사이트 이름(og:site_name) */
+      siteName?: string | null;
+      /** 원문 제목(og:title) */
+      title?: string | null;
+    };
+    /** 블로그 플랫폼. 블로그가 아니면 null */
+    platform?: string | null;
+    /** 원문 게시 시각(UTC) */
+    publishedAt?: string | null;
+    /** 자료 ID */
+    resourceId: number;
+    /** 자료 원천 */
+    source: string;
+    /** 한줄 소개 */
+    summary?: string | null;
+    /** 자료를 만든 팀. 없으면 null */
+    team?: {
+      /** 프로젝트 로고 미디어 ID. 없으면 null */
+      logoMediaId?: number | null;
+      /** 팀 로고 이미지 주소(작은 크기). logoMediaId가 없거나 이미지가 준비되지 않았으면 null */
+      logoUrl?: string | null;
+      /** 팀 이름 */
+      name?: string | null;
+      /** 등록된 프로젝트 slug. 등록 전 팀이면 null */
+      projectSlug?: string | null;
+    };
+    /** 자료에 붙은 기술 태그. 원래 표기 그대로. 없으면 빈 배열 */
+    techTags: string[];
+    /** 자료 제목 */
+    title: string;
+    /** 자료의 기술 주제. 없으면 null */
+    topic?: {
+      /** 기술 주제 이름 */
+      name?: string | null;
+      /** 기술 주제 ID */
+      topicId?: string | null;
+    };
+    /** 원문 주소 */
+    url: string;
+  };
+  /** 응답 상태 */
+  status: string;
+}
+
+/** ResourceRecentSuccessResponse */
+export interface ResourceRecentSuccessResponse {
+  /** 자료 카드 목록 */
+  data: {
+    /** 블로그 플랫폼. 블로그가 아니면 null */
+    platform?: string | null;
+    /** 원문 게시 시각(UTC) */
+    publishedAt: string;
+    /** 자료 ID. 자료 상세 조회에 쓴다 */
+    resourceId: number;
+    /** 자료 원천 */
+    source: string;
+    /** 한줄 소개 */
+    summary: string;
+    /** 자료를 만든 팀. 없으면 null */
+    team?: {
+      /** 프로젝트 로고 미디어 ID. 없으면 null */
+      logoMediaId?: number | null;
+      /** 팀 로고 이미지 주소(작은 크기). logoMediaId가 없거나 이미지가 준비되지 않았으면 null */
+      logoUrl?: string | null;
+      /** 팀 이름 */
+      name?: string | null;
+      /** 등록된 프로젝트 slug. 등록 전 팀이면 null */
+      projectSlug?: string | null;
+    };
+    /** 자료 제목 */
+    title: string;
+    /** 원문 주소 */
+    url: string;
+  }[];
+  /** 응답 상태 */
+  status: string;
+}
+
+/** ResourceRemovalReportRequest */
+export interface ResourceRemovalReportRequest {
+  /** 제보 이유. 공백 제거 후 500자 이하. 고른 자료 모두에 붙는다 */
+  memo?: string | null;
+  /** 필요 없다고 제보할 자료 ID 목록. 1~100개. 같은 ID는 한 번만 제보한다 */
+  resourceIds: (object | boolean | string | number)[];
+}
+
+/** ResourceRemovalReportSuccessResponse */
+export interface ResourceRemovalReportSuccessResponse {
+  /** 접수한 제보. 중복을 뺀 요청 순서 */
+  data: {
+    /** 제보 ID. 이미 보낸 자료면 처음 제보 ID */
+    reportId: number;
+    /** 제보한 자료 ID */
+    resourceId: number;
+  }[];
+  /** 응답 상태 */
+  status: string;
+}
+
+/** ResourceReportAdminFindAllSuccessResponse */
+export interface ResourceReportAdminFindAllSuccessResponse {
+  /** 자료 제보 목록. 최신순 */
+  data: {
+    /** ISO-8601 제보 시각 */
+    createdAt: string;
+    /** 제보 종류. REMOVE는 필요 없어요, ADD는 추가해 주세요 */
+    kind: "REMOVE" | "ADD";
+    /** 제보 이유. 없으면 null */
+    memo?: string | null;
+    /** 제보한 프로젝트 */
+    project: {
+      /** 프로젝트 slug */
+      slug: string;
+      /** 프로젝트 이름 */
+      title: string;
+    };
+    /** 제보 ID */
+    reportId: number;
+    /** 제보한 사용자 ID */
+    reporterUserId: number;
+    /** 필요 없어요 제보가 가리키는 자료. 추가해 주세요 제보이거나 자료가 내려갔으면 null */
+    resource?: {
+      /** 자료 ID */
+      resourceId?: number | null;
+      /** 자료 원천(github-pr, github-teamdoc, github-wiki, github-discussion) */
+      source?: string | null;
+      /** 자료 제목 */
+      title?: string | null;
+      /** 자료 원문 주소 */
+      url?: string | null;
+    };
+    /** 처리 상태 */
+    status: "OPEN" | "ACCEPTED" | "REJECTED";
+    /** 추가해 주세요 제보로 알려 준 주소. 필요 없어요 제보이면 null */
+    url?: string | null;
+  }[];
+  /** 커서 페이지네이션 정보 */
+  meta: {
+    /** 다음 페이지 존재 여부 */
+    hasNext: boolean;
+    /** 다음 페이지 요청에 사용할 커서. 다음 페이지가 없으면 null */
+    nextCursor?: string | null;
+    /** 상태, 종류 조건에 해당하는 전체 제보 수 */
+    totalCount: number;
+  };
+  /** 응답 상태 */
+  status: string;
+}
+
+/** ResourceReportStatusUpdateRequest */
+export interface ResourceReportStatusUpdateRequest {
+  /** 바꿀 처리 상태. OPEN, ACCEPTED, REJECTED */
+  status: "OPEN" | "ACCEPTED" | "REJECTED";
+}
+
+/** ResourceReportStatusUpdateSuccessResponse */
+export interface ResourceReportStatusUpdateSuccessResponse {
+  /** 처리한 자료 제보 */
+  data: {
+    /** 마지막으로 상태를 바꾼 시각. 바꾼 적이 없으면 null */
+    handledAt?: string | null;
+    /** 마지막으로 상태를 바꾼 관리자 ID. 바꾼 적이 없으면 null */
+    handledByUserId?: number | null;
+    /** 제보 ID */
+    reportId: number;
+    /** 바뀐 처리 상태 */
+    status: "OPEN" | "ACCEPTED" | "REJECTED";
+  };
+  /** 응답 상태 */
+  status: string;
+}
+
+/** ResourceSearchSuccessResponse */
+export interface ResourceSearchSuccessResponse {
+  /** 섹션별 검색 결과 */
+  data: {
+    blogs?: {
+      /** 블로그(blog-post), 최대 20건 */
+      items: {
+        /** 블로그 플랫폼. 블로그가 아니면 null */
+        platform?: string | null;
+        /** 원문 게시 시각(UTC) */
+        publishedAt?: string | null;
+        /** 자료 ID. 자료 상세 조회에 쓴다 */
+        resourceId: number;
+        /** 자료 원천 */
+        source: string;
+        /** 한줄 소개 */
+        summary?: string | null;
+        /** 자료를 만든 팀. 팀이 없거나 알 수 없으면 null */
+        team?: {
+          /** 프로젝트 로고 미디어 ID. 없으면 null */
+          logoMediaId?: number | null;
+          /** 팀 로고 이미지 주소(작은 크기). logoMediaId가 없거나 이미지가 준비되지 않았으면 null */
+          logoUrl?: string | null;
+          /** 팀 이름 */
+          name?: string | null;
+          /** 등록된 프로젝트 slug. 등록 전 팀이면 null */
+          projectSlug?: string | null;
+        };
+        /** 자료 제목 */
+        title: string;
+        /** 원문 주소 */
+        url: string;
+      }[];
+    };
+    documents?: {
+      /** PR과 팀 문서(github-pr, github-teamdoc, github-wiki, github-discussion), 최대 20건 */
+      items: {
+        /** 블로그 플랫폼. 블로그가 아니면 null */
+        platform?: string | null;
+        /** 원문 게시 시각(UTC) */
+        publishedAt?: string | null;
+        /** 자료 ID. 자료 상세 조회에 쓴다 */
+        resourceId: number;
+        /** 자료 원천 */
+        source: string;
+        /** 한줄 소개 */
+        summary?: string | null;
+        /** 자료를 만든 팀. 팀이 없거나 알 수 없으면 null */
+        team?: {
+          /** 프로젝트 로고 미디어 ID. 없으면 null */
+          logoMediaId?: number | null;
+          /** 팀 로고 이미지 주소(작은 크기). logoMediaId가 없거나 이미지가 준비되지 않았으면 null */
+          logoUrl?: string | null;
+          /** 팀 이름 */
+          name?: string | null;
+          /** 등록된 프로젝트 slug. 등록 전 팀이면 null */
+          projectSlug?: string | null;
+        };
+        /** 자료 제목 */
+        title: string;
+        /** 원문 주소 */
+        url: string;
+      }[];
+    };
+    talks?: {
+      /** 테코톡(youtube-tekotalk), 최대 6건 */
+      items: {
+        /** 블로그 플랫폼. 블로그가 아니면 null */
+        platform?: string | null;
+        /** 원문 게시 시각(UTC) */
+        publishedAt?: string | null;
+        /** 자료 ID. 자료 상세 조회에 쓴다 */
+        resourceId: number;
+        /** 자료 원천 */
+        source: string;
+        /** 한줄 소개 */
+        summary?: string | null;
+        /** 자료를 만든 팀. 팀이 없거나 알 수 없으면 null */
+        team?: {
+          /** 프로젝트 로고 미디어 ID. 없으면 null */
+          logoMediaId?: number | null;
+          /** 팀 로고 이미지 주소(작은 크기). logoMediaId가 없거나 이미지가 준비되지 않았으면 null */
+          logoUrl?: string | null;
+          /** 팀 이름 */
+          name?: string | null;
+          /** 등록된 프로젝트 slug. 등록 전 팀이면 null */
+          projectSlug?: string | null;
+        };
+        /** 자료 제목 */
+        title: string;
+        /** 원문 주소 */
+        url: string;
+      }[];
+    };
+  };
+  /** 응답 상태 */
+  status: string;
+}
+
+/** ResourceTopicsPopularSuccessResponse */
+export interface ResourceTopicsPopularSuccessResponse {
+  /** 많이 다룬 주제 목록 */
+  data: {
+    /** 기술 주제 이름 */
+    name: string;
+    /** 이 주제의 자료 수 */
+    resourceCount: number;
+    /** 기술 주제 ID */
+    topicId: string;
+  }[];
+  /** 응답 상태 */
+  status: string;
+}
+
+/** ResourceTopicsSuccessResponse */
+export interface ResourceTopicsSuccessResponse {
+  /** 분야 목록 */
+  data: {
+    /** 분야. COMMON, BACKEND, FRONTEND, MOBILE 중 하나 */
+    side: string;
+    /** 분야의 주제 목록 */
+    topics: {
+      /** 기술 주제 이름 */
+      name: string;
+      /** 기술 주제 ID */
+      topicId: string;
+    }[];
+  }[];
   /** 응답 상태 */
   status: string;
 }

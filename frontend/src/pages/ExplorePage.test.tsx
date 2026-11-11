@@ -5,9 +5,27 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
-import { renderRoute } from '@/test/renderRoute';
+import { http, HttpResponse } from 'msw';
+
+import { renderRoute, server } from '@/test/renderRoute';
 
 const resultSection = async (name: RegExp) => screen.findByRole('region', { name });
+
+const serverMaterial = (resourceId: number, source: string, title: string) => ({
+  resourceId,
+  source,
+  title,
+  url: `https://github.com/woowacourse-teams/sample/${resourceId}`,
+  summary: `${title} 한줄 소개`,
+  publishedAt: '2026-10-20T05:12:00Z',
+  platform: null,
+  team: {
+    name: '샤라웃',
+    projectSlug: 'shout-outz',
+    logoMediaId: 31,
+    logoUrl: 'https://cdn.example.com/media/31/thumbnail.webp',
+  },
+});
 
 describe('ExplorePage', () => {
   it('헤더에서 탐색을 현재 페이지로 표시한다', async () => {
@@ -41,14 +59,15 @@ describe('ExplorePage', () => {
     expect(within(tabs).getByRole('tab', { name: '프로젝트' })).toBeEnabled();
   });
 
-  it('검색어를 입력하면 맞는 주제의 자료를 종류별로 보여준다', async () => {
+  it('검색어를 입력하면 그 검색어로 찾은 자료를 종류별로 보여준다', async () => {
     const user = userEvent.setup();
     renderRoute('/explore');
 
     await user.type(await screen.findByRole('searchbox', { name: '기술 이야기 검색' }), '동시성');
     await user.click(screen.getByRole('button', { name: '검색' }));
 
-    expect(await screen.findByText('동시성 제어/락')).toBeVisible();
+    const summary = await screen.findByRole('region', { name: '검색 요약' });
+    expect(summary).toHaveTextContent('동시성 검색 결과');
     expect(await resultSection(/^블로그/)).toBeVisible();
     expect(await resultSection(/^테코톡/)).toBeVisible();
     expect(await resultSection(/^PR과 팀 문서/)).toBeVisible();
@@ -79,11 +98,94 @@ describe('ExplorePage', () => {
     expect(screen.queryByRole('region', { name: /^PR과 팀 문서/ })).not.toBeInTheDocument();
   });
 
-  it('맞는 주제가 없으면 안내를 보여준다', async () => {
+  it('위키와 디스커션 자료는 팀 문서 배지와 팀 로고로 보여준다', async () => {
+    server.use(
+      http.get('*/api/v1/resources/search', () =>
+        HttpResponse.json({
+          status: 'success',
+          data: {
+            blogs: { items: [] },
+            documents: {
+              items: [
+                serverMaterial(1, 'github-wiki', '위키 자료'),
+                serverMaterial(2, 'github-discussion', '디스커션 자료'),
+              ],
+            },
+            talks: { items: [] },
+          },
+        }),
+      ),
+    );
+    renderRoute('/explore?q=동시성');
+
+    const documents = await resultSection(/^PR과 팀 문서/);
+    for (const title of ['위키 자료', '디스커션 자료']) {
+      const item = within(documents).getByRole('button', { name: new RegExp(title) });
+      expect(within(item).getByText('팀 문서')).toBeVisible();
+      // 팀 로고는 서버가 준 logoUrl 이미지로 보여 준다.
+      expect(
+        item.querySelector('img[src="https://cdn.example.com/media/31/thumbnail.webp"]'),
+      ).toBeInTheDocument();
+      expect(within(item).getByRole('img', { name: 'GitHub 팀 문서' })).toBeVisible();
+    }
+  });
+
+  it('자료 요약에서 서버가 원인과 결과를 주지 않은 줄은 뺀다', async () => {
+    const user = userEvent.setup();
+    server.use(
+      http.get('*/api/v1/resources/search', () =>
+        HttpResponse.json({
+          status: 'success',
+          data: {
+            blogs: { items: [] },
+            documents: { items: [serverMaterial(7, 'github-pr', '캐시 복구 PR')] },
+            talks: { items: [] },
+          },
+        }),
+      ),
+      http.get('*/api/v1/resources/7', () =>
+        HttpResponse.json({
+          status: 'success',
+          data: {
+            ...serverMaterial(7, 'github-pr', '캐시 복구 PR'),
+            contentType: 'problem_solving',
+            techTags: ['oEmbed'],
+            keyPoints: ['봇 확인 페이지가 캐시되는 원인을 알아봐요.'],
+            experiences: [
+              {
+                problem: '미리보기가 깨졌다.',
+                cause: null,
+                solution: 'oEmbed를 먼저 썼다.',
+                result: null,
+                techs: [],
+              },
+            ],
+            linkPreview: { title: null, description: null, imageUrl: null, siteName: null },
+            topic: { topicId: 'cache', name: '캐시' },
+          },
+        }),
+      ),
+    );
+    renderRoute('/explore?q=캐시');
+
+    const documents = await resultSection(/^PR과 팀 문서/);
+    await user.click(within(documents).getByRole('button', { name: /캐시 복구 PR/ }));
+    const summary = await screen.findByRole('dialog');
+
+    expect(
+      await within(summary).findByText('봇 확인 페이지가 캐시되는 원인을 알아봐요.'),
+    ).toBeVisible();
+    expect(within(summary).getByText('미리보기가 깨졌다.')).toBeVisible();
+    expect(within(summary).getByText('oEmbed를 먼저 썼다.')).toBeVisible();
+    expect(within(summary).queryByText('원인')).not.toBeInTheDocument();
+    expect(within(summary).queryByText('결과')).not.toBeInTheDocument();
+  });
+
+  it('찾은 자료가 하나도 없으면 안내를 보여준다', async () => {
     renderRoute('/explore?q=없는검색어123');
 
     expect(
-      await screen.findByText("'없는검색어123'에 맞는 주제를 아직 못 찾았어요."),
+      await screen.findByText("'없는검색어123'에 맞는 자료를 아직 못 찾았어요."),
     ).toBeVisible();
   });
 

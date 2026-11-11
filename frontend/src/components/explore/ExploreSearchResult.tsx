@@ -1,7 +1,7 @@
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { useState, type ReactNode } from 'react';
 
-import { exploreSearchQuery, type Material } from '@/apis/explore';
+import { materialSearchQuery, type Material } from '@/apis/explore';
 import { MaterialList, TechTalkList } from '@/components/explore/MaterialList';
 import { Tab } from '@/components/Tab';
 
@@ -10,14 +10,14 @@ type KindFilter = 'ALL' | 'BLOG' | 'DOCUMENT' | 'TECH_TALK';
 // '전체'에서는 종류마다 앞의 몇 개만 보여 준다.
 const PREVIEW_COUNT = { BLOG: 8, DOCUMENT: 8, TECH_TALK: 6 } as const;
 
-/** 검색어로 찾은 주제의 블로그·테코톡·PR과 팀 문서 */
+/** 검색어로 찾은 블로그·테코톡·PR과 팀 문서 */
 export function ExploreSearchResult({ query }: { query: string }) {
-  const { data } = useSuspenseQuery(exploreSearchQuery(query));
+  const { data } = useSuspenseQuery(materialSearchQuery(query));
   const [filter, setFilter] = useState<KindFilter>('ALL');
 
-  if (data.topics.length === 0) {
+  if (data.blogs.length + data.documents.length + data.talks.length === 0) {
     return (
-      <EmptyResult title={`'${query}'에 맞는 주제를 아직 못 찾았어요.`}>
+      <EmptyResult title={`'${query}'에 맞는 자료를 아직 못 찾았어요.`}>
         다른 검색어나 추천 검색어로 찾아보세요.
       </EmptyResult>
     );
@@ -25,7 +25,7 @@ export function ExploreSearchResult({ query }: { query: string }) {
 
   const groups: { kind: Exclude<KindFilter, 'ALL'>; title: string; materials: Material[] }[] = [
     { kind: 'BLOG', title: '블로그', materials: data.blogs },
-    { kind: 'TECH_TALK', title: '테코톡', materials: data.techTalks },
+    { kind: 'TECH_TALK', title: '테코톡', materials: data.talks },
     { kind: 'DOCUMENT', title: 'PR과 팀 문서', materials: data.documents },
   ];
   const total = groups.reduce((sum, group) => sum + group.materials.length, 0);
@@ -37,8 +37,8 @@ export function ExploreSearchResult({ query }: { query: string }) {
     <>
       <section aria-label="검색 요약">
         <p className="text-sm text-gray-600">
-          <strong className="text-primary-600 font-bold">{data.topics.join(', ')}</strong> 주제로
-          찾았어요.
+          {/* 서버 검색은 주제가 아니라 검색어로 찾으므로 검색어를 보여 준다. */}
+          <strong className="text-primary-600 font-bold">{query}</strong> 검색 결과
         </p>
         <Tab
           variant="chip"
@@ -62,17 +62,12 @@ export function ExploreSearchResult({ query }: { query: string }) {
           </Tab.Item>
           <Tab.Item value="TECH_TALK">
             테코톡
-            <Count>{data.techTalks.length}</Count>
+            <Count>{data.talks.length}</Count>
           </Tab.Item>
         </Tab>
       </section>
 
       <div className="mt-5">
-        {total === 0 && (
-          <EmptyResult title={`'${data.topics.join(', ')}' 주제로 모은 자료가 아직 없어요.`}>
-            다른 주제의 자료를 먼저 살펴보세요.
-          </EmptyResult>
-        )}
         {visible.map((group, index) => {
           const materials =
             filter === 'ALL'

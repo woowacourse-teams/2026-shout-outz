@@ -1,3 +1,6 @@
+import { useQuery } from '@tanstack/react-query';
+
+import { popularKeywordsQuery } from '@/apis/explore';
 import { AppGnb } from '@/components/AppGnb';
 import { AsyncBoundary } from '@/components/AsyncBoundary';
 import { ExploreHero, type ExploreTab } from '@/components/explore/ExploreHero';
@@ -31,6 +34,8 @@ export function ExplorePage({
   sort,
   onSortChange,
 }: ExplorePageProps) {
+  const popularKeywords = useQuery({ ...popularKeywordsQuery(), enabled: tab === 'keyword' });
+
   return (
     <div className="bg-background flex min-h-dvh flex-col text-gray-900">
       <title>{query ? `${query} 검색 결과 | shout-outz` : '탐색 | shout-outz'}</title>
@@ -41,6 +46,10 @@ export function ExplorePage({
           onTabChange={onTabChange}
           query={query}
           onSearch={onSearch}
+          {...(tab === 'keyword' &&
+            popularKeywords.data && {
+              suggestions: popularKeywords.data.map(({ keyword }) => keyword),
+            })}
           {...(tab === 'project' && {
             activeSuggestion: topic,
             // 프로젝트 탭의 추천 검색어는 "이런 주제를 찾아보세요"라 검색어 대신 기술 주제 필터로 건다. 같은 것을 다시 누르면 푼다.

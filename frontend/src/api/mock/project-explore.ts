@@ -10,7 +10,7 @@ import type {
   ProjectTopicMaterials,
   ProjectTopics,
 } from '@/apis/project-explore';
-import { collectMaterials, TOPIC_FIELDS } from '@/api/mock/explore';
+import { collectMaterials, isBlog, isTalk, TOPIC_FIELDS } from '@/api/mock/explore';
 import projects from '@/api/mock/projects.json';
 
 // MOCK-API: 기술 주제 필터, 프로젝트 경험, 프로젝트 자료 목 응답이다.
@@ -273,13 +273,16 @@ const projectNameOf = (slug: string) => projects.find((project) => project.id ==
 const splitMaterials = (slug: string, topic: string) => {
   const name = projectNameOf(slug) ?? slug;
   const materials = collectMaterials([topic]);
-  const documents = materials.filter((material) => material.kind !== 'TECH_TALK');
+  const documents = materials.filter((material) => !isTalk(material));
   return {
     own: documents
       .filter((_, index) => index % 3 === 0)
-      .map((material) => ({ ...material, project: { name, logoUrl: null } })),
+      .map((material) => ({
+        ...material,
+        team: { name, projectSlug: slug, logoMediaId: null, logoUrl: null },
+      })),
     others: documents.filter((_, index) => index % 3 !== 0).slice(0, 6),
-    techTalks: materials.filter((material) => material.kind === 'TECH_TALK').slice(0, 5),
+    techTalks: materials.filter(isTalk).slice(0, 5),
   };
 };
 
@@ -306,9 +309,11 @@ export const getProjectMaterialTopics = (
   return {
     totalCount: all.length,
     kindCounts: {
-      blog: all.filter((material) => material.kind === 'BLOG').length,
-      pr: all.filter((material) => material.kind === 'PR').length,
-      teamDoc: all.filter((material) => material.kind === 'TEAM_DOC').length,
+      blog: all.filter(isBlog).length,
+      pr: all.filter((material) => material.source === 'github-pr').length,
+      teamDoc: all.filter(
+        (material) => material.source.startsWith('github-') && material.source !== 'github-pr',
+      ).length,
     },
     jobRoles: (['ALL', 'BE', 'FE'] as const)
       .map((role) => ({ jobRole: role, count: count(role) }))

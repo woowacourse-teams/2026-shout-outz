@@ -1,6 +1,5 @@
 import { http, HttpResponse } from 'msw';
 
-import type { Material } from '@/apis/explore';
 import type {
   JobPostingCommunityFeed,
   JobPostingDetail,
@@ -8,7 +7,7 @@ import type {
   JobRequirementRecommendation,
   JobRole,
 } from '@/apis/job-posting';
-import { collectMaterials, mockResourceIdOf } from '@/api/mock/explore';
+import { collectMaterials } from '@/api/mock/explore';
 
 // 서버의 사용자 채용공고 API 명세(목록, 상세, 역량별 자료)에 맞춘 목 응답이다.
 // 공고와 역량은 프로토타입 예시이고, 역량별 자료는 소개 페이지에 저장해 둔 실제 자료를 주제로 묶어 돌려준다.
@@ -139,29 +138,22 @@ const logoOf = ({ companyName, logoColor, logoTextColor = '#fff' }: MockJobPosti
 
 const RECOMMENDATION_LIMIT = 6;
 
-const SOURCE_BY_KIND: Record<Material['kind'], string> = {
-  BLOG: 'blog-post',
-  PR: 'github-pr',
-  TEAM_DOC: 'github-wiki',
-  TECH_TALK: 'youtube-tekotalk',
-};
-
 const requirementIdOf = (jobPostingId: number, index: number) => jobPostingId * 100 + index + 1;
 
 const recommendationsOf = (requirement: MockRequirement): JobRequirementRecommendation[] =>
   collectMaterials(requirement.topics)
     .slice(0, RECOMMENDATION_LIMIT)
     .map((material, index) => ({
-      resourceId: mockResourceIdOf(material.id),
+      resourceId: material.resourceId,
       verdict: index < 3 ? 'MATCH' : 'PARTIAL',
-      source: SOURCE_BY_KIND[material.kind],
+      source: material.source,
       title: material.title,
       url: material.url,
-      description: material.summary,
-      publishedAt: material.publishedAt ? `${material.publishedAt}T00:00:00Z` : null,
+      description: material.summary ?? null,
+      publishedAt: material.publishedAt ?? null,
       contentType: null,
-      teamName: material.project?.name ?? null,
-      authorDisplay: material.speaker,
+      teamName: material.team?.name ?? null,
+      authorDisplay: null,
     }));
 
 const toListItem = (posting: MockJobPosting): JobPostingListItem => ({
