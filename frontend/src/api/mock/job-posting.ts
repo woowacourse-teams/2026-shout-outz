@@ -223,7 +223,7 @@ export const getJobPostings = (keyword: string) => {
   };
 };
 
-// MOCK-API: 서버에 없는 "커뮤니티에서 나온 고민" 목 응답이다. 글 내용은 프로토타입 예시다.
+// MOCK-API: 서버에 없는 "연관 질문" 목 응답이다. 글 내용은 프로토타입 예시다.
 const COMMUNITY_FEEDS: JobPostingCommunityFeed[] = [
   {
     feedId: 1,
@@ -233,6 +233,9 @@ const COMMUNITY_FEEDS: JobPostingCommunityFeed[] = [
     content:
       '안녕하세요! 현재 금융권을 우선적으로 취업준비하고 있는 학생입니다. 금융권 취업에 앞서 중요한 고려 요소들에 대해 여쭤보고 싶습니다. 1. 도메인 지식이 중요한가요? 2. 금융권은 취업에 앞서 자격증과 정량적 기준으로 서류 합격이 판가름된다는 의견을 들었는데, 실제 취업하신분들이 느꼈던 점이 궁금합니다.',
     authorDisplay: '익명',
+    authorAffiliation: '크루',
+    authorAvatarUrl: null,
+    createdAt: '2026-10-16T09:00:00+09:00',
     commentCount: 4,
     likeCount: 5,
   },
@@ -244,6 +247,9 @@ const COMMUNITY_FEEDS: JobPostingCommunityFeed[] = [
     content:
       '오늘 투운사 접수일이라서 금융권 IT 취업에도 투운사가 있다면 이점이 있는지 궁금합니다. 사실 무관한 것 같기도 하면서, 도메인 관련된 지식에 어필이 될까 해서 여쭤봅니다!',
     authorDisplay: '익명',
+    authorAffiliation: '크루',
+    authorAvatarUrl: null,
+    createdAt: '2026-10-02T09:00:00+09:00',
     commentCount: 1,
     likeCount: 1,
   },
@@ -255,6 +261,9 @@ const COMMUNITY_FEEDS: JobPostingCommunityFeed[] = [
     content:
       '안녕하세요! 포트폴리오를 준비하면서 프로젝트 경험을 어떻게 정리할지 고민하고 있습니다. 구현한 기능을 나열하기보다는 제가 고민하고 해결한 과정을 보여주고 싶은데, 어디까지 자세히 써야 할지 어렵더라고요.',
     authorDisplay: '익명',
+    authorAffiliation: '크루',
+    authorAvatarUrl: null,
+    createdAt: '2026-09-21T09:00:00+09:00',
     commentCount: 2,
     likeCount: 4,
   },

@@ -79,7 +79,7 @@ export interface JobRequirementRecommendation {
   authorDisplay: string | null;
 }
 
-// MOCK-API: 상세 오른쪽의 "커뮤니티에서 나온 고민"은 서버 API가 없어 모양을 임의로 정했다.
+// MOCK-API: 상세 오른쪽의 "연관 질문"은 서버 API가 없어 모양을 임의로 정했다.
 export interface JobPostingCommunityFeed {
   feedId: number;
   /** 질문, 고민 등 글 종류 */
@@ -88,6 +88,11 @@ export interface JobPostingCommunityFeed {
   title: string;
   content: string;
   authorDisplay: string;
+  /** 작성자 소속. 예: "8기 백엔드 크루" */
+  authorAffiliation: string;
+  authorAvatarUrl: string | null;
+  /** ISO 시각 */
+  createdAt: string;
   commentCount: number;
   likeCount: number;
 }
