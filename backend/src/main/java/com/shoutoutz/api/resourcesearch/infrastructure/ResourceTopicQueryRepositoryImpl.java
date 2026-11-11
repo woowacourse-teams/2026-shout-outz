@@ -40,10 +40,11 @@ public class ResourceTopicQueryRepositoryImpl implements ResourceTopicQueryRepos
                 SELECT t.id, t.name, count(*) AS resource_count
                 FROM resource_topic_catalog t
                 JOIN resource_documents d ON d.topic = t.id AND d.deleted_at IS NULL
+                %s
                 GROUP BY t.id, t.name
                 ORDER BY resource_count DESC, %s
                 LIMIT :size
-                """.formatted(NAME_ORDER);
+                """.formatted(JdbcResourceSearchRepository.NOT_REMOVED_BY_REPORT, NAME_ORDER);
         return jdbcTemplate.query(sql, new MapSqlParameterSource("size", size), (resultSet, rowNumber) -> new PopularTopic(
                 topicOf(resultSet),
                 resultSet.getLong("resource_count")
