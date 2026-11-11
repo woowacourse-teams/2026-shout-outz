@@ -94,6 +94,13 @@ resource:
     connect-timeout: ${RESOURCE_EMBEDDING_CONNECT_TIMEOUT:5s}
     read-timeout: ${RESOURCE_EMBEDDING_READ_TIMEOUT:30s}
 
+# 조회 결과를 앱 서버 메모리에 보관하는 로컬 캐시.
+# enabled를 끄면 보관하지 않고 매번 DB에서 읽는다. (부하 테스트에서 캐시 전후를 비교할 때 쓴다)
+# 캐시마다 refresh-after(이 시간이 지나면 예전 값을 돌려주면서 뒤에서 새로 읽음),
+# expire-after(이 시간이 지나면 예전 값도 버림), maximum-size(보관할 최대 개수)를 caches 아래에 둔다.
+local-cache:
+  enabled: ${LOCAL_CACHE_ENABLED:true}
+
 github:
   oauth:
     client-id: ${GITHUB_OAUTH_CLIENT_ID}
