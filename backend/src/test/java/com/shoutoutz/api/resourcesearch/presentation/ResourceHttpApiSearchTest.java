@@ -61,7 +61,7 @@ class ResourceHttpApiSearchTest {
                                 101L, "blog-post", "[Database] MySQL(InnoDB) 락(Lock) (2)",
                                 "https://soeun2537.tistory.com/127", "잠금 범위와 대기 동작을 살펴봐요.",
                                 Instant.parse("2025-10-06T03:00:00Z"), "tistory",
-                                new ResourceCardResponse.Team("페스타북", "festabook", 31L)))),
+                                new ResourceCardResponse.Team("페스타북", "festabook", 31L, "https://cdn.example.com/media/project/31/thumbnail")))),
                         new ResourceSectionResponse(List.of(new ResourceCardResponse(
                                 3412L, "github-teamdoc", "포트폴리오 원장 변경 전에 포트폴리오 잠금 획득",
                                 "https://github.com/woowacourse-teams/2026-DAYNOMY/blob/main/docs/adr.md",
@@ -197,7 +197,8 @@ class ResourceHttpApiSearchTest {
                 fieldWithPath("team").type(OBJECT).description("자료를 만든 팀. 팀이 없거나 알 수 없으면 null").optional(),
                 fieldWithPath("team.name").type(STRING).description("팀 이름").optional(),
                 fieldWithPath("team.projectSlug").type(STRING).description("등록된 프로젝트 slug. 등록 전 팀이면 null").optional(),
-                fieldWithPath("team.logoMediaId").type(NUMBER).description("프로젝트 썸네일 미디어 ID. 없으면 null").optional()
+                fieldWithPath("team.logoMediaId").type(NUMBER).description("프로젝트 썸네일 미디어 ID. 없으면 null").optional(),
+                fieldWithPath("team.logoUrl").type(STRING).description("팀 로고 이미지 주소(썸네일 크기). logoMediaId가 없거나 이미지가 준비되지 않았으면 null").optional()
         );
     }
 }

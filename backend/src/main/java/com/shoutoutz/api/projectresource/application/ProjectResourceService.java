@@ -13,9 +13,12 @@ import com.shoutoutz.api.projectresource.domain.ResourceTopic;
 import com.shoutoutz.api.projectresource.presentation.dto.response.ProjectCareerCardResponse;
 import com.shoutoutz.api.projectresource.presentation.dto.response.ProjectResourceTopicsResponse;
 import com.shoutoutz.api.projectresource.presentation.dto.response.ProjectTopicResourcesResponse;
+import com.shoutoutz.api.resourcesearch.application.ResourceCardLogoResolver;
 import com.shoutoutz.api.resourcesearch.application.dto.ResourceCard;
+import com.shoutoutz.api.resourcesearch.application.dto.ResourceCardLogoUrls;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,6 +38,7 @@ public class ProjectResourceService {
     private final ProjectSlugResolver projectSlugResolver;
     private final ProjectRepository projectRepository;
     private final ProjectResourceQueryRepository projectResourceQueryRepository;
+    private final ResourceCardLogoResolver resourceCardLogoResolver;
 
     @Transactional(readOnly = true)
     public ProjectResourceTopicsResponse findTopics(String slug, ProjectResourceJobRole jobRole) {
@@ -54,17 +58,19 @@ public class ProjectResourceService {
         long projectId = findPublicProjectId(slug);
         ResourceTopic topic = projectResourceQueryRepository.findTopic(topicId)
                 .orElseThrow(() -> new EntityNotFoundException(RESOURCE_TOPIC_NOT_FOUND));
-        return ProjectTopicResourcesResponse.of(
-                topic,
-                projectResourceQueryRepository.findTeamResources(projectId, topicId, jobRole),
-                projectResourceQueryRepository.findTalks(topicId),
-                projectResourceQueryRepository.findOtherTeamResources(
-                        projectId,
-                        topicId,
-                        jobRole,
-                        OTHER_TEAM_RESOURCE_LIMIT
-                )
+        List<ResourceCard> teamResources =
+                projectResourceQueryRepository.findTeamResources(projectId, topicId, jobRole);
+        List<ResourceCard> talks = projectResourceQueryRepository.findTalks(topicId);
+        List<ResourceCard> otherTeamResources = projectResourceQueryRepository.findOtherTeamResources(
+                projectId,
+                topicId,
+                jobRole,
+                OTHER_TEAM_RESOURCE_LIMIT
         );
+        ResourceCardLogoUrls logoUrls = resourceCardLogoResolver.resolve(
+                Stream.of(teamResources, talks, otherTeamResources).flatMap(List::stream).toList()
+        );
+        return ProjectTopicResourcesResponse.of(topic, teamResources, talks, otherTeamResources, logoUrls);
     }
 
     /**
@@ -81,9 +87,12 @@ public class ProjectResourceService {
         Map<Long, List<ResourceCard>> sourcesByCard = projectResourceQueryRepository.findCareerCardSources(
                 cards.stream().map(CareerCard::cardId).toList()
         );
+        ResourceCardLogoUrls logoUrls = resourceCardLogoResolver.resolve(
+                sourcesByCard.values().stream().flatMap(List::stream).toList()
+        );
         return cards.stream()
                 .filter(card -> !sourcesByCard.getOrDefault(card.cardId(), List.of()).isEmpty())
-                .map(card -> ProjectCareerCardResponse.of(card, sourcesByCard.get(card.cardId())))
+                .map(card -> ProjectCareerCardResponse.of(card, sourcesByCard.get(card.cardId()), logoUrls))
                 .toList();
     }
 

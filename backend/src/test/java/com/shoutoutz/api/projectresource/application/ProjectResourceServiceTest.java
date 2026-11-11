@@ -22,8 +22,11 @@ import com.shoutoutz.api.projectresource.domain.ResourceTopic;
 import com.shoutoutz.api.projectresource.presentation.dto.response.ProjectCareerCardResponse;
 import com.shoutoutz.api.projectresource.presentation.dto.response.ProjectResourceTopicsResponse;
 import com.shoutoutz.api.projectresource.presentation.dto.response.ProjectTopicResourcesResponse;
+import com.shoutoutz.api.resourcesearch.application.ResourceCardLogoResolver;
 import com.shoutoutz.api.resourcesearch.application.dto.ResourceCard;
+import com.shoutoutz.api.resourcesearch.application.dto.ResourceCardLogoUrls;
 import com.shoutoutz.api.resourcesearch.presentation.dto.response.ResourceCardResponse;
+import java.net.URI;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -40,6 +43,7 @@ class ProjectResourceServiceTest {
 
     private static final String SLUG = "shout-outz";
     private static final long PROJECT_ID = 1L;
+    private static final String LOGO_URL = "https://cdn.example.com/media/project/31/thumbnail";
     private static final ResourceTopic CONCURRENCY = new ResourceTopic(
             "concurrency",
             "동시성 제어/락",
@@ -56,6 +60,9 @@ class ProjectResourceServiceTest {
     @Mock
     private ProjectResourceQueryRepository projectResourceQueryRepository;
 
+    @Mock
+    private ResourceCardLogoResolver resourceCardLogoResolver;
+
     private ProjectResourceService projectResourceService;
 
     @BeforeEach
@@ -63,7 +70,8 @@ class ProjectResourceServiceTest {
         projectResourceService = new ProjectResourceService(
                 projectSlugResolver,
                 projectRepository,
-                projectResourceQueryRepository
+                projectResourceQueryRepository,
+                resourceCardLogoResolver
         );
     }
 
@@ -110,7 +118,7 @@ class ProjectResourceServiceTest {
     }
 
     @Test
-    @DisplayName("주제별 자료는 이 팀 자료, 테코톡, 다른 팀 자료 상위 20건을 카드로 준다")
+    @DisplayName("주제별 자료는 이 팀 자료, 테코톡, 다른 팀 자료 상위 20건을 카드로 주고, 세 목록의 팀 로고 주소를 한 번에 구한다")
     void findsTopicResources() {
         givenPublicProject();
         ResourceCard teamPr = card(11L, "github-pr", new ResourceCard.Team("샤라웃", SLUG, 31L));
@@ -126,6 +134,8 @@ class ProjectResourceServiceTest {
                 ProjectResourceJobRole.BE,
                 ProjectResourceService.OTHER_TEAM_RESOURCE_LIMIT
         )).willReturn(List.of(otherBlog));
+        ResourceCardLogoUrls logoUrls = new ResourceCardLogoUrls(Map.of(31L, URI.create(LOGO_URL)));
+        given(resourceCardLogoResolver.resolve(List.of(teamPr, talk, otherBlog))).willReturn(logoUrls);
 
         ProjectTopicResourcesResponse response = projectResourceService.findResources(
                 SLUG,
@@ -135,11 +145,12 @@ class ProjectResourceServiceTest {
 
         assertThat(ProjectResourceService.OTHER_TEAM_RESOURCE_LIMIT).isEqualTo(20);
         assertThat(response.topic()).isEqualTo(new ProjectTopicResourcesResponse.Topic("concurrency", "동시성 제어/락"));
-        assertThat(response.resources()).containsExactly(ResourceCardResponse.from(teamPr));
-        assertThat(response.talks()).containsExactly(ResourceCardResponse.from(talk));
-        assertThat(response.otherTeamResources()).containsExactly(ResourceCardResponse.from(otherBlog));
+        assertThat(response.resources()).containsExactly(ResourceCardResponse.from(teamPr, logoUrls));
+        assertThat(response.talks()).containsExactly(ResourceCardResponse.from(talk, logoUrls));
+        assertThat(response.otherTeamResources()).containsExactly(ResourceCardResponse.from(otherBlog, logoUrls));
         assertThat(response.resources().getFirst().team())
-                .isEqualTo(new ResourceCardResponse.Team("샤라웃", SLUG, 31L));
+                .isEqualTo(new ResourceCardResponse.Team("샤라웃", SLUG, 31L, LOGO_URL));
+        assertThat(response.otherTeamResources().getFirst().team().logoUrl()).isNull();
         assertThat(response.talks().getFirst().team()).isNull();
     }
 
@@ -180,6 +191,7 @@ class ProjectResourceServiceTest {
         ResourceCard pr = card(31L, "github-pr", new ResourceCard.Team("샤라웃", SLUG, null));
         given(projectResourceQueryRepository.findCareerCards(PROJECT_ID)).willReturn(List.of(withSources, withoutSources));
         given(projectResourceQueryRepository.findCareerCardSources(List.of(11L, 12L))).willReturn(Map.of(11L, List.of(pr)));
+        given(resourceCardLogoResolver.resolve(List.of(pr))).willReturn(ResourceCardLogoUrls.NONE);
 
         List<ProjectCareerCardResponse> response = projectResourceService.findCareerCards(SLUG);
 
@@ -194,7 +206,7 @@ class ProjectResourceServiceTest {
                         new ProjectCareerCardResponse.Section("해결하려던 문제", "문제"),
                         new ProjectCareerCardResponse.Section("해결 과정", "해결")
                 ),
-                List.of(ResourceCardResponse.from(pr))
+                List.of(ResourceCardResponse.from(pr, ResourceCardLogoUrls.NONE))
         ));
     }
 

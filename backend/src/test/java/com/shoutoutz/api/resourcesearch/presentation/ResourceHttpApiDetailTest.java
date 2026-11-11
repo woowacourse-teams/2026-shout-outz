@@ -54,7 +54,7 @@ class ResourceHttpApiDetailTest {
         given(resourceQueryService.findDetail(101L)).willReturn(new ResourceDetailResponse(
                 101L, "blog-post", "[Database] MySQL(InnoDB) 락(Lock) (2)", "https://soeun2537.tistory.com/127",
                 "잠금 범위와 대기 동작을 살펴봐요.", Instant.parse("2025-10-06T03:00:00Z"), "tistory", null,
-                new ResourceCardResponse.Team("페스타북", "festabook", 31L),
+                new ResourceCardResponse.Team("페스타북", "festabook", 31L, "https://cdn.example.com/media/project/31/thumbnail"),
                 new ResourceTopicResponse("concurrency", "동시성 제어/락"),
                 List.of("레코드 락, 갭 락, 넥스트 키 락의 잠금 범위를 알아봐요."),
                 List.of("MySQL", "InnoDB"),
@@ -98,6 +98,8 @@ class ResourceHttpApiDetailTest {
                                                 .description("등록된 프로젝트 slug. 등록 전 팀이면 null").optional(),
                                         fieldWithPath("data.team.logoMediaId").type(NUMBER)
                                                 .description("프로젝트 썸네일 미디어 ID. 없으면 null").optional(),
+                                        fieldWithPath("data.team.logoUrl").type(STRING)
+                                                .description("팀 로고 이미지 주소(썸네일 크기). logoMediaId가 없거나 이미지가 준비되지 않았으면 null").optional(),
                                         fieldWithPath("data.topic").type(OBJECT).description("자료의 기술 주제. 없으면 null").optional(),
                                         fieldWithPath("data.topic.topicId").type(STRING).description("기술 주제 ID").optional(),
                                         fieldWithPath("data.topic.name").type(STRING).description("기술 주제 이름").optional(),

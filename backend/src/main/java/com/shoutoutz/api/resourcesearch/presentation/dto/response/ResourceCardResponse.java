@@ -1,6 +1,7 @@
 package com.shoutoutz.api.resourcesearch.presentation.dto.response;
 
 import com.shoutoutz.api.resourcesearch.application.dto.ResourceCard;
+import com.shoutoutz.api.resourcesearch.application.dto.ResourceCardLogoUrls;
 import java.time.Instant;
 
 /**
@@ -18,7 +19,7 @@ public record ResourceCardResponse(
         Team team
 ) {
 
-    public static ResourceCardResponse from(ResourceCard card) {
+    public static ResourceCardResponse from(ResourceCard card, ResourceCardLogoUrls logoUrls) {
         ResourceCard.Team team = card.team();
         return new ResourceCardResponse(
                 card.resourceId(),
@@ -28,10 +29,19 @@ public record ResourceCardResponse(
                 card.summary(),
                 card.publishedAt(),
                 card.platform(),
-                team == null ? null : new Team(team.name(), team.projectSlug(), team.logoMediaId())
+                team == null ? null : new Team(
+                        team.name(),
+                        team.projectSlug(),
+                        team.logoMediaId(),
+                        logoUrls.urlOf(team.logoMediaId())
+                )
         );
     }
 
-    public record Team(String name, String projectSlug, Long logoMediaId) {
+    /**
+     * @param logoMediaId 프로젝트 썸네일 미디어 ID. 등록 전이거나 썸네일이 없으면 null
+     * @param logoUrl     팀 로고 이미지 주소(썸네일 크기). logoMediaId 가 없거나 이미지가 준비되지 않았으면 null
+     */
+    public record Team(String name, String projectSlug, Long logoMediaId, String logoUrl) {
     }
 }
