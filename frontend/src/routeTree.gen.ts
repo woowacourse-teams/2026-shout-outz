@@ -35,6 +35,7 @@ import { Route as UsersHandleRouteImport } from './routes/users/$handle'
 import { Route as CommunityFeedIdEditRouteImport } from './routes/community/$feedId_.edit'
 import { Route as FeedsFeedIdEditRouteImport } from './routes/feeds/$feedId_.edit'
 import { Route as ProjectsSlugEditRouteImport } from './routes/projects/$slug_.edit'
+import { Route as ProjectsSlugExperiencesCardIdRouteImport } from './routes/projects/$slug_.experiences.$cardId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -167,6 +168,12 @@ const ProjectsSlugEditRoute = ProjectsSlugEditRouteImport.update({
   path: '/projects/$slug/edit',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProjectsSlugExperiencesCardIdRoute =
+  ProjectsSlugExperiencesCardIdRouteImport.update({
+    id: '/projects/$slug_/experiences/$cardId',
+    path: '/projects/$slug/experiences/$cardId',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -195,6 +202,7 @@ export interface FileRoutesByFullPath {
   '/community/$feedId/edit': typeof CommunityFeedIdEditRoute
   '/feeds/$feedId/edit': typeof FeedsFeedIdEditRoute
   '/projects/$slug/edit': typeof ProjectsSlugEditRoute
+  '/projects/$slug/experiences/$cardId': typeof ProjectsSlugExperiencesCardIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -223,6 +231,7 @@ export interface FileRoutesByTo {
   '/community/$feedId/edit': typeof CommunityFeedIdEditRoute
   '/feeds/$feedId/edit': typeof FeedsFeedIdEditRoute
   '/projects/$slug/edit': typeof ProjectsSlugEditRoute
+  '/projects/$slug/experiences/$cardId': typeof ProjectsSlugExperiencesCardIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -252,6 +261,7 @@ export interface FileRoutesById {
   '/community/$feedId_/edit': typeof CommunityFeedIdEditRoute
   '/feeds/$feedId_/edit': typeof FeedsFeedIdEditRoute
   '/projects/$slug_/edit': typeof ProjectsSlugEditRoute
+  '/projects/$slug_/experiences/$cardId': typeof ProjectsSlugExperiencesCardIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -282,6 +292,7 @@ export interface FileRouteTypes {
     | '/community/$feedId/edit'
     | '/feeds/$feedId/edit'
     | '/projects/$slug/edit'
+    | '/projects/$slug/experiences/$cardId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -310,6 +321,7 @@ export interface FileRouteTypes {
     | '/community/$feedId/edit'
     | '/feeds/$feedId/edit'
     | '/projects/$slug/edit'
+    | '/projects/$slug/experiences/$cardId'
   id:
     | '__root__'
     | '/'
@@ -338,6 +350,7 @@ export interface FileRouteTypes {
     | '/community/$feedId_/edit'
     | '/feeds/$feedId_/edit'
     | '/projects/$slug_/edit'
+    | '/projects/$slug_/experiences/$cardId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -367,6 +380,7 @@ export interface RootRouteChildren {
   CommunityFeedIdEditRoute: typeof CommunityFeedIdEditRoute
   FeedsFeedIdEditRoute: typeof FeedsFeedIdEditRoute
   ProjectsSlugEditRoute: typeof ProjectsSlugEditRoute
+  ProjectsSlugExperiencesCardIdRoute: typeof ProjectsSlugExperiencesCardIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -553,6 +567,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProjectsSlugEditRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/projects/$slug_/experiences/$cardId': {
+      id: '/projects/$slug_/experiences/$cardId'
+      path: '/projects/$slug/experiences/$cardId'
+      fullPath: '/projects/$slug/experiences/$cardId'
+      preLoaderRoute: typeof ProjectsSlugExperiencesCardIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -583,6 +604,7 @@ const rootRouteChildren: RootRouteChildren = {
   CommunityFeedIdEditRoute: CommunityFeedIdEditRoute,
   FeedsFeedIdEditRoute: FeedsFeedIdEditRoute,
   ProjectsSlugEditRoute: ProjectsSlugEditRoute,
+  ProjectsSlugExperiencesCardIdRoute: ProjectsSlugExperiencesCardIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
