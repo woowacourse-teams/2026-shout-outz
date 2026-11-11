@@ -11,6 +11,9 @@ import java.util.Map;
 
 /**
  * 프로젝트 상세 조회 응답 객체
+ *
+ * @param logoImageId 자료 카드 팀 이름 앞에 보여 줄 프로젝트 로고 미디어 ID. 없으면 null
+ * @param logoUrl     프로젝트 로고 이미지 주소. 로고가 없거나 이미지가 준비되지 않았으면 null
  */
 public record ProjectDetailResponse(
         String slug,
@@ -20,6 +23,8 @@ public record ProjectDetailResponse(
         int cohort,
         Long thumbnailImageId,
         String imageUrl,
+        Long logoImageId,
+        String logoUrl,
         String descriptionMd,
         List<DescriptionMedia> descriptionMedia,
         String githubRepositoryUrl,
@@ -66,6 +71,8 @@ public record ProjectDetailResponse(
                 detail.cohort(),
                 detail.thumbnailMediaId(),
                 toUrl(mediaUrls, detail.thumbnailMediaId()),
+                detail.logoMediaId(),
+                toUrl(mediaUrls, detail.logoMediaId()),
                 descriptionMd,
                 DescriptionMedia.from(detail.descriptionMd(), mediaUrls),
                 detail.githubRepositoryUrl(),

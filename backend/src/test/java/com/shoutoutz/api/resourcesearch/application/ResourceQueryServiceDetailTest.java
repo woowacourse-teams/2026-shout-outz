@@ -6,14 +6,18 @@ import static org.mockito.BDDMockito.given;
 
 import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
 import com.shoutoutz.api.resourcesearch.application.dto.ResourceCard;
+import com.shoutoutz.api.resourcesearch.application.dto.ResourceCardLogoUrls;
 import com.shoutoutz.api.resourcesearch.application.dto.ResourceDetail;
 import com.shoutoutz.api.resourcesearch.application.dto.ResourceExperience;
 import com.shoutoutz.api.resourcesearch.application.dto.ResourceLinkPreview;
 import com.shoutoutz.api.resourcesearch.application.dto.ResourceTopic;
 import com.shoutoutz.api.resourcesearch.domain.ResourceSearchErrorCode;
+import com.shoutoutz.api.resourcesearch.presentation.dto.response.ResourceCardResponse;
 import com.shoutoutz.api.resourcesearch.presentation.dto.response.ResourceDetailResponse;
 import com.shoutoutz.api.resourcesearch.presentation.dto.response.ResourceLinkPreviewResponse;
+import java.net.URI;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -28,13 +32,19 @@ class ResourceQueryServiceDetailTest {
     @Mock
     private ResourceDetailQueryRepository resourceDetailQueryRepository;
 
+    @Mock
+    private ResourceCardLogoResolver resourceCardLogoResolver;
+
     @InjectMocks
     private ResourceQueryService resourceQueryService;
 
     @Test
     @DisplayName("자료 상세를 응답으로 바꿔 준다")
     void findsDetail() {
-        ResourceCard card = new ResourceCard(101L, "github-pr", "제목", "https://example.com", "소개", null, null, null);
+        ResourceCard card = new ResourceCard(101L, "github-pr", "제목", "https://example.com", "소개", null, null,
+                new ResourceCard.Team("페스타북", "festabook", 31L));
+        given(resourceCardLogoResolver.resolve(List.of(card))).willReturn(new ResourceCardLogoUrls(
+                Map.of(31L, URI.create("https://cdn.example.com/media/project/31/thumbnail"))));
         given(resourceDetailQueryRepository.findById(101L)).willReturn(Optional.of(new ResourceDetail(
                 card, "problem_solving", new ResourceTopic("concurrency", "동시성 제어/락"),
                 List.of("배울 점"), List.of("Redis", "Redisson"), List.of(new ResourceExperience("문제", null, "해결", null, List.of("Redis"))),
@@ -44,6 +54,8 @@ class ResourceQueryServiceDetailTest {
 
         assertThat(response.resourceId()).isEqualTo(101L);
         assertThat(response.contentType()).isEqualTo("problem_solving");
+        assertThat(response.team()).isEqualTo(new ResourceCardResponse.Team(
+                "페스타북", "festabook", 31L, "https://cdn.example.com/media/project/31/thumbnail"));
         assertThat(response.topic().topicId()).isEqualTo("concurrency");
         assertThat(response.keyPoints()).containsExactly("배울 점");
         assertThat(response.techTags()).containsExactly("Redis", "Redisson");

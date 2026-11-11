@@ -34,13 +34,27 @@ export function MagazineList() {
     );
   }
 
+  const [featured, ...rest] = magazines;
+
   return (
     <div>
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {magazines.map((magazine) => (
-          <MagazineCard key={magazine.id} magazine={magazine} />
-        ))}
-      </div>
+      {featured && (
+        <div className="border-b border-gray-200 pt-4 pb-10">
+          <MagazineCard magazine={featured} featured />
+        </div>
+      )}
+      {rest.length > 0 && (
+        <ul
+          aria-label="매거진"
+          className="grid gap-x-6 gap-y-10 pt-10 sm:grid-cols-2 lg:grid-cols-3"
+        >
+          {rest.map((magazine) => (
+            <li key={magazine.id} className="min-w-0">
+              <MagazineCard magazine={magazine} />
+            </li>
+          ))}
+        </ul>
+      )}
       {isFetchNextPageError && (
         <p role="alert" className="py-3 text-sm text-red-600">
           {getApiErrorMessage(query.error)}

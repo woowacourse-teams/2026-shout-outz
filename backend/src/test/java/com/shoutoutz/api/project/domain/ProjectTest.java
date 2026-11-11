@@ -190,6 +190,7 @@ class ProjectTest {
                 new GithubRepositoryUrl(REPOSITORY_URL),
                 null,
                 ServiceStatus.OPERATING,
+                null,
                 null
         ))
                 .isInstanceOfSatisfying(DomainValidationException.class,
@@ -211,7 +212,8 @@ class ProjectTest {
                 githubRepositoryUrl,
                 new DeploymentUrl("https://crew.team"),
                 ServiceStatus.OPERATING,
-                13L
+                13L,
+                null
         );
     }
 
@@ -251,7 +253,8 @@ class ProjectTest {
                 new GithubRepositoryUrl(REPOSITORY_URL),
                 deploymentUrl,
                 serviceStatus,
-                12L
+                12L,
+                null
         );
     }
 }

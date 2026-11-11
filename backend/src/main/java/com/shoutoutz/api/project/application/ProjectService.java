@@ -5,9 +5,11 @@ import static com.shoutoutz.api.project.domain.ProjectErrorCode.PROJECT_DUPLICAT
 import static com.shoutoutz.api.project.domain.ProjectErrorCode.PROJECT_DUPLICATE_SLUG;
 import static com.shoutoutz.api.project.domain.ProjectErrorCode.PROJECT_DUPLICATE_TECH_TAG;
 import static com.shoutoutz.api.project.domain.ProjectErrorCode.PROJECT_INVALID_DESCRIPTION_MEDIA;
+import static com.shoutoutz.api.project.domain.ProjectErrorCode.PROJECT_INVALID_LOGO;
 import static com.shoutoutz.api.project.domain.ProjectErrorCode.PROJECT_INVALID_MEMBER;
 import static com.shoutoutz.api.project.domain.ProjectErrorCode.PROJECT_INVALID_TECH_TAG;
 import static com.shoutoutz.api.project.domain.ProjectErrorCode.PROJECT_INVALID_THUMBNAIL;
+import static com.shoutoutz.api.project.domain.ProjectErrorCode.PROJECT_LOGO_NOT_READY;
 import static com.shoutoutz.api.project.domain.ProjectErrorCode.PROJECT_NOT_FOUND;
 import static com.shoutoutz.api.project.domain.ProjectErrorCode.PROJECT_RESTORE_DEADLINE_EXPIRED;
 import static com.shoutoutz.api.project.domain.ProjectErrorCode.PROJECT_THUMBNAIL_NOT_READY;
@@ -54,6 +56,7 @@ import com.shoutoutz.api.project.domain.TeamBlogUrls;
 import com.shoutoutz.api.project.domain.TeamName;
 import com.shoutoutz.api.project.domain.Title;
 import com.shoutoutz.api.project.domain.exception.InvalidDescriptionMediaException;
+import com.shoutoutz.api.project.domain.exception.InvalidLogoException;
 import com.shoutoutz.api.project.domain.exception.InvalidProjectMemberException;
 import com.shoutoutz.api.project.domain.exception.InvalidTechTagException;
 import com.shoutoutz.api.project.domain.exception.InvalidThumbnailException;
@@ -121,12 +124,14 @@ public class ProjectService {
                 new GithubRepositoryUrl(request.githubRepositoryUrl()),
                 request.deploymentUrl() == null ? null : new DeploymentUrl(request.deploymentUrl()),
                 request.serviceStatus(),
-                request.thumbnailImageId()
+                request.thumbnailImageId(),
+                request.logoImageId()
         );
         validateGithubRepositoryNotDuplicated(project.getGithubRepositoryUrl());
         validateSlugNotDuplicated(project.getSlug());
         validateTechTags(request.techTagIds());
         validateThumbnail(request.thumbnailImageId(), registeredBy);
+        validateLogo(request.logoImageId(), registeredBy);
         validateDescriptionMediaUrls(request.descriptionMd());
         validateDescriptionMedia(request.descriptionMd(), registeredBy);
         List<Long> memberIds = request.memberHandles().stream()
@@ -158,6 +163,9 @@ public class ProjectService {
         Long thumbnailMediaId = request.isThumbnailImageIdProvided()
                 ? request.thumbnailImageId()
                 : project.getThumbnailMediaId();
+        Long logoMediaId = request.isLogoImageIdProvided()
+                ? request.logoImageId()
+                : project.getLogoMediaId();
         String descriptionMd = normalizeDescriptionReferences(project, request.descriptionMd());
         validateDescriptionMediaUrls(descriptionMd);
         Project updated = project.update(
@@ -169,12 +177,16 @@ public class ProjectService {
                 new GithubRepositoryUrl(request.githubRepositoryUrl()),
                 request.deploymentUrl() == null ? null : new DeploymentUrl(request.deploymentUrl()),
                 request.serviceStatus(),
-                thumbnailMediaId
+                thumbnailMediaId,
+                logoMediaId
         );
         validateGithubRepositoryNotDuplicated(updated.getGithubRepositoryUrl(), projectId);
         validateTechTags(request.techTagIds(), projectRepository.findTechTagIds(projectId));
         if (request.isThumbnailImageIdProvided()) {
             validateThumbnail(request.thumbnailImageId(), loginUserId);
+        }
+        if (!Objects.equals(logoMediaId, project.getLogoMediaId())) {
+            validateLogo(logoMediaId, loginUserId);
         }
         validateDescriptionMedia(descriptionMd, loginUserId);
         List<Long> memberIds = resolveMemberIds(request.memberHandles(), projectRepository.findMemberIds(projectId));
@@ -394,6 +406,9 @@ public class ProjectService {
         if (detail.thumbnailMediaId() != null) {
             mediaIds.add(detail.thumbnailMediaId());
         }
+        if (detail.logoMediaId() != null) {
+            mediaIds.add(detail.logoMediaId());
+        }
         detail.members().stream()
                 .map(com.shoutoutz.api.project.domain.ProjectMemberProfile::avatarImageId)
                 .filter(java.util.Objects::nonNull)
@@ -544,6 +559,21 @@ public class ProjectService {
                 .orElseThrow(() -> new InvalidThumbnailException(PROJECT_INVALID_THUMBNAIL));
         if (thumbnail.getStatus() != MediaStatus.READY) {
             throw new InvalidThumbnailException(PROJECT_THUMBNAIL_NOT_READY);
+        }
+    }
+
+    /**
+     * 로고는 선택 입력이다. 입력했다면 본인이 올린 프로젝트 로고 용도의 처리 완료 이미지여야 한다.
+     * 수정할 때는 로고가 바뀐 경우에만 검사한다. 관리자가 넣어 둔 로고를 수정 화면이 그대로 다시 보내도 막히지 않게 하기 위해서다.
+     */
+    private void validateLogo(Long logoMediaId, Long uploadedBy) {
+        if (logoMediaId == null) {
+            return;
+        }
+        MediaMetadata logo = findUploadedMedia(logoMediaId, uploadedBy, MediaPurpose.PROJECT_LOGO)
+                .orElseThrow(() -> new InvalidLogoException(PROJECT_INVALID_LOGO));
+        if (logo.getStatus() != MediaStatus.READY) {
+            throw new InvalidLogoException(PROJECT_LOGO_NOT_READY);
         }
     }
 

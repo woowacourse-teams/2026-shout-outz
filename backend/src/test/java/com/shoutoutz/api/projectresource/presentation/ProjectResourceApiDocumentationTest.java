@@ -91,7 +91,7 @@ class ProjectResourceApiDocumentationTest {
                                 "oEmbed로 유튜브 미리보기를 먼저 수집할 때 참고하기 좋아요.",
                                 Instant.parse("2026-10-20T05:12:00Z"),
                                 null,
-                                new ResourceCardResponse.Team("샤라웃", SLUG, 31L)
+                                new ResourceCardResponse.Team("샤라웃", SLUG, 31L, "https://cdn.example.com/media/project/31/thumbnail")
                         ),
                         new ResourceCardResponse(
                                 3420L,
@@ -101,7 +101,7 @@ class ProjectResourceApiDocumentationTest {
                                 null,
                                 null,
                                 "tistory",
-                                new ResourceCardResponse.Team("샤라웃", SLUG, 31L)
+                                new ResourceCardResponse.Team("샤라웃", SLUG, 31L, "https://cdn.example.com/media/project/31/thumbnail")
                         )
                 )
         )));
@@ -244,7 +244,7 @@ class ProjectResourceApiDocumentationTest {
                                 "비관적 락으로 중복 예약을 막을 때 참고하기 좋아요.",
                                 Instant.parse("2026-10-20T05:12:00Z"),
                                 null,
-                                new ResourceCardResponse.Team("샤라웃", SLUG, 31L)
+                                new ResourceCardResponse.Team("샤라웃", SLUG, 31L, "https://cdn.example.com/media/project/31/thumbnail")
                         )),
                         List.of(new ResourceCardResponse(
                                 2301L,
@@ -264,7 +264,7 @@ class ProjectResourceApiDocumentationTest {
                                 "레코드 락과 갭 락의 잠금 범위를 살펴볼 때 참고하기 좋아요.",
                                 Instant.parse("2025-10-06T03:00:00Z"),
                                 "tistory",
-                                new ResourceCardResponse.Team("등록 전 팀", null, null)
+                                new ResourceCardResponse.Team("등록 전 팀", null, null, null)
                         ))
                 ));
 
@@ -460,7 +460,9 @@ class ProjectResourceApiDocumentationTest {
                 fieldWithPath(prefix + ".team.projectSlug").type(STRING)
                         .description("등록된 프로젝트의 slug. 등록 전이면 null").optional(),
                 fieldWithPath(prefix + ".team.logoMediaId").type(NUMBER)
-                        .description("프로젝트 썸네일 미디어 ID. 등록 전이거나 썸네일이 없으면 null").optional()
+                        .description("프로젝트 로고 미디어 ID. 등록 전이거나 로고가 없으면 null").optional(),
+                fieldWithPath(prefix + ".team.logoUrl").type(STRING)
+                        .description("팀 로고 이미지 주소(작은 크기). logoMediaId가 없거나 이미지가 준비되지 않았으면 null").optional()
         );
     }
 

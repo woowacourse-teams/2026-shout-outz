@@ -1,5 +1,6 @@
 package com.shoutoutz.api.resourcesearch.presentation.dto.response;
 
+import com.shoutoutz.api.resourcesearch.application.dto.ResourceCardLogoUrls;
 import com.shoutoutz.api.resourcesearch.application.dto.ResourceDetail;
 import java.time.Instant;
 import java.util.List;
@@ -27,8 +28,8 @@ public record ResourceDetailResponse(
         experiences = List.copyOf(experiences);
     }
 
-    public static ResourceDetailResponse from(ResourceDetail detail) {
-        ResourceCardResponse card = ResourceCardResponse.from(detail.card());
+    public static ResourceDetailResponse from(ResourceDetail detail, ResourceCardLogoUrls logoUrls) {
+        ResourceCardResponse card = ResourceCardResponse.from(detail.card(), logoUrls);
         return new ResourceDetailResponse(
                 card.resourceId(),
                 card.source(),

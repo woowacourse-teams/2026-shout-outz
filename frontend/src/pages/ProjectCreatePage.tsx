@@ -33,7 +33,7 @@ import {
 import { sessionQuery } from '@/apis/session';
 import { myProfileQuery } from '@/apis/user';
 import { verificationRequestQuery } from '@/apis/verification';
-import { GithubLoginButton } from '@/components/auth/GithubLoginButton';
+import { LoginRequiredGuide } from '@/components/auth/LoginRequiredGuide';
 import { analytics } from '@/utils/analytics';
 
 const EMPTY_FORM: ProjectFormValues = {
@@ -103,17 +103,7 @@ function toFormValues(project: ProjectDetail, authorHandle: string): ProjectForm
 export function ProjectCreatePage() {
   const { data: session } = useSuspenseQuery(sessionQuery);
 
-  if (session.status === 'UNAUTHENTICATED') {
-    return (
-      <ProjectCreateGuard
-        title="로그인이 필요해요."
-        description="프로젝트를 등록하려면 먼저 GitHub로 로그인해 주세요."
-        action={
-          <GithubLoginButton className={getButtonStyles({})}>GitHub 로그인</GithubLoginButton>
-        }
-      />
-    );
-  }
+  if (session.status === 'UNAUTHENTICATED') return <ProjectCreateLoginGuide />;
   if (session.status === 'SIGNUP_REQUIRED') {
     return (
       <ProjectCreateGuard
@@ -127,9 +117,7 @@ export function ProjectCreatePage() {
       />
     );
   }
-  if (session.userId == null) {
-    return <ProjectCreateGuard title="로그인이 필요해요." description="다시 로그인해 주세요." />;
-  }
+  if (session.userId == null) return <ProjectCreateLoginGuide />;
 
   return <VerifiedProjectCreatePage userId={session.userId} />;
 }
@@ -463,6 +451,19 @@ export function ProjectForm({
         )}
       </main>
 
+      <Footer />
+    </div>
+  );
+}
+
+function ProjectCreateLoginGuide() {
+  return (
+    <div className="bg-background flex min-h-dvh flex-col text-gray-900">
+      <title>프로젝트 등록 | shout-outz</title>
+      <AppGnb />
+      <main className="flex-1">
+        <LoginRequiredGuide pageName="프로젝트 등록" fallbackTo="/projects" />
+      </main>
       <Footer />
     </div>
   );

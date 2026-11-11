@@ -77,7 +77,7 @@ public class ProjectResourceQueryRepositoryImpl implements ProjectResourceQueryR
                 CASE WHEN document.source = 'blog-post' THEN document.extra ->> 'platform' END AS platform,
                 project.team_name,
                 project.slug AS project_slug,
-                project.thumbnail_media_id,
+                project.logo_media_id,
                 CASE WHEN document.project_id IS NULL THEN document.extra ->> 'project_name' END AS unregistered_team_name
             """;
 
@@ -331,7 +331,7 @@ public class ProjectResourceQueryRepositoryImpl implements ProjectResourceQueryR
             return new ResourceCard.Team(
                     resultSet.getString("team_name"),
                     projectSlug,
-                    resultSet.getObject("thumbnail_media_id", Long.class)
+                    resultSet.getObject("logo_media_id", Long.class)
             );
         }
         String unregisteredTeamName = resultSet.getString("unregistered_team_name");

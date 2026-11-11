@@ -1,11 +1,11 @@
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
-import { IconArrowLeft, IconEye, IconHeart, IconMessageCircle } from '@tabler/icons-react';
+import { IconArrowLeft, IconHeart } from '@tabler/icons-react';
 import { magazineQuery, type Magazine } from '@/apis/magazine';
 import { AppGnb } from '@/components/AppGnb';
 import { AsyncBoundary } from '@/components/AsyncBoundary';
 import { Avatar } from '@/components/Avatar';
-import { Button } from '@/components/Button';
+import { Badge } from '@/components/Badge';
 import { ClientOnly } from '@/components/ClientOnly';
 import { Comments } from '@/components/feed-comments/Comments';
 import { FeedLikeButton } from '@/components/feeds/FeedLikeButton';
@@ -18,7 +18,7 @@ export function MagazineDetailPage({ magazineId }: { magazineId: number }) {
   return (
     <div className="bg-background flex min-h-dvh flex-col">
       <AppGnb />
-      <main className="mx-auto w-full max-w-4xl flex-1 px-5 pt-7 pb-16 md:px-12 md:pt-8 md:pb-20">
+      <main className="mx-auto w-full max-w-180 flex-1 px-6 pt-10 pb-28">
         <section className="min-w-0" aria-label="매거진 상세">
           <AsyncBoundary key={magazineId}>
             <MagazineDetailContent magazineId={magazineId} />
@@ -35,69 +35,67 @@ function MagazineDetailContent({ magazineId }: { magazineId: number }) {
   const publishedAt = magazine.publishedAt ?? magazine.createdAt;
 
   return (
-    // 한 줄이 너무 길어지지 않게 본문 폭을 노션 페이지 폭에 가깝게 맞춘다.
-    <article className="mx-auto max-w-[720px] min-w-0">
+    <article className="min-w-0">
       <title>{`${magazine.title} | shout-outz`}</title>
       <Link
         to="/magazines"
-        className="mb-7 inline-flex items-center gap-2 text-xs text-gray-500 hover:text-gray-900"
+        className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-900"
       >
         <IconArrowLeft className="size-4" aria-hidden="true" />
         목록으로
       </Link>
-      <p className="text-xs leading-5 font-medium text-gray-600">매거진</p>
-      <h1 className="mt-3 text-2xl leading-snug font-bold tracking-tight break-words text-gray-900 md:text-3xl">
+      {/* ASSUMPTION: 매거진 분류 값이 없어, 인터뷰이가 있는 글에 "인터뷰" 배지를 단다. */}
+      {magazine.featuredUser && (
+        <p className="mt-7">
+          <Badge tone="primary" className="px-2">
+            인터뷰
+          </Badge>
+        </p>
+      )}
+      <h1
+        className={`text-2xl leading-tight font-extrabold tracking-tight break-keep text-gray-900 md:text-3xl ${magazine.featuredUser ? 'mt-3' : 'mt-7'}`}
+      >
         {magazine.title}
       </h1>
       {magazine.summary && (
-        <p className="mt-3 text-sm leading-6 break-words text-gray-600">{magazine.summary}</p>
+        <p className="mt-3 text-base leading-relaxed break-words text-gray-600">
+          {magazine.summary}
+        </p>
       )}
-      <div className="mt-7 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex min-w-0 items-center gap-2">
+      <div className="mt-5 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 text-xs">
+        <div className="flex min-w-0 items-center gap-2.5">
           <Avatar
             src={magazine.author.avatarUrl}
             name={magazine.author.displayName ?? undefined}
             alt=""
           />
-          <div className="min-w-0">
-            <p className="text-xs leading-5 text-gray-500">에디터</p>
-            <p className="flex min-w-0 items-baseline gap-1.5 text-xs leading-5 font-semibold text-gray-900">
-              <span className="truncate">{magazine.author.displayName ?? '탈퇴한 사용자'}</span>
-              <UserHandle handle={magazine.author.handle} />
-            </p>
-          </div>
+          <p className="flex min-w-0 flex-wrap items-baseline gap-x-1">
+            <span className="text-gray-500">에디터</span>
+            <b className="font-bold text-gray-900">
+              {magazine.author.displayName ?? '탈퇴한 사용자'}
+            </b>
+            <UserHandle handle={magazine.author.handle} />
+          </p>
         </div>
-        <div className="ml-auto flex items-center gap-3 text-xs text-gray-500">
+        <p className="text-gray-500">
           <time dateTime={publishedAt}>{formatDotDate(publishedAt)}</time>
-          <span
-            className="inline-flex items-center gap-1"
-            aria-label={`조회 ${magazine.viewCount}회`}
-          >
-            <IconEye className="size-4" aria-hidden="true" />
-            {magazine.viewCount}
-          </span>
-          <span
-            className="inline-flex items-center gap-1"
-            aria-label={`좋아요 ${magazine.likeCount}개`}
-          >
-            <IconHeart className="size-4" aria-hidden="true" />
+          {' · '}
+          <span aria-label={`조회 ${magazine.viewCount}회`}>조회 {magazine.viewCount}</span>
+          {' · '}
+          <span aria-label={`좋아요 ${magazine.likeCount}개`}>
+            <IconHeart className="inline size-3.5 align-[-2px]" aria-hidden="true" />{' '}
             {magazine.likeCount}
           </span>
-          <span
-            className="inline-flex items-center gap-1"
-            aria-label={`댓글 ${magazine.commentCount}개`}
-          >
-            <IconMessageCircle className="size-4" aria-hidden="true" />
-            {magazine.commentCount}
-          </span>
-        </div>
+          {' · '}
+          <span aria-label={`댓글 ${magazine.commentCount}개`}>댓글 {magazine.commentCount}</span>
+        </p>
       </div>
       {magazine.featuredUser && <FeaturedUserIntro featuredUser={magazine.featuredUser} />}
-      <div className="mt-7 border-t border-gray-100 pt-8">
+      <div className="mt-8">
         <MarkdownContent preserveBlankLines>{magazine.contentMd}</MarkdownContent>
       </div>
       <ClientOnly>
-        <div className="mt-10 mb-8 flex justify-center">
+        <div className="mt-8 flex justify-center">
           <FeedLikeButton
             target="magazines"
             feedId={magazine.id}
@@ -106,19 +104,10 @@ function MagazineDetailContent({ magazineId }: { magazineId: number }) {
             size="lg"
           />
         </div>
-        <div className="flex flex-wrap items-center gap-2 border-b border-gray-100 pb-5">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="gap-1 px-2"
-            aria-label="댓글"
-            onClick={() => document.getElementById('magazine-comments')?.scrollIntoView()}
-          >
-            <IconMessageCircle className="size-4" aria-hidden="true" />
-            <span aria-label="댓글 수">{magazine.commentCount}</span>
-          </Button>
-        </div>
-        <section id="magazine-comments" aria-label="댓글 목록" className="mt-12 px-0 md:px-3">
+        <section id="magazine-comments" aria-labelledby="magazine-comments-title" className="mt-14">
+          <h2 id="magazine-comments-title" className="mb-3.5 text-xl font-bold text-gray-900">
+            댓글 <span className="text-primary-600">{magazine.commentCount}</span>
+          </h2>
           <Comments target="magazines" feedId={magazine.id} />
         </section>
       </ClientOnly>
@@ -132,38 +121,47 @@ function FeaturedUserIntro({
 }: {
   featuredUser: NonNullable<Magazine['featuredUser']>;
 }) {
-  const profile = (
-    <>
-      <Avatar size="lg" src={featuredUser.avatarUrl} name={featuredUser.displayName} alt="" />
-      <div className="min-w-0">
-        <p className="text-primary-600 text-xs leading-5 font-medium">인터뷰이</p>
-        <p className="group-hover:text-primary-600 flex min-w-0 flex-wrap items-baseline gap-x-1.5 text-base leading-6 font-bold text-gray-900">
-          {featuredUser.displayName}
-          <UserHandle handle={featuredUser.handle} />
-        </p>
-      </div>
-    </>
+  const name = (
+    <span className="flex min-w-0 flex-wrap items-baseline gap-x-1">
+      <span className="text-sm font-bold text-gray-900 group-hover:underline">
+        {featuredUser.displayName}
+      </span>
+      <UserHandle handle={featuredUser.handle} />
+    </span>
   );
 
   return (
-    <section aria-label="인터뷰이 소개" className="mt-7 rounded-lg bg-gray-50 p-5">
-      {featuredUser.handle ? (
-        <Link
-          to="/users/$handle"
-          params={{ handle: featuredUser.handle }}
-          aria-label={`${featuredUser.displayName} 프로필 보기`}
-          className="group focus-visible:outline-primary-600 flex w-fit min-w-0 items-center gap-3 rounded-sm focus-visible:outline-2"
-        >
-          {profile}
-        </Link>
-      ) : (
-        <div className="flex min-w-0 items-center gap-3">{profile}</div>
-      )}
-      {featuredUser.introduction && (
-        <p className="mt-3 text-sm leading-6 break-words whitespace-pre-line text-gray-600">
-          {featuredUser.introduction}
-        </p>
-      )}
+    <section
+      aria-label="인터뷰이 소개"
+      className="mt-5 flex items-center gap-3.5 rounded-xl border border-gray-100 bg-gray-50 px-5 py-4.5"
+    >
+      <Avatar
+        size="lg"
+        src={featuredUser.avatarUrl}
+        name={featuredUser.displayName}
+        alt=""
+        className="size-11 shrink-0"
+      />
+      <div className="min-w-0">
+        <p className="text-primary-600 text-xs font-bold">인터뷰이</p>
+        {featuredUser.handle ? (
+          <Link
+            to="/users/$handle"
+            params={{ handle: featuredUser.handle }}
+            aria-label={`${featuredUser.displayName} 프로필 보기`}
+            className="group focus-visible:outline-primary-600 block w-fit rounded-sm focus-visible:outline-2"
+          >
+            {name}
+          </Link>
+        ) : (
+          name
+        )}
+        {featuredUser.introduction && (
+          <p className="mt-0.5 text-xs leading-relaxed break-words whitespace-pre-line text-gray-600">
+            {featuredUser.introduction}
+          </p>
+        )}
+      </div>
     </section>
   );
 }

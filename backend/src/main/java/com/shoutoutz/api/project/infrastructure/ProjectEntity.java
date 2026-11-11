@@ -78,6 +78,9 @@ public class ProjectEntity extends BaseEntity {
     @Column(name = "thumbnail_media_id")
     private Long thumbnailMediaId;
 
+    @Column(name = "logo_media_id")
+    private Long logoMediaId;
+
     @Column(name = "deleted_at")
     private Instant deletedAt;
 
@@ -98,5 +101,6 @@ public class ProjectEntity extends BaseEntity {
         this.githubRepositoryUrl = project.getGithubRepositoryUrl().value();
         this.deploymentUrl = project.getDeploymentUrl() == null ? null : project.getDeploymentUrl().value();
         this.thumbnailMediaId = project.getThumbnailMediaId();
+        this.logoMediaId = project.getLogoMediaId();
     }
 }

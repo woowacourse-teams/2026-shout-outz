@@ -8,6 +8,7 @@ import static org.mockito.Mockito.verify;
 
 import com.shoutoutz.api.resourcesearch.application.dto.MatchedChunk;
 import com.shoutoutz.api.resourcesearch.application.dto.ResourceCard;
+import com.shoutoutz.api.resourcesearch.application.dto.ResourceCardLogoUrls;
 import com.shoutoutz.api.resourcesearch.application.dto.SearchHit;
 import com.shoutoutz.api.resourcesearch.application.dto.SectionedSearchHits;
 import com.shoutoutz.api.resourcesearch.domain.ResourceTrack;
@@ -17,6 +18,7 @@ import com.shoutoutz.api.resourcesearch.presentation.dto.response.ResourceCardRe
 import com.shoutoutz.api.resourcesearch.presentation.dto.response.ResourceSearchResponse;
 import com.shoutoutz.api.visitor.domain.VisitorKey;
 import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -39,8 +41,16 @@ class ResourceQueryServiceSearchTest {
     @Mock
     private SearchKeywordService searchKeywordService;
 
+    @Mock
+    private ResourceCardLogoResolver resourceCardLogoResolver;
+
     @InjectMocks
     private ResourceQueryService resourceQueryService;
+
+    @BeforeEach
+    void setUp() {
+        given(resourceCardLogoResolver.resolve(any())).willReturn(ResourceCardLogoUrls.NONE);
+    }
 
     @Test
     @DisplayName("섹션별 검색 순서대로 카드를 채운다")

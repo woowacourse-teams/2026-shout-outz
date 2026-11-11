@@ -58,6 +58,7 @@ public class AdminProjectMigrationService {
             Map.entry("githubRepositoryUrl", new Column("github_repository_url", Kind.TEXT, false)),
             Map.entry("deploymentUrl", new Column("deployment_url", Kind.TEXT, true)),
             Map.entry("thumbnailImageId", new Column("thumbnail_media_id", Kind.LONG, true)),
+            Map.entry("logoImageId", new Column("logo_media_id", Kind.LONG, true)),
             Map.entry("createdAt", new Column("created_at", Kind.INSTANT, false)),
             Map.entry("updatedAt", new Column("updated_at", Kind.INSTANT, false))
     );
