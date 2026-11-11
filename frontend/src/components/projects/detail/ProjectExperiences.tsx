@@ -4,11 +4,11 @@ import { useId, useState } from 'react';
 import {
   projectExperiencesQuery,
   type ExperienceJobRole,
+  type ExperienceSourceKind,
   type ProjectExperience,
+  type ProjectExperienceSource,
 } from '@/apis/project-explore';
 import { DotTab } from '@/components/explore/DotTab';
-import { SourceBadge, SourceLink } from '@/components/projects/detail/ExperienceSource';
-import { openExperienceSummary } from '@/components/projects/detail/ExperienceSummaryModal';
 import { cn } from '@/utils/cn';
 
 const JOB_ROLES: { jobRole: ExperienceJobRole; label: string }[] = [
@@ -16,6 +16,12 @@ const JOB_ROLES: { jobRole: ExperienceJobRole; label: string }[] = [
   { jobRole: 'FE', label: '프론트엔드' },
   { jobRole: 'AN', label: '안드로이드' },
 ];
+
+const SOURCE_BADGE: Record<ExperienceSourceKind, { short: string; label: string }> = {
+  PR: { short: 'PR', label: 'PR' },
+  TEAM_DOC: { short: 'D', label: '팀 문서' },
+  BLOG: { short: 'B', label: '블로그' },
+};
 
 /** 프로젝트 상세 경험 탭 */
 export function ProjectExperiences({ slug }: { slug: string }) {
@@ -61,7 +67,7 @@ export function ProjectExperiences({ slug }: { slug: string }) {
   );
 }
 
-/** 경험 카드. 카드를 누르면 자료 요약처럼 경험 요약 모달을 연다. 출처 버튼과 링크는 카드 위에 올려 따로 누른다. */
+// 프로토타입은 경험 카드 전체가 "자세히 보기"지만 경험 카드는 눌러도 아무것도 열지 않는다. 출처는 펼쳐서 원문으로 간다.
 function ExperienceItem({
   experience,
   defaultOpen,
@@ -73,15 +79,9 @@ function ExperienceItem({
   const sourcesId = useId();
 
   return (
-    <article className="group relative flex flex-col gap-2.5 py-7">
-      <button
-        type="button"
-        aria-label={`${experience.title} 자세히 보기`}
-        onClick={() => openExperienceSummary(experience)}
-        className="focus-visible:outline-primary-600 absolute inset-0 cursor-pointer rounded-lg focus-visible:outline-2"
-      />
+    <article className="flex flex-col gap-2.5 py-7">
       <span className="text-sm font-medium text-gray-500">{experience.category}</span>
-      <h3 className="text-lg font-bold text-gray-900 group-hover:underline">{experience.title}</h3>
+      <h3 className="text-lg font-bold text-gray-900">{experience.title}</h3>
       <ul className="flex flex-col gap-2">
         {experience.highlights.map((highlight) => (
           <li key={highlight} className="flex gap-2.5 text-sm leading-relaxed text-gray-600">
@@ -95,7 +95,7 @@ function ExperienceItem({
         ))}
       </ul>
       {experience.sources.length > 0 && (
-        <div className="relative mt-1.5 flex flex-col items-start gap-2">
+        <div className="mt-1.5 flex flex-col items-start gap-2">
           <button
             type="button"
             aria-expanded={open}
@@ -132,5 +132,38 @@ function ExperienceItem({
         </div>
       )}
     </article>
+  );
+}
+
+function SourceLink({ source }: { source: ProjectExperienceSource }) {
+  return (
+    <a
+      href={source.url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="focus-visible:outline-primary-600 flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm text-gray-600 hover:bg-gray-50 focus-visible:outline-2"
+    >
+      <SourceBadge kind={source.kind} />
+      <span className="sr-only">{SOURCE_BADGE[source.kind].label}: </span>
+      <span className="min-w-0 truncate">{source.title}</span>
+      {source.number !== null && (
+        <span className="ml-auto shrink-0 text-xs text-gray-400">#{source.number}</span>
+      )}
+    </a>
+  );
+}
+
+function SourceBadge({ kind, className }: { kind: ExperienceSourceKind; className?: string }) {
+  return (
+    <span
+      aria-hidden="true"
+      // DESIGN-TOKEN: 지름 20px 원 안에 PR 두 글자를 넣으려면 8px 글자가 필요해 토큰보다 작게 둔다.
+      className={cn(
+        'bg-primary-50 text-primary-600 flex size-5 shrink-0 items-center justify-center rounded-full text-[0.5rem] font-extrabold ring-2 ring-white',
+        className,
+      )}
+    >
+      {SOURCE_BADGE[kind].short}
+    </span>
   );
 }
