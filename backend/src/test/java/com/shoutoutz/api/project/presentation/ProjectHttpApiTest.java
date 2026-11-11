@@ -121,7 +121,9 @@ class ProjectHttpApiTest {
             + "deploymentUrl 없이 serviceStatus를 OPERATING으로 보내면 400, 로그인하지 않았으면 401, "
             + "없거나 형식이 틀린 slug이거나, 삭제됐거나 다른 사람의 프로젝트면 404, 이미 등록된 리포지토리로 바꾸면 409를 반환한다.";
     private static final String FIND_ALL_SUMMARY = "프로젝트 목록 조회";
-    private static final String FIND_ALL_DESCRIPTION = "승인된 프로젝트 목록을 검색어, 기수, 기술 스택으로 걸러 정렬 기준대로 조회한다. "
+    private static final String FIND_ALL_DESCRIPTION = "승인된 프로젝트 목록을 검색어, 기수, 기술 스택, 기술 주제로 걸러 정렬 기준대로 조회한다. "
+            + "기술 주제(topicId)를 주면 그 주제의 팀 자료가 있는 프로젝트만 남기며, 기술 주제 목록 조회와 같은 규칙이다. "
+            + "없는 주제 id면 빈 목록이다. "
             + "로그인하지 않아도 조회할 수 있다. 커서 기반으로, 첫 요청은 cursor를 생략하고 "
             + "다음 요청부터 응답의 meta.nextCursor를 그대로 전달한다. 정렬을 바꾸면 cursor 없이 처음부터 다시 요청한다. "
             + "POPULAR에서 좋아요 수가 같으면 최근 등록된 프로젝트가 앞에 온다. "
@@ -475,6 +477,7 @@ class ProjectHttpApiTest {
                         .queryParam("keyword", "루프")
                         .queryParam("cohorts", "6,7")
                         .queryParam("techTagIds", "1,2")
+                        .queryParam("topicId", "concurrency")
                         .queryParam("sort", "POPULAR")
                         .queryParam("size", "8"))
                 .andExpect(status().isOk())
@@ -505,6 +508,10 @@ class ProjectHttpApiTest {
                                                 .optional(),
                                         parameterWithName("techTagIds")
                                                 .description("기술 스택 필터. 쉼표로 구분 (ex. 1,2,3). 선택한 기술 스택을 모두 사용한 프로젝트만 조회")
+                                                .optional(),
+                                        parameterWithName("topicId")
+                                                .description("기술 주제 id (ex. concurrency). 기술 주제 목록 조회의 topicId. "
+                                                        + "그 주제의 팀 자료가 있는 프로젝트만 조회하며, 없는 id면 빈 목록. 40자 이하")
                                                 .optional(),
                                         parameterWithName("sort")
                                                 .description("정렬 기준 (LATEST, POPULAR). 기본값 LATEST")
@@ -582,7 +589,8 @@ class ProjectHttpApiTest {
                                 .build())
                 ));
 
-        verify(projectService).findAll(new ProjectFindAllRequest("루프", List.of(6, 7), List.of(1L, 2L), "POPULAR", 8, null));
+        verify(projectService).findAll(
+                new ProjectFindAllRequest("루프", List.of(6, 7), List.of(1L, 2L), "concurrency", "POPULAR", 8, null));
     }
 
     @Test
@@ -596,7 +604,7 @@ class ProjectHttpApiTest {
                 .andExpect(jsonPath("$.data").isEmpty())
                 .andExpect(jsonPath("$.meta.totalCount").value(0));
 
-        verify(projectService).findAll(new ProjectFindAllRequest(null, null, null, null, null, null));
+        verify(projectService).findAll(new ProjectFindAllRequest(null, null, null, null, null, null, null));
     }
 
     @Test

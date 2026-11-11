@@ -10,11 +10,13 @@ import java.util.Objects;
  * @param keyword    프로젝트 이름, 한 줄 소개, 참여 크루 이름 검색어 (대소문자 무시 부분 일치)
  * @param cohorts    선택한 기수 중 하나에 해당하는 프로젝트 (OR)
  * @param techTagIds 선택한 기술 스택을 모두 사용한 프로젝트 (AND)
+ * @param topicId    그 기술 주제의 팀 자료가 있는 프로젝트. null 이면 거르지 않는다. 필터 선택지 수 계산(filter())에는 넣지 않는다
  */
 public record ProjectSearchCondition(
         String keyword,
         List<Integer> cohorts,
         List<Long> techTagIds,
+        String topicId,
         ProjectSort sort,
         int size,
         ProjectCursor cursor

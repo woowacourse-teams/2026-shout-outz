@@ -6,9 +6,11 @@ import com.shoutoutz.api.projectresource.application.ProjectResourceQueryReposit
 import com.shoutoutz.api.projectresource.domain.ProjectResourceJobRole;
 import com.shoutoutz.api.projectresource.domain.ResourceCount;
 import com.shoutoutz.api.projectresource.domain.ResourceTopic;
+import com.shoutoutz.api.projectresource.domain.TopicProject;
 import com.shoutoutz.api.resourcesearch.application.dto.ResourceCard;
 import java.time.Instant;
 import java.util.List;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -207,6 +209,31 @@ class ProjectResourceQueryRepositoryIntegrationTest {
         );
 
         assertThat(cards).extracting(ResourceCard::resourceId).containsExactlyInAnyOrder(backend, blog);
+    }
+
+    @Test
+    @DisplayName("공개된 프로젝트마다 팀 자료가 있는 주제를 한 번씩 읽고, 내려간 자료, 받아들인 제보 자료, 테코톡, 공개되지 않은 프로젝트는 뺀다")
+    void findsTopicProjects() {
+        long otherProjectId = fixtures.publicProject("다른 팀");
+        long pendingProjectId = fixtures.project("심사 중", "PENDING", false, null);
+        fixtures.document("github-pr", "pr-1").project(projectId).topic(TOPIC).insert();
+        fixtures.document("github-pr", "pr-2").project(projectId).topic(TOPIC).insert();
+        fixtures.document("blog-post", "blog").project(otherProjectId).topic(OTHER_TOPIC).insert();
+        fixtures.document("github-pr", "deleted").project(otherProjectId).topic(TOPIC).deleted().insert();
+        fixtures.document("github-pr", "removed").project(otherProjectId).topic("auth").insert();
+        fixtures.removalReport(otherProjectId, "github-pr", "removed", "ACCEPTED");
+        fixtures.document("youtube-tekotalk", "yt:talk").project(otherProjectId).topic("auth").insert();
+        fixtures.document("github-pr", "pending").project(pendingProjectId).topic(TOPIC).insert();
+        Set<Long> projectIds = Set.of(projectId, otherProjectId, pendingProjectId);
+
+        List<TopicProject> topicProjects = projectResourceQueryRepository.findTopicProjects().stream()
+                .filter(topicProject -> projectIds.contains(topicProject.projectId()))
+                .toList();
+
+        assertThat(topicProjects).containsExactlyInAnyOrder(
+                new TopicProject(TOPIC, projectId),
+                new TopicProject(OTHER_TOPIC, otherProjectId)
+        );
     }
 
     private long idOf(String externalKey) {

@@ -664,19 +664,19 @@ class ProjectServiceTest {
     }
 
     @Test
-    @DisplayName("목록 요청의 검색어, 필터, 정렬, 조회 개수, 커서를 정리해 조회 조건으로 넘긴다.")
+    @DisplayName("목록 요청의 검색어, 필터, 기술 주제, 정렬, 조회 개수, 커서를 정리해 조회 조건으로 넘긴다.")
     void findsProjectsWithResolvedCondition() {
         ProjectCursor cursor = ProjectCursor.popular(3L, NOW, 50L);
         when(projectRepository.findAll(any(ProjectSearchCondition.class)))
                 .thenReturn(new ProjectPage(List.of(), false, 0));
 
         projectService.findAll(new ProjectFindAllRequest(
-                " 모아 ", List.of(7, 6, 7), List.of(2L, 1L, 2L), "POPULAR", 20, ProjectCursorCodec.encode(cursor)));
+                " 모아 ", List.of(7, 6, 7), List.of(2L, 1L, 2L), " concurrency ", "POPULAR", 20, ProjectCursorCodec.encode(cursor)));
 
         ArgumentCaptor<ProjectSearchCondition> conditionCaptor = ArgumentCaptor.forClass(ProjectSearchCondition.class);
         verify(projectRepository).findAll(conditionCaptor.capture());
         assertThat(conditionCaptor.getValue()).isEqualTo(new ProjectSearchCondition(
-                "모아", List.of(7, 6), List.of(2L, 1L), ProjectSort.POPULAR, 20, cursor));
+                "모아", List.of(7, 6), List.of(2L, 1L), "concurrency", ProjectSort.POPULAR, 20, cursor));
     }
 
     @Test
@@ -692,7 +692,7 @@ class ProjectServiceTest {
                 .thenReturn(Map.of(21L, URI.create("https://cdn.example.com/avatar-21")));
 
         ProjectFindAllResponse response = projectService.findAll(
-                new ProjectFindAllRequest(null, null, null, "POPULAR", 2, null));
+                new ProjectFindAllRequest(null, null, null, null, "POPULAR", 2, null));
 
         assertThat(response.items()).extracting(ProjectFindAllResponse.Item::slug).containsExactly("loop-10", "loop-9");
         assertThat(response.meta().hasNext()).isTrue();
@@ -715,7 +715,7 @@ class ProjectServiceTest {
                 .thenReturn(new ProjectPage(List.of(summary(10L, 0L, NOW)), false, 1));
 
         ProjectFindAllResponse response = projectService.findAll(
-                new ProjectFindAllRequest(null, null, null, null, null, null));
+                new ProjectFindAllRequest(null, null, null, null, null, null, null));
 
         assertThat(response.meta().hasNext()).isFalse();
         assertThat(response.meta().nextCursor()).isNull();
@@ -847,7 +847,7 @@ class ProjectServiceTest {
     @DisplayName("정의되지 않은 기수로 필터링하면 목록을 조회하지 않고 400을 던진다.")
     void rejectsUndefinedCohortFilter() {
         assertThatThrownBy(() -> projectService.findAll(
-                new ProjectFindAllRequest(null, List.of(99), null, null, null, null)))
+                new ProjectFindAllRequest(null, List.of(99), null, null, null, null, null)))
                 .isInstanceOfSatisfying(InvalidCohortException.class,
                         error -> assertThat(error.getErrorCode()).isEqualTo(CohortErrorCode.INVALID_COHORT));
 
@@ -860,7 +860,7 @@ class ProjectServiceTest {
         String latestCursor = ProjectCursorCodec.encode(ProjectCursor.latest(NOW, 10L));
 
         assertThatThrownBy(() -> projectService.findAll(
-                new ProjectFindAllRequest(null, null, null, "POPULAR", null, latestCursor)))
+                new ProjectFindAllRequest(null, null, null, null, "POPULAR", null, latestCursor)))
                 .isInstanceOf(InvalidProjectCursorException.class);
 
         verifyNoInteractions(projectRepository);

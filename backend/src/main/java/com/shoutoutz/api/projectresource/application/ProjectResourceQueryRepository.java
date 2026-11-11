@@ -3,6 +3,7 @@ package com.shoutoutz.api.projectresource.application;
 import com.shoutoutz.api.projectresource.domain.ProjectResourceJobRole;
 import com.shoutoutz.api.projectresource.domain.ResourceCount;
 import com.shoutoutz.api.projectresource.domain.ResourceTopic;
+import com.shoutoutz.api.projectresource.domain.TopicProject;
 import com.shoutoutz.api.resourcesearch.application.dto.ResourceCard;
 import java.util.List;
 import java.util.Optional;
@@ -21,6 +22,11 @@ public interface ProjectResourceQueryRepository {
      * 이 프로젝트 팀 자료를 주제, 자료 직군, 원천별로 센다. 주제가 없는 자료는 세지 않는다.
      */
     List<ResourceCount> countTeamResources(long projectId);
+
+    /**
+     * 공개된 프로젝트마다 팀 자료를 하나 이상 가진 주제. 같은 (주제, 프로젝트)는 한 번만 준다.
+     */
+    List<TopicProject> findTopicProjects();
 
     /**
      * 이 프로젝트의 그 주제 팀 자료 전부. 블로그 먼저, 그다음 점수 높은 순, 같으면 최신순이다.

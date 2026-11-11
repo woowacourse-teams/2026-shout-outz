@@ -215,6 +215,7 @@ public class ProjectService {
                 request.keyword(),
                 request.resolvedCohorts(),
                 request.resolvedTechTagIds(),
+                request.topicId(),
                 sort,
                 request.resolvedSize(),
                 request.resolvedCursor()
