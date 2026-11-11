@@ -52,9 +52,10 @@ export function ProjectExperiences({ slug }: { slug: string }) {
       <ul aria-label="경험">
         {experiences
           .filter((experience) => experience.jobRole === selected)
-          .map((experience) => (
+          .map((experience, index) => (
             <li key={experience.experienceId} className="border-t border-gray-100 first:border-t-0">
-              <ExperienceItem experience={experience} />
+              {/* 프로토타입처럼 첫 경험의 출처만 펼쳐 둔다. */}
+              <ExperienceItem experience={experience} defaultOpen={index === 0} />
             </li>
           ))}
       </ul>
@@ -68,8 +69,14 @@ export function ProjectExperiences({ slug }: { slug: string }) {
 }
 
 // ASSUMPTION: 프로토타입은 경험 카드 전체가 "자세히 보기" 링크지만 경험 상세 화면이 없어 링크를 달지 않는다. 출처는 펼쳐서 원문으로 간다.
-function ExperienceItem({ experience }: { experience: ProjectExperience }) {
-  const [open, setOpen] = useState(false);
+function ExperienceItem({
+  experience,
+  defaultOpen,
+}: {
+  experience: ProjectExperience;
+  defaultOpen: boolean;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
   const sourcesId = useId();
 
   return (
@@ -90,7 +97,6 @@ function ExperienceItem({ experience }: { experience: ProjectExperience }) {
       </ul>
       {experience.sources.length > 0 && (
         <div className="mt-1.5 flex flex-col items-start gap-2">
-          {/* ASSUMPTION: 프로토타입은 첫 경험의 출처만 펼쳐져 있어, 처음에는 모두 접어 둔다. */}
           <button
             type="button"
             aria-expanded={open}

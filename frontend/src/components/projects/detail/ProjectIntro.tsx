@@ -15,17 +15,6 @@ export function ProjectIntro({ project }: { project: ProjectDetail }) {
         <MarkdownContent>{project.descriptionMd ?? ''}</MarkdownContent>
       </section>
       <aside className="flex min-w-0 flex-col gap-9 lg:w-62 lg:shrink-0">
-        {/* ASSUMPTION: 프로토타입은 "경험" 칸만 있고 값이 비어 있어, 기존 상세에 있던 기수와 서비스 상태를 보여 준다. */}
-        <dl className="grid grid-cols-4 text-sm">
-          <dt className="border-b border-gray-100 py-2.5 text-gray-500">기수</dt>
-          <dd className="col-span-3 border-b border-gray-100 py-2.5 text-gray-900">
-            우아한테크코스 {project.cohort}기
-          </dd>
-          <dt className="border-b border-gray-100 py-2.5 text-gray-500">상태</dt>
-          <dd className="col-span-3 border-b border-gray-100 py-2.5 text-gray-900">
-            {project.serviceStatus === 'OPERATING' ? '운영 중' : project.serviceStatus}
-          </dd>
-        </dl>
         <section aria-labelledby="project-members">
           <h2 id="project-members" className="pb-2.5 text-sm font-bold text-gray-900">
             참여 크루 <span className="font-medium text-gray-400">{project.members.length}</span>

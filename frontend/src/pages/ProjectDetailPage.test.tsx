@@ -219,12 +219,13 @@ describe('프로젝트 상세 탭', () => {
 
     const [toggle] = within(experiences).getAllByRole('button', { name: /출처 \d+개/ });
     if (!toggle) throw new Error('출처 버튼을 찾을 수 없습니다.');
-    expect(toggle).toHaveAttribute('aria-expanded', 'false');
-    await userEvent.click(toggle);
+    // 첫 경험의 출처는 처음부터 펼쳐 둔다.
     expect(toggle).toHaveAttribute('aria-expanded', 'true');
     expect(
       screen.getByRole('link', { name: /힙 메모리 한도 조정으로 백엔드 강제 종료 방지/ }),
     ).toHaveAttribute('target', '_blank');
+    await userEvent.click(toggle);
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
 
     const roles = screen.getByRole('tablist', { name: '직군' });
     await userEvent.click(within(roles).getByRole('tab', { name: '프론트엔드' }));

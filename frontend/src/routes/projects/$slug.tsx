@@ -30,7 +30,7 @@ function RouteComponent() {
   return (
     <ProjectDetailPage
       slug={toProjectSlug(slug)}
-      // ASSUMPTION: 프로토타입 탭 순서대로 처음에는 경험 탭을 보여 준다.
+      // 프로토타입 탭 순서대로 처음에는 경험 탭을 보여 준다.
       tab={tab ?? 'experience'}
       onTabChange={(next) =>
         void navigate({

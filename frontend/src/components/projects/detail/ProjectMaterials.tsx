@@ -30,7 +30,7 @@ export function ProjectMaterials({ slug, projectName }: ProjectMaterialsProps) {
   const { data } = useSuspenseQuery(projectMaterialTopicsQuery(slug, jobRole));
   const topics = data.fields.flatMap((field) => field.topics.map((topic) => topic.name));
   const [chosenTopic, setChosenTopic] = useState<string | null>(null);
-  // ASSUMPTION: 처음이나 직군을 바꿔 고른 주제가 목록에 없으면 첫 주제를 보여 준다.
+  // 처음이나 직군을 바꿔 고른 주제가 목록에 없으면 첫 주제를 보여 준다.
   const topic = chosenTopic && topics.includes(chosenTopic) ? chosenTopic : (topics[0] ?? null);
 
   if (data.totalCount === 0) {
@@ -56,7 +56,7 @@ export function ProjectMaterials({ slug, projectName }: ProjectMaterialsProps) {
 
       <div className="lg:flex lg:gap-14">
         <nav aria-label="주제" className="lg:w-52 lg:shrink-0">
-          {/* ASSUMPTION: 모바일에서는 긴 주제 목록 대신 가로로 넘기는 칩으로 고른다. */}
+          {/* 모바일에서는 긴 주제 목록 대신 가로로 넘기는 칩으로 고른다. */}
           <ul className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-2 lg:hidden">
             {topics.map((name) => (
               <li key={name} className="shrink-0">
