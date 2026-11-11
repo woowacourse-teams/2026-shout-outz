@@ -46,7 +46,7 @@ export function ProjectDetailHeader({ project }: { project: ProjectDetail }) {
                 {link.label}
               </a>
             ))}
-            {/* PROTOTYPE-DIFF: 프로토타입에는 없지만 참여 크루가 수정할 수 있게 링크 줄 끝에 둔다. */}
+            {/* 프로토타입에는 없지만 참여 크루가 수정할 수 있게 링크 줄 끝에 둔다. */}
             {project.editable && (
               <Link
                 to="/projects/$slug/edit"
