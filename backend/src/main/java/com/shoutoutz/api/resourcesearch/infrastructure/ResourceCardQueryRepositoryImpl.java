@@ -25,7 +25,7 @@ public class ResourceCardQueryRepositoryImpl implements ResourceCardQueryReposit
             d.id, d.source, d.title, d.url, d.summary, d.published_at,
             d.extra ->> 'platform' AS platform,
             CASE WHEN d.project_id IS NULL THEN d.extra ->> 'project_name' END AS collected_team_name,
-            p.team_name, p.slug, p.logo_media_id
+            p.title AS project_title, p.slug, p.logo_media_id
             """;
 
     static final String VISIBLE_PROJECT_JOIN = """
@@ -114,7 +114,7 @@ public class ResourceCardQueryRepositoryImpl implements ResourceCardQueryReposit
         String projectSlug = resultSet.getString("slug");
         if (projectSlug != null) {
             return new ResourceCard.Team(
-                    resultSet.getString("team_name"),
+                    resultSet.getString("project_title"),
                     projectSlug,
                     resultSet.getObject("logo_media_id", Long.class)
             );

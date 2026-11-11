@@ -94,7 +94,7 @@ class ResourceHttpApiDetailTest {
                                                 .description("PR과 팀 문서의 종류(problem_solving, tech_decision, implementation, chore, design, "
                                                         + "operation, experiment, convention, plan, other). 블로그와 테코톡은 null").optional(),
                                         fieldWithPath("data.team").type(OBJECT).description("자료를 만든 팀. 없으면 null").optional(),
-                                        fieldWithPath("data.team.name").type(STRING).description("팀 이름").optional(),
+                                        fieldWithPath("data.team.name").type(STRING).description("등록된 프로젝트면 프로젝트 이름, 등록 전 팀이면 수집 때 저장한 프로젝트 이름").optional(),
                                         fieldWithPath("data.team.projectSlug").type(STRING)
                                                 .description("등록된 프로젝트 slug. 등록 전 팀이면 null").optional(),
                                         fieldWithPath("data.team.logoMediaId").type(NUMBER)

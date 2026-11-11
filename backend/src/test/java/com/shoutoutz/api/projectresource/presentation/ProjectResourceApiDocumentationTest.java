@@ -463,7 +463,7 @@ class ProjectResourceApiDocumentationTest {
                 fieldWithPath(prefix + ".team").type(OBJECT)
                         .description("자료를 만든 팀. 테코톡처럼 팀이 없거나 팀을 알 수 없으면 null").optional(),
                 fieldWithPath(prefix + ".team.name").type(STRING)
-                        .description("등록된 프로젝트면 팀 이름, 등록 전 팀이면 수집 때 저장한 팀 이름").optional(),
+                        .description("등록된 프로젝트면 프로젝트 이름, 등록 전 팀이면 수집 때 저장한 프로젝트 이름").optional(),
                 fieldWithPath(prefix + ".team.projectSlug").type(STRING)
                         .description("등록된 프로젝트의 slug. 등록 전이면 null").optional(),
                 fieldWithPath(prefix + ".team.logoMediaId").type(NUMBER)

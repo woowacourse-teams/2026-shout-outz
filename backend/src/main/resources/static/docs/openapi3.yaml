@@ -157,12 +157,12 @@ paths:
               examples:
                 category-save-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"slug\",\"\
-                    message\":\"slug 형식이 올바르지 않습니다.\"},{\"field\":\"type\",\"message\"\
-                    :\"type은 필수입니다.\"},{\"field\":\"feedType\",\"message\":\"feedType은\
-                    \ 필수입니다.\"},{\"field\":\"displayName\",\"message\":\"displayName은\
-                    \ 필수입니다.\"},{\"field\":\"displayOrder\",\"message\":\"displayOrder는\
-                    \ 0 이상이어야 합니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"feedType\"\
+                    ,\"message\":\"feedType은 필수입니다.\"},{\"field\":\"displayOrder\"\
+                    ,\"message\":\"displayOrder는 0 이상이어야 합니다.\"},{\"field\":\"displayName\"\
+                    ,\"message\":\"displayName은 필수입니다.\"},{\"field\":\"type\",\"message\"\
+                    :\"type은 필수입니다.\"},{\"field\":\"slug\",\"message\":\"slug 형식이\
+                    \ 올바르지 않습니다.\"}]}"
         "409":
           description: "409"
           content:
@@ -544,14 +544,14 @@ paths:
                 $ref: "#/components/schemas/MagazineFindAllSuccessResponse"
               examples:
                 magazine-list:
-                  value: "{\"status\":\"success\",\"data\":[{\"id\":43,\"title\":\"\
-                    첫 매거진\",\"summary\":\"매거진 요약\",\"thumbnailUrl\":\"https://cdn.example.com/test-prefix/magazine/490f29b8-6ea3-402b-a19e-bf05aa24e266/thumbnail\"\
-                    ,\"featuredUser\":{\"handle\":\"@i3a1fc4e456d5470f9339\",\"displayName\"\
+                  value: "{\"status\":\"success\",\"data\":[{\"id\":195,\"title\"\
+                    :\"첫 매거진\",\"summary\":\"매거진 요약\",\"thumbnailUrl\":\"https://cdn.example.com/test-prefix/magazine/46b9a34f-ffec-4bd1-8009-4fb3e800475d/thumbnail\"\
+                    ,\"featuredUser\":{\"handle\":\"@id1731b6efac4418a97b3\",\"displayName\"\
                     :\"소개 회원\",\"introduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다.\",\"\
-                    avatarUrl\":null},\"author\":{\"handle\":\"@i0fcd35ce33454658abea\"\
+                    avatarUrl\":null},\"author\":{\"handle\":\"@i0711285a928b42adb98d\"\
                     ,\"displayName\":\"편집자\",\"avatarUrl\":null},\"status\":\"PUBLISHED\"\
-                    ,\"publishedAt\":\"2026-11-11T07:28:16.931431Z\",\"createdAt\"\
-                    :\"2026-11-11T07:28:16.913308Z\",\"updatedAt\":\"2026-11-11T07:28:16.932179Z\"\
+                    ,\"publishedAt\":\"2026-11-11T10:26:37.882309Z\",\"createdAt\"\
+                    :\"2026-11-11T10:26:37.856575Z\",\"updatedAt\":\"2026-11-11T10:26:37.883631Z\"\
                     ,\"likeCount\":0,\"likedByMe\":false,\"commentCount\":0,\"viewCount\"\
                     :0}],\"meta\":{\"nextCursor\":null,\"hasNext\":false,\"totalCount\"\
                     :1}}"
@@ -1515,23 +1515,23 @@ paths:
                 $ref: "#/components/schemas/MagazineFindAllSuccessResponse"
               examples:
                 magazine-admin-list:
-                  value: "{\"status\":\"success\",\"data\":[{\"id\":49,\"title\":\"\
-                    첫 매거진\",\"summary\":\"매거진 요약\",\"thumbnailUrl\":\"https://cdn.example.com/test-prefix/magazine/d0311307-b70a-44d0-ab95-02b9c917cce1/thumbnail\"\
-                    ,\"featuredUser\":{\"handle\":\"@icd010cf4f9e04fb6a4e9\",\"displayName\"\
+                  value: "{\"status\":\"success\",\"data\":[{\"id\":201,\"title\"\
+                    :\"첫 매거진\",\"summary\":\"매거진 요약\",\"thumbnailUrl\":\"https://cdn.example.com/test-prefix/magazine/f4b89230-8645-47db-8ddb-f3e7f36cfe44/thumbnail\"\
+                    ,\"featuredUser\":{\"handle\":\"@ie4916da69c8e4799adcf\",\"displayName\"\
                     :\"소개 회원\",\"introduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다.\",\"\
-                    avatarUrl\":null},\"author\":{\"handle\":\"@i0e6b8c96453247dd86e1\"\
+                    avatarUrl\":null},\"author\":{\"handle\":\"@if97ee3e04de54da68fcb\"\
                     ,\"displayName\":\"편집자\",\"avatarUrl\":null},\"status\":\"DRAFT\"\
-                    ,\"publishedAt\":null,\"createdAt\":\"2026-11-11T07:28:17.174728Z\"\
-                    ,\"updatedAt\":\"2026-11-11T07:28:17.174728Z\",\"likeCount\":0,\"\
+                    ,\"publishedAt\":null,\"createdAt\":\"2026-11-11T10:26:38.196894Z\"\
+                    ,\"updatedAt\":\"2026-11-11T10:26:38.196894Z\",\"likeCount\":0,\"\
                     likedByMe\":false,\"commentCount\":0,\"viewCount\":0},{\"id\"\
-                    :48,\"title\":\"첫 매거진\",\"summary\":\"매거진 요약\",\"thumbnailUrl\"\
-                    :\"https://cdn.example.com/test-prefix/magazine/d0311307-b70a-44d0-ab95-02b9c917cce1/thumbnail\"\
-                    ,\"featuredUser\":{\"handle\":\"@icd010cf4f9e04fb6a4e9\",\"displayName\"\
+                    :200,\"title\":\"첫 매거진\",\"summary\":\"매거진 요약\",\"thumbnailUrl\"\
+                    :\"https://cdn.example.com/test-prefix/magazine/f4b89230-8645-47db-8ddb-f3e7f36cfe44/thumbnail\"\
+                    ,\"featuredUser\":{\"handle\":\"@ie4916da69c8e4799adcf\",\"displayName\"\
                     :\"소개 회원\",\"introduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다.\",\"\
-                    avatarUrl\":null},\"author\":{\"handle\":\"@i0e6b8c96453247dd86e1\"\
+                    avatarUrl\":null},\"author\":{\"handle\":\"@if97ee3e04de54da68fcb\"\
                     ,\"displayName\":\"편집자\",\"avatarUrl\":null},\"status\":\"DRAFT\"\
-                    ,\"publishedAt\":null,\"createdAt\":\"2026-11-11T07:28:17.163946Z\"\
-                    ,\"updatedAt\":\"2026-11-11T07:28:17.163946Z\",\"likeCount\":0,\"\
+                    ,\"publishedAt\":null,\"createdAt\":\"2026-11-11T10:26:38.183427Z\"\
+                    ,\"updatedAt\":\"2026-11-11T10:26:38.183427Z\",\"likeCount\":0,\"\
                     likedByMe\":false,\"commentCount\":0,\"viewCount\":0}],\"meta\"\
                     :{\"nextCursor\":null,\"hasNext\":false,\"totalCount\":2}}"
     post:
@@ -1554,7 +1554,7 @@ paths:
         required: true
         schema:
           type: string
-        example: Wp8p4r_daQYjFUyZqIadghiydlCw7hbpr92iADo9vGg
+        example: rHmAKLYnkOocxL19a3YVUbYid2GgD-X_CuM3ZZOjQQg
       requestBody:
         content:
           application/json;charset=UTF-8:
@@ -1563,37 +1563,37 @@ paths:
             examples:
               magazine-create-csrf-invalid:
                 value: "{\"title\":\"제목\",\"summary\":\"매거진 요약\",\"featuredUserId\"\
-                  :519,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다.\"\
-                  ,\"thumbnailMediaId\":139,\"contentMd\":\"본문\"}"
+                  :2544,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다.\"\
+                  ,\"thumbnailMediaId\":596,\"contentMd\":\"본문\"}"
               magazine-create-csrf-missing:
                 value: "{\"title\":\"제목\",\"summary\":\"매거진 요약\",\"featuredUserId\"\
-                  :440,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다.\"\
-                  ,\"thumbnailMediaId\":61,\"contentMd\":\"본문\"}"
+                  :2465,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다.\"\
+                  ,\"thumbnailMediaId\":518,\"contentMd\":\"본문\"}"
               magazine-create:
                 value: "{\"title\":\"첫 매거진\",\"summary\":\"매거진 요약\",\"featuredUserId\"\
-                  :481,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다.\"\
-                  ,\"thumbnailMediaId\":101,\"contentMd\":\"![매거진](media://102)\"}"
+                  :2506,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다.\"\
+                  ,\"thumbnailMediaId\":558,\"contentMd\":\"![매거진](media://559)\"}"
               magazine-create-featuredUser-not-found:
                 value: "{\"title\":\"제목\",\"summary\":\"매거진 요약\",\"featuredUserId\"\
                   :9223372036854775807,\"featuredUserIntroduction\":\"우아한테크코스 출신 개\
-                  발자의 경험을 소개합니다.\",\"thumbnailMediaId\":73,\"contentMd\":\"본문\"}"
+                  발자의 경험을 소개합니다.\",\"thumbnailMediaId\":530,\"contentMd\":\"본문\"}"
               magazine-create-unauthorized:
                 value: "{\"title\":\"제목\",\"summary\":\"매거진 요약\",\"featuredUserId\"\
-                  :467,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다.\"\
-                  ,\"thumbnailMediaId\":87,\"contentMd\":\"본문\"}"
+                  :2492,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다.\"\
+                  ,\"thumbnailMediaId\":544,\"contentMd\":\"본문\"}"
               magazine-create-invalid-media:
                 value: "{\"title\":\"제목\",\"summary\":\"매거진 요약\",\"featuredUserId\"\
-                  :420,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다.\"\
-                  ,\"thumbnailMediaId\":40,\"contentMd\":\"![사진](https://example.com/a.png)\"\
+                  :2445,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다.\"\
+                  ,\"thumbnailMediaId\":497,\"contentMd\":\"![사진](https://example.com/a.png)\"\
                   }"
               magazine-create-validation-failed:
                 value: "{\"title\":\"\",\"summary\":\"매거진 요약\",\"featuredUserId\"\
-                  :426,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다.\"\
-                  ,\"thumbnailMediaId\":49,\"contentMd\":\"본문\"}"
+                  :2451,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다.\"\
+                  ,\"thumbnailMediaId\":506,\"contentMd\":\"본문\"}"
               magazine-create-forbidden:
                 value: "{\"title\":\"제목\",\"summary\":\"매거진 요약\",\"featuredUserId\"\
-                  :404,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다.\"\
-                  ,\"thumbnailMediaId\":24,\"contentMd\":\"본문\"}"
+                  :2429,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다.\"\
+                  ,\"thumbnailMediaId\":481,\"contentMd\":\"본문\"}"
       responses:
         "403":
           description: "403"
@@ -1619,15 +1619,15 @@ paths:
                 $ref: "#/components/schemas/MagazineAdminResponse"
               examples:
                 magazine-create:
-                  value: "{\"status\":\"success\",\"data\":{\"id\":48,\"title\":\"\
-                    첫 매거진\",\"summary\":\"매거진 요약\",\"featuredUserId\":481,\"featuredUserIntroduction\"\
-                    :\"우아한테크코스 출신 개발자의 경험을 소개합니다.\",\"author\":{\"handle\":\"@i0e6b8c96453247dd86e1\"\
+                  value: "{\"status\":\"success\",\"data\":{\"id\":200,\"title\":\"\
+                    첫 매거진\",\"summary\":\"매거진 요약\",\"featuredUserId\":2506,\"featuredUserIntroduction\"\
+                    :\"우아한테크코스 출신 개발자의 경험을 소개합니다.\",\"author\":{\"handle\":\"@if97ee3e04de54da68fcb\"\
                     ,\"displayName\":\"편집자\",\"avatarUrl\":null},\"thumbnailMediaId\"\
-                    :101,\"contentMd\":\"![매거진](media://102)\",\"status\":\"DRAFT\"\
-                    ,\"publishedAt\":null,\"createdAt\":\"2026-11-11T07:28:17.163946Z\"\
-                    ,\"updatedAt\":\"2026-11-11T07:28:17.163946Z\",\"thumbnailUrl\"\
-                    :\"https://cdn.example.com/test-prefix/magazine/d0311307-b70a-44d0-ab95-02b9c917cce1/thumbnail\"\
-                    ,\"previewContentMd\":\"![매거진](https://cdn.example.com/test-prefix/magazine/9a8ccc21-e10b-4edd-825d-359e51cad040/display)\"\
+                    :558,\"contentMd\":\"![매거진](media://559)\",\"status\":\"DRAFT\"\
+                    ,\"publishedAt\":null,\"createdAt\":\"2026-11-11T10:26:38.183427Z\"\
+                    ,\"updatedAt\":\"2026-11-11T10:26:38.183427Z\",\"thumbnailUrl\"\
+                    :\"https://cdn.example.com/test-prefix/magazine/f4b89230-8645-47db-8ddb-f3e7f36cfe44/thumbnail\"\
+                    ,\"previewContentMd\":\"![매거진](https://cdn.example.com/test-prefix/magazine/bad08c17-5865-4757-9ff3-2de043679291/display)\"\
                     }}"
         "404":
           description: "404"
@@ -2049,9 +2049,9 @@ paths:
               examples:
                 auth-signup-invalid-profile:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"bio\",\"\
-                    message\":\"bio는 200자를 초과할 수 없습니다.\"},{\"field\":\"blogUrl\",\"\
-                    message\":\"blogUrl 형식이 올바르지 않습니다.\"},{\"field\":\"githubProfileUrl\"\
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"blogUrl\"\
+                    ,\"message\":\"blogUrl 형식이 올바르지 않습니다.\"},{\"field\":\"bio\",\"\
+                    message\":\"bio는 200자를 초과할 수 없습니다.\"},{\"field\":\"githubProfileUrl\"\
                     ,\"message\":\"githubProfileUrl 형식이 올바르지 않습니다.\"}]}"
                 auth-signup-session-missing:
                   value: "{\"status\":\"error\",\"code\":\"OAUTH_SIGNUP_SESSION_NOT_FOUND\"\
@@ -2059,9 +2059,9 @@ paths:
                 auth-signup-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
                     message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"handle\"\
-                    ,\"message\":\"handle 형식이 올바르지 않습니다.\"},{\"field\":\"handle\"\
-                    ,\"message\":\"handle은 필수입니다.\"},{\"field\":\"displayName\",\"\
-                    message\":\"displayName은 필수입니다.\"}]}"
+                    ,\"message\":\"handle은 필수입니다.\"},{\"field\":\"handle\",\"message\"\
+                    :\"handle 형식이 올바르지 않습니다.\"},{\"field\":\"displayName\",\"message\"\
+                    :\"displayName은 필수입니다.\"}]}"
         "409":
           description: "409"
           content:
@@ -2566,15 +2566,15 @@ paths:
                 $ref: "#/components/schemas/MagazineFindSuccessResponse"
               examples:
                 magazine-detail:
-                  value: "{\"status\":\"success\",\"data\":{\"id\":43,\"title\":\"\
-                    첫 매거진\",\"summary\":\"매거진 요약\",\"thumbnailUrl\":\"https://cdn.example.com/test-prefix/magazine/490f29b8-6ea3-402b-a19e-bf05aa24e266/thumbnail\"\
-                    ,\"featuredUser\":{\"handle\":\"@i3a1fc4e456d5470f9339\",\"displayName\"\
+                  value: "{\"status\":\"success\",\"data\":{\"id\":195,\"title\":\"\
+                    첫 매거진\",\"summary\":\"매거진 요약\",\"thumbnailUrl\":\"https://cdn.example.com/test-prefix/magazine/46b9a34f-ffec-4bd1-8009-4fb3e800475d/thumbnail\"\
+                    ,\"featuredUser\":{\"handle\":\"@id1731b6efac4418a97b3\",\"displayName\"\
                     :\"소개 회원\",\"introduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다.\",\"\
-                    avatarUrl\":null},\"author\":{\"handle\":\"@i0fcd35ce33454658abea\"\
+                    avatarUrl\":null},\"author\":{\"handle\":\"@i0711285a928b42adb98d\"\
                     ,\"displayName\":\"편집자\",\"avatarUrl\":null},\"contentMd\":\"\
-                    ![사진](https://cdn.example.com/test-prefix/magazine/f256a545-9155-4e7e-8607-1cf4e808f3f7/display)\"\
-                    ,\"publishedAt\":\"2026-11-11T07:28:16.931431Z\",\"createdAt\"\
-                    :\"2026-11-11T07:28:16.913308Z\",\"updatedAt\":\"2026-11-11T07:28:16.932179Z\"\
+                    ![사진](https://cdn.example.com/test-prefix/magazine/e0819de7-06c7-45ac-b4d5-debd6722e854/display)\"\
+                    ,\"publishedAt\":\"2026-11-11T10:26:37.882309Z\",\"createdAt\"\
+                    :\"2026-11-11T10:26:37.856575Z\",\"updatedAt\":\"2026-11-11T10:26:37.883631Z\"\
                     ,\"likeCount\":0,\"likedByMe\":false,\"commentCount\":0,\"viewCount\"\
                     :1}}"
         "404":
@@ -2710,9 +2710,9 @@ paths:
                 news-event-create-required-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
                     message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"eventStartAt\"\
-                    ,\"message\":\"eventStartAt은 필수입니다.\"},{\"field\":\"eventEndAt\"\
-                    ,\"message\":\"eventEndAt은 필수입니다.\"},{\"field\":\"title\",\"message\"\
-                    :\"title은 필수입니다.\"}]}"
+                    ,\"message\":\"eventStartAt은 필수입니다.\"},{\"field\":\"title\",\"\
+                    message\":\"title은 필수입니다.\"},{\"field\":\"eventEndAt\",\"message\"\
+                    :\"eventEndAt은 필수입니다.\"}]}"
                 news-event-create-period-order-invalid:
                   value: "{\"status\":\"error\",\"code\":\"NEWS_EVENT_PERIOD_INVALID\"\
                     ,\"message\":\"이벤트 시작 시각은 종료 시각보다 늦을 수 없습니다.\"}"
@@ -4342,15 +4342,15 @@ paths:
                 $ref: "#/components/schemas/MagazineAdminResponse"
               examples:
                 magazine-admin-detail:
-                  value: "{\"status\":\"success\",\"data\":{\"id\":49,\"title\":\"\
-                    첫 매거진\",\"summary\":\"매거진 요약\",\"featuredUserId\":481,\"featuredUserIntroduction\"\
-                    :\"우아한테크코스 출신 개발자의 경험을 소개합니다.\",\"author\":{\"handle\":\"@i0e6b8c96453247dd86e1\"\
+                  value: "{\"status\":\"success\",\"data\":{\"id\":201,\"title\":\"\
+                    첫 매거진\",\"summary\":\"매거진 요약\",\"featuredUserId\":2506,\"featuredUserIntroduction\"\
+                    :\"우아한테크코스 출신 개발자의 경험을 소개합니다.\",\"author\":{\"handle\":\"@if97ee3e04de54da68fcb\"\
                     ,\"displayName\":\"편집자\",\"avatarUrl\":null},\"thumbnailMediaId\"\
-                    :101,\"contentMd\":\"![사진](media://102)\",\"status\":\"DRAFT\"\
-                    ,\"publishedAt\":null,\"createdAt\":\"2026-11-11T07:28:17.174728Z\"\
-                    ,\"updatedAt\":\"2026-11-11T07:28:17.174728Z\",\"thumbnailUrl\"\
-                    :\"https://cdn.example.com/test-prefix/magazine/d0311307-b70a-44d0-ab95-02b9c917cce1/thumbnail\"\
-                    ,\"previewContentMd\":\"![사진](https://cdn.example.com/test-prefix/magazine/9a8ccc21-e10b-4edd-825d-359e51cad040/display)\"\
+                    :558,\"contentMd\":\"![사진](media://559)\",\"status\":\"DRAFT\"\
+                    ,\"publishedAt\":null,\"createdAt\":\"2026-11-11T10:26:38.196894Z\"\
+                    ,\"updatedAt\":\"2026-11-11T10:26:38.196894Z\",\"thumbnailUrl\"\
+                    :\"https://cdn.example.com/test-prefix/magazine/f4b89230-8645-47db-8ddb-f3e7f36cfe44/thumbnail\"\
+                    ,\"previewContentMd\":\"![사진](https://cdn.example.com/test-prefix/magazine/bad08c17-5865-4757-9ff3-2de043679291/display)\"\
                     }}"
         "401":
           description: "401"
@@ -4400,7 +4400,7 @@ paths:
         required: true
         schema:
           type: string
-        example: BgGFnSdTjNLWO-0q8CYPRc3v5QwCSyxYmVQO0EhxMMw
+        example: mswriBdecqHV9UG3vt9NJMUE_37akBCPXpmo_rag5gY
       requestBody:
         content:
           application/json;charset=UTF-8:
@@ -4409,28 +4409,28 @@ paths:
             examples:
               magazine-update-validation-failed:
                 value: "{\"title\":\"\",\"summary\":\"매거진 요약\",\"featuredUserId\"\
-                  :426,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다.\"\
-                  ,\"thumbnailMediaId\":49,\"contentMd\":\"본문\"}"
+                  :2451,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다.\"\
+                  ,\"thumbnailMediaId\":506,\"contentMd\":\"본문\"}"
               magazine-update-csrf-missing:
                 value: "{\"title\":\"제목\",\"summary\":\"매거진 요약\",\"featuredUserId\"\
-                  :442,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다.\"\
-                  ,\"thumbnailMediaId\":63,\"contentMd\":\"본문\"}"
+                  :2467,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다.\"\
+                  ,\"thumbnailMediaId\":520,\"contentMd\":\"본문\"}"
               magazine-update-not-found:
                 value: "{\"title\":\"제목\",\"summary\":\"매거진 요약\",\"featuredUserId\"\
-                  :511,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다.\"\
-                  ,\"thumbnailMediaId\":131,\"contentMd\":\"본문\"}"
+                  :2536,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다.\"\
+                  ,\"thumbnailMediaId\":588,\"contentMd\":\"본문\"}"
               magazine-update-forbidden:
                 value: "{\"title\":\"제목\",\"summary\":\"매거진 요약\",\"featuredUserId\"\
-                  :410,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다.\"\
-                  ,\"thumbnailMediaId\":30,\"contentMd\":\"본문\"}"
+                  :2435,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다.\"\
+                  ,\"thumbnailMediaId\":487,\"contentMd\":\"본문\"}"
               magazine-update-unauthorized:
                 value: "{\"title\":\"제목\",\"summary\":\"매거진 요약\",\"featuredUserId\"\
-                  :473,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다.\"\
-                  ,\"thumbnailMediaId\":93,\"contentMd\":\"본문\"}"
+                  :2498,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다.\"\
+                  ,\"thumbnailMediaId\":550,\"contentMd\":\"본문\"}"
               magazine-update:
                 value: "{\"title\":\"수정된 매거진\",\"summary\":\"매거진 요약\",\"featuredUserId\"\
-                  :454,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다.\"\
-                  ,\"thumbnailMediaId\":75,\"contentMd\":\"수정 본문\"}"
+                  :2479,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다.\"\
+                  ,\"thumbnailMediaId\":532,\"contentMd\":\"수정 본문\"}"
       responses:
         "400":
           description: "400"
@@ -4484,14 +4484,14 @@ paths:
                 $ref: "#/components/schemas/MagazineAdminResponse"
               examples:
                 magazine-update:
-                  value: "{\"status\":\"success\",\"data\":{\"id\":41,\"title\":\"\
-                    수정된 매거진\",\"summary\":\"매거진 요약\",\"featuredUserId\":454,\"featuredUserIntroduction\"\
-                    :\"우아한테크코스 출신 개발자의 경험을 소개합니다.\",\"author\":{\"handle\":\"@i3213f69128f84205b737\"\
+                  value: "{\"status\":\"success\",\"data\":{\"id\":193,\"title\":\"\
+                    수정된 매거진\",\"summary\":\"매거진 요약\",\"featuredUserId\":2479,\"featuredUserIntroduction\"\
+                    :\"우아한테크코스 출신 개발자의 경험을 소개합니다.\",\"author\":{\"handle\":\"@i94d4c6b2957e4d9e9925\"\
                     ,\"displayName\":\"편집자\",\"avatarUrl\":null},\"thumbnailMediaId\"\
-                    :75,\"contentMd\":\"수정 본문\",\"status\":\"PUBLISHED\",\"publishedAt\"\
-                    :\"2026-11-11T07:28:16.680436Z\",\"createdAt\":\"2026-11-11T07:28:16.673451Z\"\
-                    ,\"updatedAt\":\"2026-11-11T07:28:16.755805Z\",\"thumbnailUrl\"\
-                    :\"https://cdn.example.com/test-prefix/magazine/393fe51c-c3ea-4a0e-be6c-25463812a5b2/thumbnail\"\
+                    :532,\"contentMd\":\"수정 본문\",\"status\":\"PUBLISHED\",\"publishedAt\"\
+                    :\"2026-11-11T10:26:37.623266Z\",\"createdAt\":\"2026-11-11T10:26:37.615660Z\"\
+                    ,\"updatedAt\":\"2026-11-11T10:26:37.647556Z\",\"thumbnailUrl\"\
+                    :\"https://cdn.example.com/test-prefix/magazine/7019e840-561d-4019-a62b-2197a314dcb7/thumbnail\"\
                     ,\"previewContentMd\":\"수정 본문\"}}"
     delete:
       tags:
@@ -4521,7 +4521,7 @@ paths:
         required: true
         schema:
           type: string
-        example: QqB6WZED8tBnuuvy_TigOd7owqYBdId8I8zLySplXwI
+        example: 5S6xK6buwzSt2SXjy0R7cU7tF4KS6_JxMnhaHr71q-0
       responses:
         "401":
           description: "401"
@@ -5823,9 +5823,9 @@ paths:
               examples:
                 user-verification-request-create-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"cohort\"\
-                    ,\"message\":\"cohort는 양의 정수여야 합니다.\"},{\"field\":\"nickname\"\
-                    ,\"message\":\"nickname은 필수입니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"nickname\"\
+                    ,\"message\":\"nickname은 필수입니다.\"},{\"field\":\"cohort\",\"message\"\
+                    :\"cohort는 양의 정수여야 합니다.\"}]}"
         "201":
           description: "201"
           content:
@@ -6364,7 +6364,7 @@ paths:
         required: true
         schema:
           type: string
-        example: fMxGIDM3r5om15PGQARusC8UGv1pd4UUSO89xKhfHO8
+        example: K9dRXUNAVZQ8aIWRMateJl6ifqBjFcoSXtnZTLmxvLo
       responses:
         "403":
           description: "403"
@@ -6417,15 +6417,15 @@ paths:
                 $ref: "#/components/schemas/MagazineAdminResponse"
               examples:
                 magazine-publish:
-                  value: "{\"status\":\"success\",\"data\":{\"id\":41,\"title\":\"\
-                    첫 매거진\",\"summary\":\"매거진 요약\",\"featuredUserId\":454,\"featuredUserIntroduction\"\
-                    :\"우아한테크코스 출신 개발자의 경험을 소개합니다.\",\"author\":{\"handle\":\"@i3213f69128f84205b737\"\
+                  value: "{\"status\":\"success\",\"data\":{\"id\":193,\"title\":\"\
+                    첫 매거진\",\"summary\":\"매거진 요약\",\"featuredUserId\":2479,\"featuredUserIntroduction\"\
+                    :\"우아한테크코스 출신 개발자의 경험을 소개합니다.\",\"author\":{\"handle\":\"@i94d4c6b2957e4d9e9925\"\
                     ,\"displayName\":\"편집자\",\"avatarUrl\":null},\"thumbnailMediaId\"\
-                    :75,\"contentMd\":\"![사진](media://76)\",\"status\":\"PUBLISHED\"\
-                    ,\"publishedAt\":\"2026-11-11T07:28:16.680436Z\",\"createdAt\"\
-                    :\"2026-11-11T07:28:16.673451Z\",\"updatedAt\":\"2026-11-11T07:28:16.681198Z\"\
-                    ,\"thumbnailUrl\":\"https://cdn.example.com/test-prefix/magazine/393fe51c-c3ea-4a0e-be6c-25463812a5b2/thumbnail\"\
-                    ,\"previewContentMd\":\"![사진](https://cdn.example.com/test-prefix/magazine/e653c4f8-1fc9-4851-a8dd-99034dfd571e/display)\"\
+                    :532,\"contentMd\":\"![사진](media://533)\",\"status\":\"PUBLISHED\"\
+                    ,\"publishedAt\":\"2026-11-11T10:26:37.623266Z\",\"createdAt\"\
+                    :\"2026-11-11T10:26:37.615660Z\",\"updatedAt\":\"2026-11-11T10:26:37.624329Z\"\
+                    ,\"thumbnailUrl\":\"https://cdn.example.com/test-prefix/magazine/7019e840-561d-4019-a62b-2197a314dcb7/thumbnail\"\
+                    ,\"previewContentMd\":\"![사진](https://cdn.example.com/test-prefix/magazine/b43b828e-8fb6-4b48-a3ab-6e17f6b90011/display)\"\
                     }}"
   /api/v1/admin/magazines/{magazineId}/unpublish:
     post:
@@ -6455,7 +6455,7 @@ paths:
         required: true
         schema:
           type: string
-        example: NcpAdmoRfgiaug5vS3KYc5hA4O2_zVeTv7NzGQSwHqE
+        example: 7k3dLK5LG8pBHfma5jQsnwzYq3yJJSMaxuAheQfbH9I
       responses:
         "403":
           description: "403"
@@ -6478,14 +6478,14 @@ paths:
                 $ref: "#/components/schemas/MagazineAdminResponse"
               examples:
                 magazine-unpublish:
-                  value: "{\"status\":\"success\",\"data\":{\"id\":41,\"title\":\"\
-                    수정된 매거진\",\"summary\":\"매거진 요약\",\"featuredUserId\":454,\"featuredUserIntroduction\"\
-                    :\"우아한테크코스 출신 개발자의 경험을 소개합니다.\",\"author\":{\"handle\":\"@i3213f69128f84205b737\"\
+                  value: "{\"status\":\"success\",\"data\":{\"id\":193,\"title\":\"\
+                    수정된 매거진\",\"summary\":\"매거진 요약\",\"featuredUserId\":2479,\"featuredUserIntroduction\"\
+                    :\"우아한테크코스 출신 개발자의 경험을 소개합니다.\",\"author\":{\"handle\":\"@i94d4c6b2957e4d9e9925\"\
                     ,\"displayName\":\"편집자\",\"avatarUrl\":null},\"thumbnailMediaId\"\
-                    :75,\"contentMd\":\"수정 본문\",\"status\":\"DRAFT\",\"publishedAt\"\
-                    :\"2026-11-11T07:28:16.680436Z\",\"createdAt\":\"2026-11-11T07:28:16.673451Z\"\
-                    ,\"updatedAt\":\"2026-11-11T07:28:16.793518Z\",\"thumbnailUrl\"\
-                    :\"https://cdn.example.com/test-prefix/magazine/393fe51c-c3ea-4a0e-be6c-25463812a5b2/thumbnail\"\
+                    :532,\"contentMd\":\"수정 본문\",\"status\":\"DRAFT\",\"publishedAt\"\
+                    :\"2026-11-11T10:26:37.623266Z\",\"createdAt\":\"2026-11-11T10:26:37.615660Z\"\
+                    ,\"updatedAt\":\"2026-11-11T10:26:37.687684Z\",\"thumbnailUrl\"\
+                    :\"https://cdn.example.com/test-prefix/magazine/7019e840-561d-4019-a62b-2197a314dcb7/thumbnail\"\
                     ,\"previewContentMd\":\"수정 본문\"}}"
         "401":
           description: "401"
@@ -8626,6 +8626,74 @@ components:
             - type: boolean
             - type: string
             - type: number
+    ProjectTopicsSuccessResponse:
+      title: ProjectTopicsSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - groups
+          - totalCount
+          type: object
+          properties:
+            groups:
+              type: array
+              description: "직군 묶음. COMMON, BE, FE, AN 순이고 주제가 없는 묶음은 빠진다"
+              items:
+                required:
+                - code
+                - name
+                - projectCount
+                - shortName
+                - topics
+                type: object
+                properties:
+                  projectCount:
+                    type: number
+                    description: 그 묶음 주제를 하나라도 다룬 프로젝트 수
+                  code:
+                    type: string
+                    description: 묶음 코드
+                    enum:
+                    - COMMON
+                    - BE
+                    - FE
+                    - AN
+                  topics:
+                    type: array
+                    description: "묶음 안 주제. 프로젝트가 많은 순, 같으면 이름순"
+                    items:
+                      required:
+                      - name
+                      - projectCount
+                      - topicId
+                      type: object
+                      properties:
+                        projectCount:
+                          type: number
+                          description: 그 주제를 다룬 프로젝트 수. 1 이상
+                        topicId:
+                          type: string
+                          description: 주제 id. 프로젝트 목록 조회의 topicId 조건으로 쓴다
+                        name:
+                          type: string
+                          description: 주제 이름
+                  name:
+                    type: string
+                    description: "묶음 이름. 공통, 백엔드, 프론트엔드, 안드로이드"
+                  shortName:
+                    type: string
+                    description: "짧은 이름. 공통, BE, FE, AN"
+            totalCount:
+              type: number
+              description: 주제가 하나라도 있는 공개 프로젝트 수
+          description: 기술 주제 목록
+        status:
+          type: string
+          description: 응답 상태
     ProjectCareerCardsSuccessResponse:
       title: ProjectCareerCardsSuccessResponse
       required:
@@ -8682,7 +8750,8 @@ components:
                       properties:
                         name:
                           type: string
-                          description: "등록된 프로젝트면 팀 이름, 등록 전 팀이면 수집 때 저장한 팀 이름"
+                          description: "등록된 프로젝트면 프로젝트 이름, 등록 전 팀이면 수집 때 저장한 프로젝트\
+                            \ 이름"
                           nullable: true
                         logoUrl:
                           type: string
@@ -8758,74 +8827,6 @@ components:
                   - type: boolean
                   - type: string
                   - type: number
-        status:
-          type: string
-          description: 응답 상태
-    ProjectTopicsSuccessResponse:
-      title: ProjectTopicsSuccessResponse
-      required:
-      - data
-      - status
-      type: object
-      properties:
-        data:
-          required:
-          - groups
-          - totalCount
-          type: object
-          properties:
-            groups:
-              type: array
-              description: "직군 묶음. COMMON, BE, FE, AN 순이고 주제가 없는 묶음은 빠진다"
-              items:
-                required:
-                - code
-                - name
-                - projectCount
-                - shortName
-                - topics
-                type: object
-                properties:
-                  projectCount:
-                    type: number
-                    description: 그 묶음 주제를 하나라도 다룬 프로젝트 수
-                  code:
-                    type: string
-                    description: 묶음 코드
-                    enum:
-                    - COMMON
-                    - BE
-                    - FE
-                    - AN
-                  topics:
-                    type: array
-                    description: "묶음 안 주제. 프로젝트가 많은 순, 같으면 이름순"
-                    items:
-                      required:
-                      - name
-                      - projectCount
-                      - topicId
-                      type: object
-                      properties:
-                        projectCount:
-                          type: number
-                          description: 그 주제를 다룬 프로젝트 수. 1 이상
-                        topicId:
-                          type: string
-                          description: 주제 id. 프로젝트 목록 조회의 topicId 조건으로 쓴다
-                        name:
-                          type: string
-                          description: 주제 이름
-                  name:
-                    type: string
-                    description: "묶음 이름. 공통, 백엔드, 프론트엔드, 안드로이드"
-                  shortName:
-                    type: string
-                    description: "짧은 이름. 공통, BE, FE, AN"
-            totalCount:
-              type: number
-              description: 주제가 하나라도 있는 공개 프로젝트 수
-          description: 기술 주제 목록
         status:
           type: string
           description: 응답 상태
@@ -9333,155 +9334,6 @@ components:
               type: number
               description: 지금 고른 직군의 공고 수. 직군을 고르지 않았으면 allCount와 같다
           description: 페이지네이션과 직군별 개수
-        status:
-          type: string
-          description: 응답 상태
-    ResourceDetailSuccessResponse:
-      title: ResourceDetailSuccessResponse
-      required:
-      - data
-      - status
-      type: object
-      properties:
-        data:
-          required:
-          - experiences
-          - keyPoints
-          - resourceId
-          - source
-          - techTags
-          - title
-          - url
-          type: object
-          properties:
-            summary:
-              type: string
-              description: 한줄 소개
-              nullable: true
-            techTags:
-              type: array
-              description: 자료에 붙은 기술 태그. 원래 표기 그대로. 없으면 빈 배열
-              items:
-                type: string
-            resourceId:
-              type: number
-              description: 자료 ID
-            publishedAt:
-              type: string
-              description: 원문 게시 시각(UTC)
-              nullable: true
-            team:
-              type: object
-              properties:
-                name:
-                  type: string
-                  description: 팀 이름
-                  nullable: true
-                logoUrl:
-                  type: string
-                  description: 팀 로고 이미지 주소(작은 크기). logoMediaId가 없거나 이미지가 준비되지 않았으면
-                    null
-                  nullable: true
-                logoMediaId:
-                  type: number
-                  description: 프로젝트 로고 미디어 ID. 없으면 null
-                  nullable: true
-                projectSlug:
-                  type: string
-                  description: 등록된 프로젝트 slug. 등록 전 팀이면 null
-                  nullable: true
-              description: 자료를 만든 팀. 없으면 null
-            source:
-              type: string
-              description: 자료 원천
-            title:
-              type: string
-              description: 자료 제목
-            experiences:
-              type: array
-              description: 어떤 문제를 어떻게 풀었나. 없으면 빈 배열
-              items:
-                required:
-                - problem
-                - solution
-                - techs
-                type: object
-                properties:
-                  result:
-                    type: string
-                    description: 결과
-                    nullable: true
-                  problem:
-                    type: string
-                    description: 문제
-                  solution:
-                    type: string
-                    description: 해결
-                  cause:
-                    type: string
-                    description: 원인
-                    nullable: true
-                  techs:
-                    type: array
-                    description: 쓴 기술. 없으면 빈 배열
-                    items:
-                      type: string
-            platform:
-              type: string
-              description: 블로그 플랫폼. 블로그가 아니면 null
-              nullable: true
-            url:
-              type: string
-              description: 원문 주소
-            linkPreview:
-              type: object
-              properties:
-                imageUrl:
-                  type: string
-                  description: 썸네일 주소(og:image)
-                  nullable: true
-                siteName:
-                  type: string
-                  description: 사이트 이름(og:site_name)
-                  nullable: true
-                description:
-                  type: string
-                  description: 원문 설명(og:description)
-                  nullable: true
-                title:
-                  type: string
-                  description: 원문 제목(og:title)
-                  nullable: true
-              description: 원문 링크 미리보기. 아직 모으지 못했거나 실패했으면 null
-            faviconUrl:
-              type: string
-              description: "블로그 출처 아이콘 주소. tistory, velog, rilog 는 플랫폼 공식 아이콘, 그 밖\
-                의 블로그(개인 도메인 등)는 원문 페이지의 파비콘. 블로그가 아니거나 아직 수집 전이면 null"
-              nullable: true
-            keyPoints:
-              type: array
-              description: 이 자료에서 배울 점. 없으면 빈 배열
-              items:
-                type: string
-            topic:
-              type: object
-              properties:
-                topicId:
-                  type: string
-                  description: 기술 주제 ID
-                  nullable: true
-                name:
-                  type: string
-                  description: 기술 주제 이름
-                  nullable: true
-              description: 자료의 기술 주제. 없으면 null
-            contentType:
-              type: string
-              description: "PR과 팀 문서의 종류(problem_solving, tech_decision, implementation,\
-                \ chore, design, operation, experiment, convention, plan, other).\
-                \ 블로그와 테코톡은 null"
-              nullable: true
-          description: 자료 상세
         status:
           type: string
           description: 응답 상태
@@ -11152,77 +11004,6 @@ components:
               updatedAt:
                 type: string
                 description: 수정 시각
-        status:
-          type: string
-          description: 응답 상태
-    ResourceRecentSuccessResponse:
-      title: ResourceRecentSuccessResponse
-      required:
-      - data
-      - status
-      type: object
-      properties:
-        data:
-          type: array
-          description: 자료 카드 목록
-          items:
-            required:
-            - publishedAt
-            - resourceId
-            - source
-            - summary
-            - title
-            - url
-            type: object
-            properties:
-              summary:
-                type: string
-                description: 한줄 소개
-              faviconUrl:
-                type: string
-                description: "블로그 출처 아이콘 주소. tistory, velog, rilog 는 플랫폼 공식 아이콘, 그\
-                  \ 밖의 블로그(개인 도메인 등)는 원문 페이지의 파비콘. 블로그가 아니거나 아직 수집 전이면 null"
-                nullable: true
-              resourceId:
-                type: number
-                description: 자료 ID. 자료 상세 조회에 쓴다
-              publishedAt:
-                type: string
-                description: 원문 게시 시각(UTC)
-              team:
-                type: object
-                properties:
-                  name:
-                    type: string
-                    description: 팀 이름
-                    nullable: true
-                  logoUrl:
-                    type: string
-                    description: 팀 로고 이미지 주소(작은 크기). logoMediaId가 없거나 이미지가 준비되지 않았으면
-                      null
-                    nullable: true
-                  logoMediaId:
-                    type: number
-                    description: 프로젝트 로고 미디어 ID. 없으면 null
-                    nullable: true
-                  projectSlug:
-                    type: string
-                    description: 등록된 프로젝트 slug. 등록 전 팀이면 null
-                    nullable: true
-                description: 자료를 만든 팀. 없으면 null
-              source:
-                type: string
-                description: 자료 원천
-              title:
-                type: string
-                description: 자료 제목
-              platform:
-                type: string
-                description: 블로그 플랫폼. 블로그가 아니면 null
-                nullable: true
-              url:
-                type: string
-                description: 원문 주소
         status:
           type: string
           description: 응답 상태
@@ -13775,6 +13556,77 @@ components:
         status:
           type: string
           description: 응답 상태
+    ResourceRecentSuccessResponse:
+      title: ResourceRecentSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          type: array
+          description: 자료 카드 목록
+          items:
+            required:
+            - publishedAt
+            - resourceId
+            - source
+            - summary
+            - title
+            - url
+            type: object
+            properties:
+              summary:
+                type: string
+                description: 한줄 소개
+              faviconUrl:
+                type: string
+                description: "블로그 출처 아이콘 주소. tistory, velog, rilog 는 플랫폼 공식 아이콘, 그\
+                  \ 밖의 블로그(개인 도메인 등)는 원문 페이지의 파비콘. 블로그가 아니거나 아직 수집 전이면 null"
+                nullable: true
+              resourceId:
+                type: number
+                description: 자료 ID. 자료 상세 조회에 쓴다
+              publishedAt:
+                type: string
+                description: 원문 게시 시각(UTC)
+              team:
+                type: object
+                properties:
+                  name:
+                    type: string
+                    description: "등록된 프로젝트면 프로젝트 이름, 등록 전 팀이면 수집 때 저장한 프로젝트 이름"
+                    nullable: true
+                  logoUrl:
+                    type: string
+                    description: 팀 로고 이미지 주소(작은 크기). logoMediaId가 없거나 이미지가 준비되지 않았으면
+                      null
+                    nullable: true
+                  logoMediaId:
+                    type: number
+                    description: 프로젝트 로고 미디어 ID. 없으면 null
+                    nullable: true
+                  projectSlug:
+                    type: string
+                    description: 등록된 프로젝트 slug. 등록 전 팀이면 null
+                    nullable: true
+                description: 자료를 만든 팀. 없으면 null
+              source:
+                type: string
+                description: 자료 원천
+              title:
+                type: string
+                description: 자료 제목
+              platform:
+                type: string
+                description: 블로그 플랫폼. 블로그가 아니면 null
+                nullable: true
+              url:
+                type: string
+                description: 원문 주소
+        status:
+          type: string
+          description: 응답 상태
     ProjectCommentDeleteSuccessResponse:
       title: ProjectCommentDeleteSuccessResponse
       required:
@@ -14419,6 +14271,225 @@ components:
                   nullable: true
               description: 댓글 본문에서 추출한 첫 URL의 링크 미리보기. URL이 없으면 null
           description: 생성된 댓글
+        status:
+          type: string
+          description: 응답 상태
+    ResourceSearchSuccessResponse:
+      title: ResourceSearchSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            documents:
+              required:
+              - items
+              type: object
+              properties:
+                items:
+                  type: array
+                  description: "PR과 팀 문서(github-pr, github-teamdoc, github-wiki, github-discussion),\
+                    \ 최대 20건"
+                  items:
+                    required:
+                    - resourceId
+                    - source
+                    - title
+                    - url
+                    type: object
+                    properties:
+                      summary:
+                        type: string
+                        description: 한줄 소개
+                        nullable: true
+                      faviconUrl:
+                        type: string
+                        description: "블로그 출처 아이콘 주소. tistory, velog, rilog 는 플랫폼 공\
+                          식 아이콘, 그 밖의 블로그(개인 도메인 등)는 원문 페이지의 파비콘. 블로그가 아니거나 아직 수집\
+                          \ 전이면 null"
+                        nullable: true
+                      resourceId:
+                        type: number
+                        description: 자료 ID. 자료 상세 조회에 쓴다
+                      publishedAt:
+                        type: string
+                        description: 원문 게시 시각(UTC)
+                        nullable: true
+                      team:
+                        type: object
+                        properties:
+                          name:
+                            type: string
+                            description: "등록된 프로젝트면 프로젝트 이름, 등록 전 팀이면 수집 때 저장한 프로젝\
+                              트 이름"
+                            nullable: true
+                          logoUrl:
+                            type: string
+                            description: 팀 로고 이미지 주소(작은 크기). logoMediaId가 없거나 이미지가
+                              준비되지 않았으면 null
+                            nullable: true
+                          logoMediaId:
+                            type: number
+                            description: 프로젝트 로고 미디어 ID. 없으면 null
+                            nullable: true
+                          projectSlug:
+                            type: string
+                            description: 등록된 프로젝트 slug. 등록 전 팀이면 null
+                            nullable: true
+                        description: 자료를 만든 팀. 팀이 없거나 알 수 없으면 null
+                      source:
+                        type: string
+                        description: 자료 원천
+                      title:
+                        type: string
+                        description: 자료 제목
+                      platform:
+                        type: string
+                        description: 블로그 플랫폼. 블로그가 아니면 null
+                        nullable: true
+                      url:
+                        type: string
+                        description: 원문 주소
+            blogs:
+              required:
+              - items
+              type: object
+              properties:
+                items:
+                  type: array
+                  description: "블로그(blog-post), 최대 20건"
+                  items:
+                    required:
+                    - resourceId
+                    - source
+                    - title
+                    - url
+                    type: object
+                    properties:
+                      summary:
+                        type: string
+                        description: 한줄 소개
+                        nullable: true
+                      faviconUrl:
+                        type: string
+                        description: "블로그 출처 아이콘 주소. tistory, velog, rilog 는 플랫폼 공\
+                          식 아이콘, 그 밖의 블로그(개인 도메인 등)는 원문 페이지의 파비콘. 블로그가 아니거나 아직 수집\
+                          \ 전이면 null"
+                        nullable: true
+                      resourceId:
+                        type: number
+                        description: 자료 ID. 자료 상세 조회에 쓴다
+                      publishedAt:
+                        type: string
+                        description: 원문 게시 시각(UTC)
+                        nullable: true
+                      team:
+                        type: object
+                        properties:
+                          name:
+                            type: string
+                            description: "등록된 프로젝트면 프로젝트 이름, 등록 전 팀이면 수집 때 저장한 프로젝\
+                              트 이름"
+                            nullable: true
+                          logoUrl:
+                            type: string
+                            description: 팀 로고 이미지 주소(작은 크기). logoMediaId가 없거나 이미지가
+                              준비되지 않았으면 null
+                            nullable: true
+                          logoMediaId:
+                            type: number
+                            description: 프로젝트 로고 미디어 ID. 없으면 null
+                            nullable: true
+                          projectSlug:
+                            type: string
+                            description: 등록된 프로젝트 slug. 등록 전 팀이면 null
+                            nullable: true
+                        description: 자료를 만든 팀. 팀이 없거나 알 수 없으면 null
+                      source:
+                        type: string
+                        description: 자료 원천
+                      title:
+                        type: string
+                        description: 자료 제목
+                      platform:
+                        type: string
+                        description: 블로그 플랫폼. 블로그가 아니면 null
+                        nullable: true
+                      url:
+                        type: string
+                        description: 원문 주소
+            talks:
+              required:
+              - items
+              type: object
+              properties:
+                items:
+                  type: array
+                  description: "테코톡(youtube-tekotalk), 최대 6건"
+                  items:
+                    required:
+                    - resourceId
+                    - source
+                    - title
+                    - url
+                    type: object
+                    properties:
+                      summary:
+                        type: string
+                        description: 한줄 소개
+                        nullable: true
+                      faviconUrl:
+                        type: string
+                        description: "블로그 출처 아이콘 주소. tistory, velog, rilog 는 플랫폼 공\
+                          식 아이콘, 그 밖의 블로그(개인 도메인 등)는 원문 페이지의 파비콘. 블로그가 아니거나 아직 수집\
+                          \ 전이면 null"
+                        nullable: true
+                      resourceId:
+                        type: number
+                        description: 자료 ID. 자료 상세 조회에 쓴다
+                      publishedAt:
+                        type: string
+                        description: 원문 게시 시각(UTC)
+                        nullable: true
+                      team:
+                        type: object
+                        properties:
+                          name:
+                            type: string
+                            description: "등록된 프로젝트면 프로젝트 이름, 등록 전 팀이면 수집 때 저장한 프로젝\
+                              트 이름"
+                            nullable: true
+                          logoUrl:
+                            type: string
+                            description: 팀 로고 이미지 주소(작은 크기). logoMediaId가 없거나 이미지가
+                              준비되지 않았으면 null
+                            nullable: true
+                          logoMediaId:
+                            type: number
+                            description: 프로젝트 로고 미디어 ID. 없으면 null
+                            nullable: true
+                          projectSlug:
+                            type: string
+                            description: 등록된 프로젝트 slug. 등록 전 팀이면 null
+                            nullable: true
+                        description: 자료를 만든 팀. 팀이 없거나 알 수 없으면 null
+                      source:
+                        type: string
+                        description: 자료 원천
+                      title:
+                        type: string
+                        description: 자료 제목
+                      platform:
+                        type: string
+                        description: 블로그 플랫폼. 블로그가 아니면 null
+                        nullable: true
+                      url:
+                        type: string
+                        description: 원문 주소
+          description: 섹션별 검색 결과
         status:
           type: string
           description: 응답 상태
@@ -15815,6 +15886,155 @@ components:
         status:
           type: string
           description: 응답 상태
+    ResourceDetailSuccessResponse:
+      title: ResourceDetailSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - experiences
+          - keyPoints
+          - resourceId
+          - source
+          - techTags
+          - title
+          - url
+          type: object
+          properties:
+            summary:
+              type: string
+              description: 한줄 소개
+              nullable: true
+            techTags:
+              type: array
+              description: 자료에 붙은 기술 태그. 원래 표기 그대로. 없으면 빈 배열
+              items:
+                type: string
+            resourceId:
+              type: number
+              description: 자료 ID
+            publishedAt:
+              type: string
+              description: 원문 게시 시각(UTC)
+              nullable: true
+            team:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: "등록된 프로젝트면 프로젝트 이름, 등록 전 팀이면 수집 때 저장한 프로젝트 이름"
+                  nullable: true
+                logoUrl:
+                  type: string
+                  description: 팀 로고 이미지 주소(작은 크기). logoMediaId가 없거나 이미지가 준비되지 않았으면
+                    null
+                  nullable: true
+                logoMediaId:
+                  type: number
+                  description: 프로젝트 로고 미디어 ID. 없으면 null
+                  nullable: true
+                projectSlug:
+                  type: string
+                  description: 등록된 프로젝트 slug. 등록 전 팀이면 null
+                  nullable: true
+              description: 자료를 만든 팀. 없으면 null
+            source:
+              type: string
+              description: 자료 원천
+            title:
+              type: string
+              description: 자료 제목
+            experiences:
+              type: array
+              description: 어떤 문제를 어떻게 풀었나. 없으면 빈 배열
+              items:
+                required:
+                - problem
+                - solution
+                - techs
+                type: object
+                properties:
+                  result:
+                    type: string
+                    description: 결과
+                    nullable: true
+                  problem:
+                    type: string
+                    description: 문제
+                  solution:
+                    type: string
+                    description: 해결
+                  cause:
+                    type: string
+                    description: 원인
+                    nullable: true
+                  techs:
+                    type: array
+                    description: 쓴 기술. 없으면 빈 배열
+                    items:
+                      type: string
+            platform:
+              type: string
+              description: 블로그 플랫폼. 블로그가 아니면 null
+              nullable: true
+            url:
+              type: string
+              description: 원문 주소
+            linkPreview:
+              type: object
+              properties:
+                imageUrl:
+                  type: string
+                  description: 썸네일 주소(og:image)
+                  nullable: true
+                siteName:
+                  type: string
+                  description: 사이트 이름(og:site_name)
+                  nullable: true
+                description:
+                  type: string
+                  description: 원문 설명(og:description)
+                  nullable: true
+                title:
+                  type: string
+                  description: 원문 제목(og:title)
+                  nullable: true
+              description: 원문 링크 미리보기. 아직 모으지 못했거나 실패했으면 null
+            faviconUrl:
+              type: string
+              description: "블로그 출처 아이콘 주소. tistory, velog, rilog 는 플랫폼 공식 아이콘, 그 밖\
+                의 블로그(개인 도메인 등)는 원문 페이지의 파비콘. 블로그가 아니거나 아직 수집 전이면 null"
+              nullable: true
+            keyPoints:
+              type: array
+              description: 이 자료에서 배울 점. 없으면 빈 배열
+              items:
+                type: string
+            topic:
+              type: object
+              properties:
+                topicId:
+                  type: string
+                  description: 기술 주제 ID
+                  nullable: true
+                name:
+                  type: string
+                  description: 기술 주제 이름
+                  nullable: true
+              description: 자료의 기술 주제. 없으면 null
+            contentType:
+              type: string
+              description: "PR과 팀 문서의 종류(problem_solving, tech_decision, implementation,\
+                \ chore, design, operation, experiment, convention, plan, other).\
+                \ 블로그와 테코톡은 null"
+              nullable: true
+          description: 자료 상세
+        status:
+          type: string
+          description: 응답 상태
     MagazineFindAllSuccessResponse:
       title: MagazineFindAllSuccessResponse
       required:
@@ -15956,222 +16176,6 @@ components:
               reportId:
                 type: number
                 description: 제보 ID. 이미 보낸 자료면 처음 제보 ID
-        status:
-          type: string
-          description: 응답 상태
-    ResourceSearchSuccessResponse:
-      title: ResourceSearchSuccessResponse
-      required:
-      - data
-      - status
-      type: object
-      properties:
-        data:
-          type: object
-          properties:
-            documents:
-              required:
-              - items
-              type: object
-              properties:
-                items:
-                  type: array
-                  description: "PR과 팀 문서(github-pr, github-teamdoc, github-wiki, github-discussion),\
-                    \ 최대 20건"
-                  items:
-                    required:
-                    - resourceId
-                    - source
-                    - title
-                    - url
-                    type: object
-                    properties:
-                      summary:
-                        type: string
-                        description: 한줄 소개
-                        nullable: true
-                      faviconUrl:
-                        type: string
-                        description: "블로그 출처 아이콘 주소. tistory, velog, rilog 는 플랫폼 공\
-                          식 아이콘, 그 밖의 블로그(개인 도메인 등)는 원문 페이지의 파비콘. 블로그가 아니거나 아직 수집\
-                          \ 전이면 null"
-                        nullable: true
-                      resourceId:
-                        type: number
-                        description: 자료 ID. 자료 상세 조회에 쓴다
-                      publishedAt:
-                        type: string
-                        description: 원문 게시 시각(UTC)
-                        nullable: true
-                      team:
-                        type: object
-                        properties:
-                          name:
-                            type: string
-                            description: 팀 이름
-                            nullable: true
-                          logoUrl:
-                            type: string
-                            description: 팀 로고 이미지 주소(작은 크기). logoMediaId가 없거나 이미지가
-                              준비되지 않았으면 null
-                            nullable: true
-                          logoMediaId:
-                            type: number
-                            description: 프로젝트 로고 미디어 ID. 없으면 null
-                            nullable: true
-                          projectSlug:
-                            type: string
-                            description: 등록된 프로젝트 slug. 등록 전 팀이면 null
-                            nullable: true
-                        description: 자료를 만든 팀. 팀이 없거나 알 수 없으면 null
-                      source:
-                        type: string
-                        description: 자료 원천
-                      title:
-                        type: string
-                        description: 자료 제목
-                      platform:
-                        type: string
-                        description: 블로그 플랫폼. 블로그가 아니면 null
-                        nullable: true
-                      url:
-                        type: string
-                        description: 원문 주소
-            blogs:
-              required:
-              - items
-              type: object
-              properties:
-                items:
-                  type: array
-                  description: "블로그(blog-post), 최대 20건"
-                  items:
-                    required:
-                    - resourceId
-                    - source
-                    - title
-                    - url
-                    type: object
-                    properties:
-                      summary:
-                        type: string
-                        description: 한줄 소개
-                        nullable: true
-                      faviconUrl:
-                        type: string
-                        description: "블로그 출처 아이콘 주소. tistory, velog, rilog 는 플랫폼 공\
-                          식 아이콘, 그 밖의 블로그(개인 도메인 등)는 원문 페이지의 파비콘. 블로그가 아니거나 아직 수집\
-                          \ 전이면 null"
-                        nullable: true
-                      resourceId:
-                        type: number
-                        description: 자료 ID. 자료 상세 조회에 쓴다
-                      publishedAt:
-                        type: string
-                        description: 원문 게시 시각(UTC)
-                        nullable: true
-                      team:
-                        type: object
-                        properties:
-                          name:
-                            type: string
-                            description: 팀 이름
-                            nullable: true
-                          logoUrl:
-                            type: string
-                            description: 팀 로고 이미지 주소(작은 크기). logoMediaId가 없거나 이미지가
-                              준비되지 않았으면 null
-                            nullable: true
-                          logoMediaId:
-                            type: number
-                            description: 프로젝트 로고 미디어 ID. 없으면 null
-                            nullable: true
-                          projectSlug:
-                            type: string
-                            description: 등록된 프로젝트 slug. 등록 전 팀이면 null
-                            nullable: true
-                        description: 자료를 만든 팀. 팀이 없거나 알 수 없으면 null
-                      source:
-                        type: string
-                        description: 자료 원천
-                      title:
-                        type: string
-                        description: 자료 제목
-                      platform:
-                        type: string
-                        description: 블로그 플랫폼. 블로그가 아니면 null
-                        nullable: true
-                      url:
-                        type: string
-                        description: 원문 주소
-            talks:
-              required:
-              - items
-              type: object
-              properties:
-                items:
-                  type: array
-                  description: "테코톡(youtube-tekotalk), 최대 6건"
-                  items:
-                    required:
-                    - resourceId
-                    - source
-                    - title
-                    - url
-                    type: object
-                    properties:
-                      summary:
-                        type: string
-                        description: 한줄 소개
-                        nullable: true
-                      faviconUrl:
-                        type: string
-                        description: "블로그 출처 아이콘 주소. tistory, velog, rilog 는 플랫폼 공\
-                          식 아이콘, 그 밖의 블로그(개인 도메인 등)는 원문 페이지의 파비콘. 블로그가 아니거나 아직 수집\
-                          \ 전이면 null"
-                        nullable: true
-                      resourceId:
-                        type: number
-                        description: 자료 ID. 자료 상세 조회에 쓴다
-                      publishedAt:
-                        type: string
-                        description: 원문 게시 시각(UTC)
-                        nullable: true
-                      team:
-                        type: object
-                        properties:
-                          name:
-                            type: string
-                            description: 팀 이름
-                            nullable: true
-                          logoUrl:
-                            type: string
-                            description: 팀 로고 이미지 주소(작은 크기). logoMediaId가 없거나 이미지가
-                              준비되지 않았으면 null
-                            nullable: true
-                          logoMediaId:
-                            type: number
-                            description: 프로젝트 로고 미디어 ID. 없으면 null
-                            nullable: true
-                          projectSlug:
-                            type: string
-                            description: 등록된 프로젝트 slug. 등록 전 팀이면 null
-                            nullable: true
-                        description: 자료를 만든 팀. 팀이 없거나 알 수 없으면 null
-                      source:
-                        type: string
-                        description: 자료 원천
-                      title:
-                        type: string
-                        description: 자료 제목
-                      platform:
-                        type: string
-                        description: 블로그 플랫폼. 블로그가 아니면 null
-                        nullable: true
-                      url:
-                        type: string
-                        description: 원문 주소
-          description: 섹션별 검색 결과
         status:
           type: string
           description: 응답 상태
@@ -16424,60 +16428,6 @@ components:
         status:
           type: string
           description: 응답 상태
-    MagazineCommentDeleteSuccessResponse:
-      title: MagazineCommentDeleteSuccessResponse
-      required:
-      - data
-      - status
-      type: object
-      properties:
-        data:
-          required:
-          - deleted
-          - id
-          type: object
-          properties:
-            deleted:
-              type: boolean
-              description: 댓글 삭제 여부
-            id:
-              type: number
-              description: 삭제된 댓글 ID
-          description: 삭제된 댓글
-        status:
-          type: string
-          description: 응답 상태
-    NewsReactionSuccessResponse:
-      title: NewsReactionSuccessResponse
-      required:
-      - data
-      - status
-      type: object
-      properties:
-        data:
-          required:
-          - active
-          - likeCount
-          - newsId
-          - type
-          type: object
-          properties:
-            newsId:
-              type: number
-              description: 소식 ID
-            active:
-              type: boolean
-              description: 요청한 반응의 활성 상태
-            likeCount:
-              type: number
-              description: 소식 좋아요 수
-            type:
-              type: string
-              description: 반응 타입. 현재 LIKE만 지원하며 향후 확장할 수 있다.
-          description: 소식 반응 변경 결과
-        status:
-          type: string
-          description: 응답 상태
     ProjectTopicResourcesSuccessResponse:
       title: ProjectTopicResourcesSuccessResponse
       required:
@@ -16525,7 +16475,7 @@ components:
                     properties:
                       name:
                         type: string
-                        description: "등록된 프로젝트면 팀 이름, 등록 전 팀이면 수집 때 저장한 팀 이름"
+                        description: "등록된 프로젝트면 프로젝트 이름, 등록 전 팀이면 수집 때 저장한 프로젝트 이름"
                         nullable: true
                       logoUrl:
                         type: string
@@ -16587,7 +16537,7 @@ components:
                     properties:
                       name:
                         type: string
-                        description: "등록된 프로젝트면 팀 이름, 등록 전 팀이면 수집 때 저장한 팀 이름"
+                        description: "등록된 프로젝트면 프로젝트 이름, 등록 전 팀이면 수집 때 저장한 프로젝트 이름"
                         nullable: true
                       logoUrl:
                         type: string
@@ -16649,7 +16599,7 @@ components:
                     properties:
                       name:
                         type: string
-                        description: "등록된 프로젝트면 팀 이름, 등록 전 팀이면 수집 때 저장한 팀 이름"
+                        description: "등록된 프로젝트면 프로젝트 이름, 등록 전 팀이면 수집 때 저장한 프로젝트 이름"
                         nullable: true
                       logoUrl:
                         type: string
@@ -16693,6 +16643,60 @@ components:
                   description: 주제 이름
               description: 고른 주제
           description: 고른 주제의 자료
+        status:
+          type: string
+          description: 응답 상태
+    MagazineCommentDeleteSuccessResponse:
+      title: MagazineCommentDeleteSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - deleted
+          - id
+          type: object
+          properties:
+            deleted:
+              type: boolean
+              description: 댓글 삭제 여부
+            id:
+              type: number
+              description: 삭제된 댓글 ID
+          description: 삭제된 댓글
+        status:
+          type: string
+          description: 응답 상태
+    NewsReactionSuccessResponse:
+      title: NewsReactionSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - active
+          - likeCount
+          - newsId
+          - type
+          type: object
+          properties:
+            newsId:
+              type: number
+              description: 소식 ID
+            active:
+              type: boolean
+              description: 요청한 반응의 활성 상태
+            likeCount:
+              type: number
+              description: 소식 좋아요 수
+            type:
+              type: string
+              description: 반응 타입. 현재 LIKE만 지원하며 향후 확장할 수 있다.
+          description: 소식 반응 변경 결과
         status:
           type: string
           description: 응답 상태

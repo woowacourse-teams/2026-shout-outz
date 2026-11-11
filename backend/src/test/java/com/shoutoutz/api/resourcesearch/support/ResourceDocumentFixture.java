@@ -72,11 +72,12 @@ public class ResourceDocumentFixture {
                         INSERT INTO projects (
                             cohort, team_name, slug, title, tagline,
                             service_status, approval_status, github_repository_url, deleted_at
-                        ) VALUES (8, ?, ?, '테스트 프로젝트', '프로젝트 소개', 'OPERATING', ?, ?, ?)
+                        ) VALUES (8, ?, ?, ?, '프로젝트 소개', 'OPERATING', ?, ?, ?)
                         RETURNING id
                         """,
                 Long.class,
-                teamName, slug, approvalStatus, "https://github.com/woowacourse-teams/" + slug, deletedAt
+                // 카드는 프로젝트 이름(title)을 보여 준다. 팀 이름(team_name)은 일부러 다르게 넣어 섞이지 않았는지 확인한다
+                teamName + " 팀", slug, teamName, approvalStatus, "https://github.com/woowacourse-teams/" + slug, deletedAt
         );
     }
 
