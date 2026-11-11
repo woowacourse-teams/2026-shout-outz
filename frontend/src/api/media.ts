@@ -18,6 +18,7 @@ const MEDIA_PATH = '/api/v1/media';
  * - `MAGAZINE_THUMBNAIL` MagazineSaveRequest.thumbnailMediaId
  * - `PROJECT_DESCRIPTION` ProjectCreateRequest.descriptionMd
  * - `PROJECT_THUMBNAIL`   ProjectCreateRequest.thumbnailImageId
+ * - `PROJECT_LOGO`        ProjectCreateRequest.logoImageId
  * - `USER_AVATAR`         UserProfileUpdateRequest.avatarImageId
  */
 export type MediaPurpose =
@@ -27,6 +28,7 @@ export type MediaPurpose =
   | 'MAGAZINE_THUMBNAIL'
   | 'PROJECT_DESCRIPTION'
   | 'PROJECT_THUMBNAIL'
+  | 'PROJECT_LOGO'
   | 'USER_AVATAR';
 
 interface MediaUploadTicket {
@@ -163,6 +165,9 @@ export async function uploadMedia(
 }
 
 export const uploadProjectThumbnail = (file: File) => uploadMedia(file, 'PROJECT_THUMBNAIL');
+
+/** 자료 카드 팀 이름 앞에 작게 보여 주는 팀 로고 */
+export const uploadProjectLogo = (file: File) => uploadMedia(file, 'PROJECT_LOGO');
 
 export const uploadHomeBannerImage = (file: File) => uploadMedia(file, 'HOME_BANNER');
 
