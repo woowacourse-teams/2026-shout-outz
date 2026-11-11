@@ -47,6 +47,21 @@ public class ResourceDocumentFixture {
         return project(slug, teamName, "APPROVED", Timestamp.from(Instant.now()));
     }
 
+    public void removalReport(long documentId, String status) {
+        long projectId = approvedProject("report-" + UUID.randomUUID().toString().substring(0, 8), "제보 팀");
+        jdbcTemplate.update(
+                """
+                        INSERT INTO resource_reports (
+                            project_id, user_id, kind, resource_source, resource_external_key, status, created_at, updated_at
+                        )
+                        SELECT ?, ?, 'REMOVE', source, external_key, ?, now(), now()
+                        FROM resource_documents
+                        WHERE id = ?
+                        """,
+                projectId, user(), status, documentId
+        );
+    }
+
     public long logoMediaIdOf(long projectId) {
         return jdbcTemplate.queryForObject("SELECT thumbnail_media_id FROM projects WHERE id = ?", Long.class, projectId);
     }

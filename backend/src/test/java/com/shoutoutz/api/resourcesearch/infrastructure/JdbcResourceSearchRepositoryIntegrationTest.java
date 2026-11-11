@@ -9,6 +9,7 @@ import static org.assertj.core.api.Assertions.within;
 import com.shoutoutz.api.resourcesearch.application.ResourceSearchRepository;
 import com.shoutoutz.api.resourcesearch.application.dto.ResourceSearchCandidate;
 import com.shoutoutz.api.resourcesearch.domain.ResourceTrack;
+import com.shoutoutz.api.resourcesearch.support.ResourceDocumentFixture;
 import com.shoutoutz.api.resourcesearch.support.ResourceSearchFixture;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -32,10 +33,12 @@ class JdbcResourceSearchRepositoryIntegrationTest {
     private JdbcTemplate jdbcTemplate;
 
     private ResourceSearchFixture fixture;
+    private ResourceDocumentFixture documents;
 
     @BeforeEach
     void setUp() {
         fixture = new ResourceSearchFixture(jdbcTemplate);
+        documents = new ResourceDocumentFixture(jdbcTemplate);
     }
 
     @Test
@@ -87,6 +90,22 @@ class JdbcResourceSearchRepositoryIntegrationTest {
         long available = fixture.intro(fixture.document(ResourceTrack.BE), vector(0, 1));
 
         assertThat(search(ResourceTrack.BE, 10)).extracting(candidate -> candidate.chunk().chunkId()).containsExactly(available);
+    }
+
+    @Test
+    void 제보로_삭제가_승인된_자료는_제외하고_대기와_거절된_제보의_자료는_남긴다() {
+        long accepted = fixture.document(ResourceTrack.BE);
+        fixture.intro(accepted, vector(1, 0));
+        documents.removalReport(accepted, "ACCEPTED");
+        long open = fixture.document(ResourceTrack.BE);
+        long openChunk = fixture.intro(open, vector(1, 0));
+        documents.removalReport(open, "OPEN");
+        long rejected = fixture.document(ResourceTrack.BE);
+        long rejectedChunk = fixture.intro(rejected, vector(1, 0));
+        documents.removalReport(rejected, "REJECTED");
+
+        assertThat(search(ResourceTrack.BE, 10)).extracting(candidate -> candidate.chunk().chunkId())
+                .containsExactly(openChunk, rejectedChunk);
     }
 
     @Test
