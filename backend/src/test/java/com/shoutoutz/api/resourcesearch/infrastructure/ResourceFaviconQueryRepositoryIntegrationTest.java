@@ -35,18 +35,25 @@ class ResourceFaviconQueryRepositoryIntegrationTest {
     }
 
     @Test
-    @DisplayName("수집이 끝난 링크 미리보기의 파비콘만 자료 ID별로 준다")
-    void findsFaviconsOfReadyPreviews() {
+    @DisplayName("마지막으로 받은 파비콘을 수집 상태와 관계없이 자료 ID별로 주고, 받은 적이 없으면 뺀다")
+    void findsLastCollectedFavicons() {
         long ready = fixture.document("blog-post").save();
-        long pending = fixture.document("blog-post").save();
-        long withoutFavicon = fixture.document("blog-post").save();
+        long refetching = fixture.document("blog-post").save();
+        long failed = fixture.document("blog-post").save();
+        long neverCollected = fixture.document("blog-post").save();
         long notLinked = fixture.document("blog-post").save();
         link(ready, "READY", "https://jun.dev/favicon.png");
-        link(pending, "PENDING", "https://pending.dev/favicon.png");
-        link(withoutFavicon, "READY", null);
+        link(refetching, "PROCESSING", "https://refetching.dev/favicon.png");
+        link(failed, "FAILED", "https://down.dev/favicon.png");
+        link(neverCollected, "PENDING", null);
 
-        assertThat(resourceFaviconQueryRepository.findFaviconUrls(List.of(ready, pending, withoutFavicon, notLinked)))
-                .containsExactlyEntriesOf(Map.of(ready, "https://jun.dev/favicon.png"));
+        assertThat(resourceFaviconQueryRepository.findFaviconUrls(
+                List.of(ready, refetching, failed, neverCollected, notLinked)))
+                .containsOnly(
+                        Map.entry(ready, "https://jun.dev/favicon.png"),
+                        Map.entry(refetching, "https://refetching.dev/favicon.png"),
+                        Map.entry(failed, "https://down.dev/favicon.png")
+                );
         assertThat(resourceFaviconQueryRepository.findFaviconUrls(List.of())).isEmpty();
     }
 

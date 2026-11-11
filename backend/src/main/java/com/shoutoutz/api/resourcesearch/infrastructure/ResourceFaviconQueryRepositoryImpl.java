@@ -13,12 +13,15 @@ import org.springframework.stereotype.Repository;
 @RequiredArgsConstructor
 public class ResourceFaviconQueryRepositoryImpl implements ResourceFaviconQueryRepository {
 
+    /**
+     * 수집 상태와 관계없이 마지막으로 받은 파비콘을 준다. 7일마다 다시 받는 동안이나 사이트가 잠깐 죽어 실패한 동안에도
+     * 이미 보이던 아이콘이 사라지지 않게 하기 위해서다. 실패해도 저장된 값은 지워지지 않고, 성공하면 새 값으로 바뀐다.
+     */
     private static final String FIND_FAVICON_URLS_SQL = """
             SELECT ref.document_id, preview.favicon_url
             FROM resource_link_preview_refs ref
             JOIN link_preview_cache preview ON preview.id = ref.cache_id
             WHERE ref.document_id IN (:resourceIds)
-              AND preview.status = 'READY'
               AND preview.favicon_url IS NOT NULL
             """;
 

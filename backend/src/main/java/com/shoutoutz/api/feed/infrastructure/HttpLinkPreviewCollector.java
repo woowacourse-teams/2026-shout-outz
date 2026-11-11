@@ -8,6 +8,7 @@ import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.Optional;
 import org.apache.hc.client5.http.classic.methods.HttpGet;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
@@ -236,8 +237,19 @@ public class HttpLinkPreviewCollector implements LinkPreviewCollector {
                 limit(description, 500),
                 imageUrl(meta(document, "property", "og:image"), pageUrl),
                 limit(siteName, 100),
-                imageUrl(FaviconSelector.select(document), pageUrl)
+                faviconUrl(document, pageUrl)
         );
+    }
+
+    /**
+     * 파비콘 후보를 좋은 순서로 검증해, 처음으로 가져올 수 있는 주소를 쓴다. 모두 안 되면 null 이다.
+     */
+    private String faviconUrl(Document document, URI pageUrl) {
+        return FaviconSelector.candidates(document, pageUrl).stream()
+                .map(candidate -> imageUrl(candidate, pageUrl))
+                .filter(Objects::nonNull)
+                .findFirst()
+                .orElse(null);
     }
 
     private String meta(Document document, String attribute, String value) {
