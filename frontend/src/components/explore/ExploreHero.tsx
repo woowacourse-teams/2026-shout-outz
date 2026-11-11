@@ -175,7 +175,7 @@ function SearchForm({ query, label, placeholder, onSearch }: SearchFormProps) {
       className="mx-auto mt-6 flex max-w-2xl min-w-0 items-center gap-2"
       onSubmit={(event) => {
         event.preventDefault();
-        // ASSUMPTION: 검색어를 지우고 검색하면 검색을 풀어 추천 검색어를 다시 보여 준다.
+        // 검색어를 지우고 검색하면 검색을 풀어 추천 검색어를 다시 보여 준다.
         if (input.trim() || query) onSearch(input.trim());
       }}
     >
