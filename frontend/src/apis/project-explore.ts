@@ -1,38 +1,20 @@
 import { infiniteQueryOptions, queryOptions } from '@tanstack/react-query';
 
-import type { Material } from '@/apis/explore';
+import type {
+  ProjectCareerCardsSuccessResponse,
+  ProjectResourceTopicsSuccessResponse,
+  ProjectTopicResourcesSuccessResponse,
+  ProjectTopicsSuccessResponse,
+} from '@/api/generated/schema';
 import { PROJECT_PAGE_SIZE } from '@/constants/project';
 import type { ProjectListMeta, ProjectSort, ProjectSummary } from '@/types/project';
 import { httpClient, type ApiSuccessBody } from '@/utils/client';
 
-// MOCK-API: 기술 주제 필터, 프로젝트 경험, 프로젝트 자료는 서버 API가 없어 화면에 필요한 모양대로 임의로 정했다.
-// 프로젝트 목록은 서버의 GET /api/v1/projects를 쓰고, 서버에 없는 topic 조건만 덧붙인다.
-
-/** 기술 주제를 묶는 직군. 공통은 여러 직군이 함께 다루는 주제다. */
-export type ProjectTopicGroupCode = 'COMMON' | 'BE' | 'FE' | 'AN';
-
-export interface ProjectTopic {
-  name: string;
-  /** 이 주제를 다룬 프로젝트 수 */
-  projectCount: number;
-}
-
-export interface ProjectTopicGroup {
-  code: ProjectTopicGroupCode;
-  /** 예: 백엔드 */
-  name: string;
-  /** 예: BE */
-  shortName: string;
-  projectCount: number;
-  /** 프로젝트가 많은 순 */
-  topics: ProjectTopic[];
-}
-
-export interface ProjectTopics {
-  /** 주제가 하나라도 있는 프로젝트 수 */
-  totalCount: number;
-  groups: ProjectTopicGroup[];
-}
+/** 탐색 화면 프로젝트 탭의 기술 주제. 직군(공통·백엔드·프론트엔드·안드로이드)별로 묶여 있다. */
+export type ProjectTopics = ProjectTopicsSuccessResponse['data'];
+export type ProjectTopicGroup = ProjectTopics['groups'][number];
+export type ProjectTopicGroupCode = ProjectTopicGroup['code'];
+export type ProjectTopic = ProjectTopicGroup['topics'][number];
 
 export interface ExploreProjectFilter {
   keyword: string;
@@ -41,59 +23,44 @@ export interface ExploreProjectFilter {
   sort: ProjectSort;
 }
 
-export type ExperienceJobRole = 'BE' | 'FE' | 'AN';
-export type ExperienceSourceKind = 'PR' | 'TEAM_DOC' | 'BLOG';
+type CareerCardResponse = ProjectCareerCardsSuccessResponse['data'][number];
 
-export interface ProjectExperienceSource {
-  kind: ExperienceSourceKind;
-  title: string;
-  url: string;
-  /** PR 번호. PR이 아니면 null */
-  number: number | null;
+/**
+ * 프로젝트 상세 경험 탭의 경력 카드.
+ *
+ * 스키마는 resumeBullets·techs를 `(object | boolean | string | number)[]`로 뽑는다(생성기가 배열 원소 타입을 못 읽은 결과다).
+ * 서버가 주는 값은 문장이라 string[]로 좁혀 쓴다. sections(포트폴리오 글)는 보여 줄 화면 디자인이 아직 없어 쓰지 않는다.
+ */
+export interface ProjectCareerCard extends Omit<CareerCardResponse, 'resumeBullets' | 'techs'> {
+  /** 이력서 문장. 카드에 점 찍힌 줄로 보여 준다. */
+  resumeBullets: string[];
+  techs: string[];
 }
 
-/** 프로젝트에서 한 경험. 팀 자료에서 뽑아 요약한 것이다. */
-export interface ProjectExperience {
-  experienceId: number;
-  jobRole: ExperienceJobRole;
-  /** 예: 장애 대응, 쿼리 최적화 */
-  category: string;
-  title: string;
-  /** 무엇을 했는지 한 줄씩 */
-  highlights: string[];
-  sources: ProjectExperienceSource[];
-}
+export type CareerCardSource = ProjectCareerCard['sources'][number];
 
-export type MaterialJobRole = 'ALL' | ExperienceJobRole;
+export type ProjectResourceTopics = ProjectResourceTopicsSuccessResponse['data'];
+export type MaterialJobRole = ProjectResourceTopics['jobRoles'][number]['jobRole'];
 
-export interface ProjectMaterialTopics {
-  /** 이 프로젝트 자료 수 */
-  totalCount: number;
-  kindCounts: { blog: number; pr: number; teamDoc: number };
-  jobRoles: { jobRole: MaterialJobRole; count: number }[];
-  /** 고른 직군의 자료를 분야별 주제로 묶은 것. 자료가 많은 순 */
-  fields: { name: string; topics: { name: string; count: number }[] }[];
-}
-
-export interface ProjectTopicMaterials {
-  topic: string;
-  /** 이 프로젝트 팀의 자료 */
-  materials: Material[];
-  techTalks: Material[];
-  /** 같은 주제를 다룬 다른 팀의 자료 */
-  otherTeamMaterials: Material[];
-}
+export type ProjectTopicResources = ProjectTopicResourcesSuccessResponse['data'];
 
 const projectPath = (slug: string) => `/api/v1/projects/@${slug}`;
 
+/** 목록 조회 조건. 서버는 기술 주제를 이름이 아니라 topicId로 받는다. */
+export interface ExploreProjectQuery {
+  keyword: string;
+  topicId: string | null;
+  sort: ProjectSort;
+}
+
 export async function fetchExploreProjectsPage(
-  { keyword, topic, sort }: ExploreProjectFilter,
+  { keyword, topicId, sort }: ExploreProjectQuery,
   cursor?: string,
   signal?: AbortSignal,
 ) {
   const searchParams: Record<string, string | number> = { sort, size: PROJECT_PAGE_SIZE };
   if (keyword.trim()) searchParams.keyword = keyword.trim();
-  if (topic) searchParams.topic = topic;
+  if (topicId) searchParams.topicId = topicId;
   if (cursor) searchParams.cursor = cursor;
 
   const response = await httpClient<ApiSuccessBody<ProjectSummary[], ProjectListMeta>>(
@@ -118,7 +85,7 @@ async function get<T>(path: string, signal?: AbortSignal, searchParams?: Record<
   return response.data;
 }
 
-export const exploreProjectsQuery = (filter: ExploreProjectFilter) =>
+export const exploreProjectsQuery = (filter: ExploreProjectQuery) =>
   infiniteQueryOptions({
     queryKey: ['explore', 'projects', filter],
     initialPageParam: undefined as string | undefined,
@@ -133,22 +100,26 @@ export const projectTopicsQuery = () =>
     queryFn: ({ signal }) => get<ProjectTopics>('/api/v1/projects/topics', signal),
   });
 
-export const projectExperiencesQuery = (slug: string) =>
+export const projectCareerCardsQuery = (slug: string) =>
   queryOptions({
-    queryKey: ['project-detail', slug, 'experiences'],
-    queryFn: ({ signal }) => get<ProjectExperience[]>(`${projectPath(slug)}/experiences`, signal),
+    queryKey: ['project-detail', slug, 'career-cards'],
+    queryFn: ({ signal }) => get<ProjectCareerCard[]>(`${projectPath(slug)}/career-cards`, signal),
   });
 
-export const projectMaterialTopicsQuery = (slug: string, jobRole: MaterialJobRole) =>
+export const projectResourceTopicsQuery = (slug: string, jobRole: MaterialJobRole) =>
   queryOptions({
-    queryKey: ['project-detail', slug, 'material-topics', jobRole],
+    queryKey: ['project-detail', slug, 'resource-topics', jobRole],
     queryFn: ({ signal }) =>
-      get<ProjectMaterialTopics>(`${projectPath(slug)}/material-topics`, signal, { jobRole }),
+      get<ProjectResourceTopics>(`${projectPath(slug)}/resource-topics`, signal, { jobRole }),
   });
 
-export const projectTopicMaterialsQuery = (slug: string, topic: string) =>
+export const projectTopicResourcesQuery = (
+  slug: string,
+  topicId: string,
+  jobRole: MaterialJobRole,
+) =>
   queryOptions({
-    queryKey: ['project-detail', slug, 'materials', topic],
+    queryKey: ['project-detail', slug, 'resources', topicId, jobRole],
     queryFn: ({ signal }) =>
-      get<ProjectTopicMaterials>(`${projectPath(slug)}/materials`, signal, { topic }),
+      get<ProjectTopicResources>(`${projectPath(slug)}/resources`, signal, { topicId, jobRole }),
   });

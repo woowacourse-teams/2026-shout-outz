@@ -44,26 +44,6 @@ export function formatMaterialDate(value: string | null | undefined) {
   return match ? `${match[1]}년 ${Number(match[2])}월 ${Number(match[3])}일` : '';
 }
 
-const BLOG_FAVICONS = [
-  ['tistory.com', '/about-assets/assets/tistory.svg'],
-  ['velog.io', '/about-assets/assets/velog.ico'],
-  ['rilog.kr', '/about-assets/assets/rilog.svg'],
-] as const;
-
-/** 아는 블로그 서비스의 파비콘. 모르는 주소면 null이다. */
-export function blogFaviconOf(url: string) {
-  try {
-    const { hostname } = new URL(url);
-    return (
-      BLOG_FAVICONS.find(
-        ([domain]) => hostname === domain || hostname.endsWith(`.${domain}`),
-      )?.[1] ?? null
-    );
-  } catch {
-    return null;
-  }
-}
-
 export function hostnameOf(url: string) {
   try {
     return new URL(url).hostname;
@@ -114,7 +94,8 @@ function TeamLogo({ logoUrl }: { logoUrl: string | null }) {
 }
 
 /**
- * 제목 앞 출처 아이콘. 블로그는 파비콘, PR과 팀 문서는 GitHub 마크에 종류 배지를 붙인다.
+ * 제목 앞 출처 아이콘. 블로그는 서버가 준 파비콘(`team.logoUrl`), PR과 팀 문서는 GitHub 마크에 종류 배지를 붙인다.
+ * 블로그 파비콘이 없으면(null) 아이콘을 그리지 않는다.
  * `size`는 제목 옆(18px)과 원문 카드(22px)에서 다르게 쓴다.
  */
 export function MaterialIcon({
@@ -148,26 +129,14 @@ export function MaterialIcon({
     );
   }
 
-  const faviconUrl = blogFaviconOf(material.url);
-  if (faviconUrl)
-    return (
-      <img
-        src={faviconUrl}
-        alt=""
-        className={cn('shrink-0 rounded-sm', box, className)}
-        loading="lazy"
-      />
-    );
-
-  // 파비콘을 모르는 블로그는 회색 사각형으로 자리를 잡는다.
+  const faviconUrl = material.team?.logoUrl;
+  if (!faviconUrl) return null;
   return (
-    <span
-      aria-hidden="true"
-      className={cn(
-        'ring-gray-opacity-100 shrink-0 rounded-sm bg-gray-200 ring-1 ring-inset',
-        box,
-        className,
-      )}
+    <img
+      src={faviconUrl}
+      alt=""
+      className={cn('shrink-0 rounded-sm', box, className)}
+      loading="lazy"
     />
   );
 }
@@ -180,7 +149,7 @@ function GithubMark({ className }: { className?: string }) {
   );
 }
 
-function DocumentMark({ className }: { className?: string }) {
+export function DocumentMark({ className }: { className?: string }) {
   return (
     <svg
       viewBox="0 0 24 24"

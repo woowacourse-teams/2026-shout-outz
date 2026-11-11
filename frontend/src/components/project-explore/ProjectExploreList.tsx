@@ -1,7 +1,12 @@
-import { useSuspenseInfiniteQuery } from '@tanstack/react-query';
+import { useSuspenseInfiniteQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { IconChevronDown } from '@tabler/icons-react';
 
-import { exploreProjectsQuery, type ExploreProjectFilter } from '@/apis/project-explore';
+import {
+  exploreProjectsQuery,
+  projectTopicsQuery,
+  type ExploreProjectFilter,
+  type ProjectTopics,
+} from '@/apis/project-explore';
 import { ExploreProjectCard } from '@/components/project-explore/ExploreProjectCard';
 import type { ProjectSort } from '@/types/project';
 import { cn } from '@/utils/cn';
@@ -17,8 +22,36 @@ interface ProjectExploreListProps {
   onSortChange: (sort: ProjectSort) => void;
 }
 
-export function ProjectExploreList({ filter, onSortChange }: ProjectExploreListProps) {
-  const query = useSuspenseInfiniteQuery(exploreProjectsQuery(filter));
+/**
+ * 주소에는 읽기 쉬운 주제 이름을 두고, 서버에는 그 주제의 topicId로 묻는다.
+ * 목록에 없는 이름이면 그대로 보내 서버가 빈 목록을 주게 한다.
+ */
+const topicIdOf = (topics: ProjectTopics, name: string) =>
+  topics.groups.flatMap((group) => group.topics).find((topic) => topic.name === name)?.topicId ??
+  name;
+
+export function ProjectExploreList(props: ProjectExploreListProps) {
+  // 주제를 고르지 않았으면 주제 목록을 기다리지 않고 바로 프로젝트를 조회한다.
+  return props.filter.topic ? (
+    <TopicProjectList {...props} topic={props.filter.topic} />
+  ) : (
+    <ProjectList {...props} topicId={null} />
+  );
+}
+
+function TopicProjectList({ topic, ...props }: ProjectExploreListProps & { topic: string }) {
+  const { data: topics } = useSuspenseQuery(projectTopicsQuery());
+  return <ProjectList {...props} topicId={topicIdOf(topics, topic)} />;
+}
+
+function ProjectList({
+  filter,
+  onSortChange,
+  topicId,
+}: ProjectExploreListProps & { topicId: string | null }) {
+  const query = useSuspenseInfiniteQuery(
+    exploreProjectsQuery({ keyword: filter.keyword, topicId, sort: filter.sort }),
+  );
   const projects = query.data.pages.flatMap((page) => page.projects);
   const totalCount = query.data.pages[0]?.meta.totalCount ?? projects.length;
   // 검색어와 기술 주제는 함께 걸리지 않는다(routes/explore.tsx).
