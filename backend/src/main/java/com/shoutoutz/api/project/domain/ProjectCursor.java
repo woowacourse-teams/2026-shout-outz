@@ -33,6 +33,13 @@ public record ProjectCursor(
         return new ProjectCursor(ProjectSort.LATEST, null, createdAt, id);
     }
 
+    /**
+     * 관련도순은 고른 순서에서 이 프로젝트 다음부터 읽는다. 고른 순서가 없을 때는 최신순처럼 등록 시각을 쓴다.
+     */
+    public static ProjectCursor relevance(Instant createdAt, long id) {
+        return new ProjectCursor(ProjectSort.RELEVANCE, null, createdAt, id);
+    }
+
     public static ProjectCursor popular(long likeCount, Instant createdAt, long id) {
         return new ProjectCursor(ProjectSort.POPULAR, likeCount, createdAt, id);
     }

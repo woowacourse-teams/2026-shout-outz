@@ -40,6 +40,17 @@ class ProjectCursorCodecTest {
     }
 
     @Test
+    @DisplayName("관련도순 커서는 관련도순으로 디코딩되고, 최신순 요청에 쓰면 400을 던진다.")
+    void encodesAndDecodesRelevanceCursor() {
+        ProjectCursor cursor = ProjectCursor.relevance(CREATED_AT, 100L);
+
+        String encoded = ProjectCursorCodec.encode(cursor);
+
+        assertThat(ProjectCursorCodec.decode(encoded, ProjectSort.RELEVANCE)).isEqualTo(cursor);
+        assertInvalidCursor(encoded, ProjectSort.LATEST);
+    }
+
+    @Test
     @DisplayName("인코딩한 커서는 쿼리스트링에서 깨지는 문자(+, /, =)를 쓰지 않는다.")
     void encodesUrlSafeCursor() {
         String encoded = ProjectCursorCodec.encode(ProjectCursor.popular(Long.MAX_VALUE, CREATED_AT, Long.MAX_VALUE));

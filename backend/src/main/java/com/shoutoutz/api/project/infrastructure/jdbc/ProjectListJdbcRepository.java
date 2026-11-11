@@ -5,6 +5,7 @@ import com.shoutoutz.api.project.application.UserProjectQueryRepository;
 import com.shoutoutz.api.project.application.dto.UserProjectItem;
 import com.shoutoutz.api.project.application.dto.UserProjectResult;
 import com.shoutoutz.api.project.domain.ApprovalStatus;
+import com.shoutoutz.api.project.domain.KeywordCandidate;
 import com.shoutoutz.api.project.domain.ProjectCursor;
 import com.shoutoutz.api.project.domain.ProjectFilterCondition;
 import com.shoutoutz.api.project.domain.ProjectFilterOptions;
@@ -177,8 +178,8 @@ public class ProjectListJdbcRepository implements UserProjectQueryRepository {
      * - 탈퇴한 팀원은 이름을 숨기므로 검색되지 않는다.
      * - 가입하지 않은 이관 팀원은 GitHub 이름과 GitHub 아이디로, 가입해서 매칭된 이관 팀원은 프로필 이름으로 검색된다.
      */
-    private static final String KEYWORD_CONDITION = """
-              AND (
+    private static final String KEYWORD_MATCH = """
+              (
                   p.title ILIKE :keywordPattern ESCAPE '\\'
                   OR p.tagline ILIKE :keywordPattern ESCAPE '\\'
                   OR EXISTS (
@@ -212,6 +213,19 @@ public class ProjectListJdbcRepository implements UserProjectQueryRepository {
                         )
                   )
               )
+            """;
+
+    private static final String KEYWORD_CONDITION = "  AND " + KEYWORD_MATCH;
+
+    /**
+     * 직접 검색 후보. 공개되고 필터를 통과한 프로젝트 중 검색어가 이름, 소개, 크루 이름, 저장소와 배포 주소에 들었거나
+     * 자료 검색에 걸린 프로젝트다. 저장소 이름이 "2025-hearit"처럼 영문 표기를 담는 경우가 많아 주소도 본다.
+     */
+    private static final String KEYWORD_CANDIDATES_SQL = """
+            SELECT p.id, p.title ILIKE :keywordPattern ESCAPE '\\' AS title_matched
+            FROM projects p
+            WHERE p.approval_status = 'APPROVED'
+              AND p.deleted_at IS NULL
             """;
 
     private static final String COHORT_COUNTS_SQL = """
@@ -278,6 +292,41 @@ public class ProjectListJdbcRepository implements UserProjectQueryRepository {
                           AND deleted_at IS NULL
                         """,
                 (resultSet, rowNumber) -> new PublicProjectTitle(resultSet.getLong("id"), resultSet.getString("title"))
+        );
+    }
+
+    public List<KeywordCandidate> findKeywordCandidates(
+            ProjectFilterCondition condition,
+            List<Long> resourceProjectIds
+    ) {
+        MapSqlParameterSource parameters = new MapSqlParameterSource()
+                .addValue("keywordPattern", "%" + escapeLikePattern(condition.keyword()) + "%");
+        StringBuilder sql = new StringBuilder(KEYWORD_CANDIDATES_SQL);
+        if (!condition.cohorts().isEmpty()) {
+            sql.append(COHORTS_CONDITION);
+            parameters.addValue("cohorts", condition.cohorts());
+        }
+        if (!condition.techTagIds().isEmpty()) {
+            sql.append(TECH_TAGS_CONDITION);
+            parameters.addValue("techTagIds", condition.techTagIds());
+            parameters.addValue("techTagCount", condition.techTagIds().size());
+        }
+        sql.append("  AND (\n").append(KEYWORD_MATCH).append("""
+                      OR p.github_repository_url ILIKE :keywordPattern ESCAPE '\\'
+                      OR p.deployment_url ILIKE :keywordPattern ESCAPE '\\'
+                """);
+        if (!resourceProjectIds.isEmpty()) {
+            sql.append("      OR p.id IN (:resourceProjectIds)\n");
+            parameters.addValue("resourceProjectIds", resourceProjectIds);
+        }
+        sql.append("  )\n");
+        return jdbcTemplate.query(
+                sql.toString(),
+                parameters,
+                (resultSet, rowNumber) -> new KeywordCandidate(
+                        resultSet.getLong("id"),
+                        resultSet.getBoolean("title_matched")
+                )
         );
     }
 
@@ -526,6 +575,8 @@ public class ProjectListJdbcRepository implements UserProjectQueryRepository {
      * 커서가 있으면 커서 위치 다음부터, 정렬 기준대로 조회 개수보다 하나 더 조회한다.
      * 정렬의 마지막 기준을 항상 id로 두어, 등록 시각이나 좋아요 수가 같아도 순서가 하나로 정해진다.
      * 커서 조건은 정렬 기준과 같은 순서로 (값1, 값2, ...) < (커서 값1, 커서 값2, ...) 를 비교한다.
+     * 관련도순은 미리 고른 프로젝트 순서(projectIds)를 그대로 쓰고, 커서 프로젝트보다 뒤에 있는 프로젝트부터 읽는다.
+     * 고른 순서가 없으면 최신순과 같다.
      */
     private static String pageSql(
             String filteredProjectsSql,
@@ -533,26 +584,46 @@ public class ProjectListJdbcRepository implements UserProjectQueryRepository {
             MapSqlParameterSource parameters
     ) {
         boolean popular = condition.sort() == ProjectSort.POPULAR;
+        boolean ranked = condition.sort() == ProjectSort.RELEVANCE
+                && condition.projectIds() != null
+                && !condition.projectIds().isEmpty();
         StringBuilder sql = new StringBuilder("WITH filtered AS (")
                 .append(filteredProjectsSql)
                 .append(")\nSELECT * FROM filtered\n");
 
         ProjectCursor cursor = condition.cursor();
         if (cursor != null) {
-            sql.append(popular
-                    ? "WHERE (like_count, created_at, id) < (:cursorLikeCount, :cursorCreatedAt, :cursorId)\n"
-                    : "WHERE (created_at, id) < (:cursorCreatedAt, :cursorId)\n");
+            sql.append(cursorCondition(popular, ranked));
             parameters.addValue("cursorLikeCount", cursor.likeCount());
             parameters.addValue("cursorCreatedAt", OffsetDateTime.ofInstant(cursor.createdAt(), ZoneOffset.UTC));
             parameters.addValue("cursorId", cursor.id());
         }
 
-        sql.append(popular
-                ? "ORDER BY like_count DESC, created_at DESC, id DESC\n"
-                : "ORDER BY created_at DESC, id DESC\n");
+        sql.append(orderBy(popular, ranked));
         sql.append("LIMIT :limit");
         parameters.addValue("limit", condition.size() + 1);
         return sql.toString();
+    }
+
+    private static String cursorCondition(boolean popular, boolean ranked) {
+        if (ranked) {
+            return "WHERE array_position(ARRAY[:projectIds]::bigint[], id) "
+                    + "> array_position(ARRAY[:projectIds]::bigint[], :cursorId::bigint)\n";
+        }
+        if (popular) {
+            return "WHERE (like_count, created_at, id) < (:cursorLikeCount, :cursorCreatedAt, :cursorId)\n";
+        }
+        return "WHERE (created_at, id) < (:cursorCreatedAt, :cursorId)\n";
+    }
+
+    private static String orderBy(boolean popular, boolean ranked) {
+        if (ranked) {
+            return "ORDER BY array_position(ARRAY[:projectIds]::bigint[], id)\n";
+        }
+        if (popular) {
+            return "ORDER BY like_count DESC, created_at DESC, id DESC\n";
+        }
+        return "ORDER BY created_at DESC, id DESC\n";
     }
 
     private static ProjectSummary mapSummary(ResultSet resultSet, int rowNumber) throws SQLException {

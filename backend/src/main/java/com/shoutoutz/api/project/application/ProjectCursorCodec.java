@@ -15,6 +15,7 @@ import java.util.Base64;
  * 인코딩 전 형식
  * - LATEST : LATEST|{등록 시각}|{프로젝트 ID}
  * - POPULAR: POPULAR|{좋아요 수}|{등록 시각}|{프로젝트 ID}
+ * - RELEVANCE: RELEVANCE|{등록 시각}|{프로젝트 ID}
  */
 public final class ProjectCursorCodec {
 
@@ -52,7 +53,7 @@ public final class ProjectCursorCodec {
                 return ProjectCursor.popular(Long.parseLong(parts[1]), Instant.parse(parts[2]), Long.parseLong(parts[3]));
             }
             validatePartCount(parts, LATEST_PARTS);
-            return ProjectCursor.latest(Instant.parse(parts[1]), Long.parseLong(parts[2]));
+            return new ProjectCursor(sort, null, Instant.parse(parts[1]), Long.parseLong(parts[2]));
         } catch (RuntimeException exception) {
             throw new InvalidProjectCursorException();
         }

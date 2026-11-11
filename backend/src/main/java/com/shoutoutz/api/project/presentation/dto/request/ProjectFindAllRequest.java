@@ -30,7 +30,7 @@ public record ProjectFindAllRequest(
         @Size(max = 40, message = "topicId는 40자 이하여야 합니다.")
         String topicId,
 
-        @Pattern(regexp = "LATEST|POPULAR", message = "sort는 LATEST 또는 POPULAR여야 합니다.")
+        @Pattern(regexp = "LATEST|POPULAR|RELEVANCE", message = "sort는 LATEST, POPULAR, RELEVANCE 중 하나여야 합니다.")
         String sort,
 
         @Min(value = 1, message = "size는 1 이상이어야 합니다.")

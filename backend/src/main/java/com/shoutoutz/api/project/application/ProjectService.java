@@ -16,6 +16,7 @@ import static com.shoutoutz.api.project.domain.ProjectErrorCode.PROJECT_THUMBNAI
 import static com.shoutoutz.api.user.domain.account.UserErrorCode.USER_NOT_FOUND;
 
 import com.shoutoutz.api.cohort.domain.Cohort;
+import com.shoutoutz.api.common.embedding.EmbeddingException;
 import com.shoutoutz.api.common.exception.custom.ConflictException;
 import com.shoutoutz.api.common.exception.custom.DuplicateEntityException;
 import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
@@ -43,6 +44,7 @@ import com.shoutoutz.api.project.domain.ProjectDetail;
 import com.shoutoutz.api.project.domain.ProjectFilterCondition;
 import com.shoutoutz.api.project.domain.ProjectFilterOptions;
 import com.shoutoutz.api.project.domain.ProjectMemberProfile;
+import com.shoutoutz.api.project.domain.KeywordCandidates;
 import com.shoutoutz.api.project.domain.NormalizedKeyword;
 import com.shoutoutz.api.project.domain.ProjectMembers;
 import com.shoutoutz.api.project.domain.ProjectPage;
@@ -76,6 +78,8 @@ import com.shoutoutz.api.project.presentation.dto.response.ProjectFindAllRespons
 import com.shoutoutz.api.project.presentation.dto.response.ProjectUpdateResponse;
 import com.shoutoutz.api.projectresource.application.ProjectResourceQueryRepository;
 import com.shoutoutz.api.projectresource.domain.ResourceTopic;
+import com.shoutoutz.api.resourcesearch.application.ResourceSearchService;
+import com.shoutoutz.api.resourcesearch.application.dto.SearchHit;
 import com.shoutoutz.api.techtag.domain.TechTagRepository;
 import com.shoutoutz.api.user.domain.account.User;
 import com.shoutoutz.api.user.domain.account.UserRepository;
@@ -95,12 +99,21 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ProjectService {
+
+    /**
+     * 직접 검색에서 읽는 자료 수와 남기는 프로젝트 수. 벡터 검색은 맞는 자료가 없어도 가까운 자료를 돌려주므로,
+     * 관련이 약한 프로젝트가 끝없이 붙지 않게 상한을 둔다. 데모 검색 로그를 보고 다시 정하는 초안 값이다.
+     */
+    private static final int DIRECT_SEARCH_RESOURCES = 100;
+    private static final int DIRECT_SEARCH_PROJECTS = 30;
 
     private final ProjectRepository projectRepository;
     private final ProjectSlugResolver projectSlugResolver;
@@ -116,6 +129,7 @@ public class ProjectService {
     private final BlogSourceRepository blogSourceRepository;
     private final TopicAliases topicAliases;
     private final ProjectResourceQueryRepository projectResourceQueryRepository;
+    private final ResourceSearchService resourceSearchService;
     private final Clock clock;
 
     @Transactional
@@ -259,6 +273,7 @@ public class ProjectService {
      * 프로젝트 탭 검색어를 해석한다. 기술 주제를 함께 고르면 주제 안에서 부분 일치로 찾으므로 해석하지 않는다.
      * 검색어가 공개 프로젝트 이름과 같으면 그 프로젝트로 가려는 입력으로 보고, 검색어 대신 그 프로젝트들만 조회한다.
      * 이름이 아니고 기술 주제 별칭과 맞는 주제가 하나면, 사이드바에서 그 주제를 고른 것과 같게 조회하고 해석한 주제를 알린다.
+     * 둘 다 아니면 글자 일치와 자료 검색으로 직접 찾는다.
      */
     private ResolvedKeyword resolveKeyword(ProjectSearchCondition condition) {
         if (condition.keyword() == null || condition.topicId() != null) {
@@ -277,10 +292,33 @@ public class ProjectService {
         }
         Optional<ResourceTopic> matchedTopic = topicAliases.match(keyword)
                 .flatMap(projectResourceQueryRepository::findTopic);
-        if (matchedTopic.isEmpty()) {
-            return new ResolvedKeyword(condition, null);
+        if (matchedTopic.isPresent()) {
+            return new ResolvedKeyword(condition.inTopic(matchedTopic.get().topicId()), matchedTopic.get());
         }
-        return new ResolvedKeyword(condition.inTopic(matchedTopic.get().topicId()), matchedTopic.get());
+        List<Long> resourceProjectIds = searchResourceProjectIds(condition.keyword());
+        KeywordCandidates candidates = new KeywordCandidates(
+                projectRepository.findKeywordCandidates(condition.filter(), resourceProjectIds),
+                resourceProjectIds
+        );
+        return new ResolvedKeyword(condition.onlyProjects(candidates.rankedIds(DIRECT_SEARCH_PROJECTS)), null);
+    }
+
+    /**
+     * 자료 검색에 처음 나온 순서대로의 프로젝트 id. 팀이 없는 자료(테코톡 등)는 건너뛴다.
+     * 외부 임베딩 호출이 실패하면 자료 검색 없이 글자 일치 결과만 보여 주고, 실패는 로그로 남긴다.
+     */
+    private List<Long> searchResourceProjectIds(String keyword) {
+        try {
+            return resourceSearchService.search(keyword, null, DIRECT_SEARCH_RESOURCES).stream()
+                    .map(SearchHit::projectId)
+                    .filter(Objects::nonNull)
+                    .distinct()
+                    .toList();
+        } catch (EmbeddingException exception) {
+            log.warn("Project direct search without resource search: errorCode={}, httpStatus={}",
+                    exception.errorCode(), exception.httpStatus());
+            return List.of();
+        }
     }
 
     /**

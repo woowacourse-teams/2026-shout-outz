@@ -3,6 +3,7 @@ package com.shoutoutz.api.project.infrastructure;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.shoutoutz.api.cohort.domain.Cohort;
+import com.shoutoutz.api.project.domain.KeywordCandidate;
 import com.shoutoutz.api.project.domain.ProjectCursor;
 import com.shoutoutz.api.project.domain.ProjectFilterCondition;
 import com.shoutoutz.api.project.domain.ProjectFilterOptions;
@@ -446,6 +447,70 @@ class ProjectListRepositoryIntegrationTest {
 
         assertThat(ids(page)).containsExactly(cohort7);
         assertThat(page.totalCount()).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("관련도순은 미리 고른 프로젝트 순서대로 조회하고, 커서로 이어 읽으면 그 순서를 이어간다.")
+    void sortsRelevanceByGivenOrderAndPaginates() {
+        long first = saveProject("APPROVED", 6, BASE_TIME);
+        long second = saveProject("APPROVED", 6, BASE_TIME.plus(2, ChronoUnit.HOURS));
+        long third = saveProject("APPROVED", 6, BASE_TIME.plus(1, ChronoUnit.HOURS));
+        List<Long> rankedIds = List.of(second, first, third);
+
+        ProjectPage firstPage = findAll(new ProjectSearchCondition(
+                null, List.of(), List.of(), null, ProjectSort.RELEVANCE, 2, null, rankedIds));
+        ProjectCursor cursor = firstPage.nextCursor(ProjectSort.RELEVANCE);
+        ProjectPage secondPage = findAll(new ProjectSearchCondition(
+                null, List.of(), List.of(), null, ProjectSort.RELEVANCE, 2, cursor, rankedIds));
+
+        assertThat(ids(firstPage)).containsExactly(second, first);
+        assertThat(firstPage.hasNext()).isTrue();
+        assertThat(ids(secondPage)).containsExactly(third);
+        assertThat(secondPage.hasNext()).isFalse();
+        assertThat(secondPage.totalCount()).isEqualTo(3);
+    }
+
+    @Test
+    @DisplayName("고른 프로젝트 없이 관련도순으로 조회하면 최신순과 같다.")
+    void sortsRelevanceLikeLatestWithoutGivenOrder() {
+        long older = saveProject("APPROVED", 6, BASE_TIME);
+        long newer = saveProject("APPROVED", 6, BASE_TIME.plus(1, ChronoUnit.HOURS));
+
+        ProjectPage page = findAll(new ProjectSearchCondition(
+                token, List.of(), List.of(), null, ProjectSort.RELEVANCE, 50, null));
+
+        assertThat(ids(page)).containsExactly(newer, older);
+    }
+
+    @Test
+    @DisplayName("직접 검색 후보는 필터를 통과한 프로젝트 중 이름, 소개, 크루 이름, 저장소와 배포 주소에 검색어가 들었거나 자료 검색에 걸린 프로젝트다.")
+    void findsKeywordCandidates() {
+        long byTitle = saveProject("[" + token + "] 제목", "소개", "APPROVED", 6, BASE_TIME);
+        long byTagline = saveProject("제목", "소개 " + token, "APPROVED", 6, BASE_TIME);
+        long byRepository = saveProject("제목", "소개", "APPROVED", 6, BASE_TIME);
+        jdbcTemplate.update("UPDATE projects SET github_repository_url = ? WHERE id = ?",
+                "https://github.com/woowacourse-teams/2025-" + token, byRepository);
+        long byDeployment = saveProject("제목", "소개", "APPROVED", 6, BASE_TIME);
+        jdbcTemplate.update("UPDATE projects SET deployment_url = ? WHERE id = ?",
+                "https://" + token + ".example.com", byDeployment);
+        long byResource = saveProject("제목", "소개", "APPROVED", 6, BASE_TIME);
+        long unrelated = saveProject("제목", "소개", "APPROVED", 6, BASE_TIME);
+        long otherCohort = saveProject("[" + token + "] 7기", "소개", "APPROVED", 7, BASE_TIME);
+        long pendingResource = saveProject("제목", "소개", "PENDING", 6, BASE_TIME);
+
+        List<KeywordCandidate> candidates = projectRepository.findKeywordCandidates(
+                new ProjectFilterCondition(token, List.of(6), List.of()),
+                List.of(byResource, pendingResource, otherCohort)
+        );
+
+        assertThat(candidates).containsExactlyInAnyOrder(
+                new KeywordCandidate(byTitle, true),
+                new KeywordCandidate(byTagline, false),
+                new KeywordCandidate(byRepository, false),
+                new KeywordCandidate(byDeployment, false),
+                new KeywordCandidate(byResource, false)
+        );
+        assertThat(candidates).extracting(KeywordCandidate::id).doesNotContain(unrelated, otherCohort, pendingResource);
     }
 
     private static Map<Long, Long> techTagCounts(ProjectFilterOptions options) {

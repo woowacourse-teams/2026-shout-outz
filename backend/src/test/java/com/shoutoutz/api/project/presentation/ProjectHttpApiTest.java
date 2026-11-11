@@ -508,8 +508,11 @@ class ProjectHttpApiTest {
                                                         + "대소문자, 공백, 구두점을 빼고 같은 이름이 있으면 그 프로젝트만 조회한다. "
                                                         + "같은 이름이 없으면 기술 주제 별칭과 비교해, 가장 잘 맞는 주제가 하나면 "
                                                         + "그 주제(topicId)로 조회하고 meta.matchedTopic에 담는다. "
-                                                        + "둘 다 아니거나 topicId와 함께 보내면 프로젝트 이름, 한 줄 소개, "
-                                                        + "참여 크루 이름에서 대소문자를 무시한 부분 일치로 찾는다")
+                                                        + "둘 다 아니면 직접 검색한다. 이름, 한 줄 소개, 참여 크루 이름, 저장소와 배포 주소에 "
+                                                        + "검색어가 든 프로젝트와 기술 자료 검색에 걸린 자료의 프로젝트를 모아, 이름에 든 프로젝트, "
+                                                        + "자료 검색 순서, 나머지 순으로 최대 30개를 고른다. "
+                                                        + "topicId와 함께 보내면 해석하지 않고 그 주제 안에서 프로젝트 이름, 한 줄 소개, "
+                                                        + "참여 크루 이름의 대소문자를 무시한 부분 일치로 찾는다")
                                                 .optional(),
                                         parameterWithName("cohorts")
                                                 .description("기수 필터. 쉼표로 구분 (ex. 6,7). 선택한 기수 중 하나에 해당하면 조회")
@@ -522,7 +525,9 @@ class ProjectHttpApiTest {
                                                         + "그 주제의 팀 자료가 있는 프로젝트만 조회하며, 없는 id면 빈 목록. 40자 이하")
                                                 .optional(),
                                         parameterWithName("sort")
-                                                .description("정렬 기준 (LATEST, POPULAR). 기본값 LATEST")
+                                                .description("정렬 기준 (LATEST, POPULAR, RELEVANCE). 기본값 LATEST. "
+                                                        + "RELEVANCE는 직접 검색에서 고른 순서대로 주고, 그 밖에는 LATEST와 같다. "
+                                                        + "검색어가 있으면 RELEVANCE를 보내야 직접 검색의 관련도가 반영된다")
                                                 .optional(),
                                         parameterWithName("size")
                                                 .description("한 번에 가져올 프로젝트 수. 기본값 8, 1~50")
