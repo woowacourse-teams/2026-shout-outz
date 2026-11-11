@@ -109,7 +109,7 @@ test.each(['/projects', '/projects/'])(
     expect(await screen.findByRole('heading', { name: 'Dropit' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { level: 1, name: '프로젝트' })).toBeInTheDocument();
     const header = screen.getByRole('banner');
-    expect(within(header).getByRole('link', { name: '프로젝트' })).toHaveAttribute(
+    expect(within(header).getByRole('link', { name: '탐색' })).toHaveAttribute(
       'aria-current',
       'page',
     );

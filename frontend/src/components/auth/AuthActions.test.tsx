@@ -109,6 +109,31 @@ describe('AuthActions', () => {
     expect(screen.queryByRole('menu')).not.toBeInTheDocument();
   });
 
+  it('모바일 내 계정 서랍에서 프로필과 내 글·내 프로젝트로 가는 링크, 로그아웃을 보여 준다', async () => {
+    renderRoute('/');
+    const trigger = await screen.findByRole('button', { name: '내 계정 열기' });
+    // vaul 서랍은 jsdom에서 포인터 이벤트가 막혀 키보드로 연다.
+    trigger.focus();
+    await userEvent.keyboard('{Enter}');
+
+    const drawer = await screen.findByRole('dialog', { name: '내 계정' });
+    expect(await within(drawer).findByText('정우진')).toBeInTheDocument();
+    expect(within(drawer).getByText('@woojin')).toBeInTheDocument();
+    expect(within(drawer).getByRole('link', { name: '내 프로필' })).toHaveAttribute(
+      'href',
+      '/users/woojin',
+    );
+    expect(within(drawer).getByRole('link', { name: '내가 쓴 질문 · 답변' })).toHaveAttribute(
+      'href',
+      '/users/woojin?tab=feeds',
+    );
+    expect(within(drawer).getByRole('link', { name: '내 프로젝트' })).toHaveAttribute(
+      'href',
+      '/users/woojin?tab=projects',
+    );
+    expect(within(drawer).getByRole('button', { name: '로그아웃' })).toBeInTheDocument();
+  });
+
   it.each(['로딩', '실패'])(
     '요약 조회 %s 중에도 로그아웃은 가능하고 마이페이지는 표시하지 않는다',
     async (state) => {
