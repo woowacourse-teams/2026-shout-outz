@@ -32,24 +32,28 @@ export function NewsItem({
   ...props
 }: NewsItemProps) {
   return (
-    <article
-      className={cn('flex min-w-0 flex-col gap-3', compact && 'gap-2', className)}
-      {...props}
-    >
+    <article className={cn('flex min-w-0 flex-col gap-2', className)} {...props}>
       <div className="flex items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2">
-          {type === 'EVENT' && <NewsEventStatusBadge status={eventStatus} />}
+          {type === 'EVENT' && (
+            <NewsEventStatusBadge status={eventStatus} variant={compact ? 'solid' : 'soft'} />
+          )}
           <NewsCategoryBadge type={type} />
         </div>
-        <time dateTime={publishedAt} className="shrink-0 text-xs text-gray-500">
+        <time
+          dateTime={publishedAt}
+          className={cn('shrink-0 text-xs', compact ? 'text-gray-500' : 'text-gray-400')}
+        >
           {formatDotDate(publishedAt)}
         </time>
       </div>
 
       <h2
         className={cn(
-          'group-hover:text-primary-600 leading-6 font-semibold tracking-tight break-words text-gray-900',
-          compact ? 'line-clamp-2 text-sm' : 'text-base',
+          'tracking-tight break-words text-gray-900',
+          compact
+            ? 'group-hover:text-primary-600 line-clamp-2 text-sm leading-6 font-semibold'
+            : 'text-lg leading-snug font-bold group-hover:underline',
         )}
       >
         {title}
@@ -58,12 +62,14 @@ export function NewsItem({
       <p
         className={cn(
           'line-clamp-2 break-words text-gray-600',
-          compact ? 'text-xs leading-5' : 'text-sm leading-6',
+          compact ? 'text-xs leading-5' : 'text-sm leading-relaxed md:text-base',
         )}
       >
         {summary}
       </p>
-      {type === 'EVENT' && <NewsEventPeriod startAt={eventStartAt} endAt={eventEndAt} compact />}
+      {type === 'EVENT' && (
+        <NewsEventPeriod startAt={eventStartAt} endAt={eventEndAt} compact strongDates={!compact} />
+      )}
     </article>
   );
 }
