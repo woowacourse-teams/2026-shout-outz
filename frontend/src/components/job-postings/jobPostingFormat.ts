@@ -20,7 +20,7 @@ const parseDate = (value: string) => {
 };
 
 /** 카드 배지. 마감일이 없으면 상시, 있으면 남은 날을 D-n(당일은 D-day)으로 보여 준다. */
-export function deadlineBadge(deadline: string | null, today = new Date()) {
+export function deadlineBadge(deadline: string | null | undefined, today = new Date()) {
   if (!deadline) return '상시';
   const start = new Date(today.getFullYear(), today.getMonth(), today.getDate());
   const days = Math.round((parseDate(deadline).getTime() - start.getTime()) / MS_PER_DAY);
@@ -28,7 +28,7 @@ export function deadlineBadge(deadline: string | null, today = new Date()) {
 }
 
 /** 상세 제목 아래 문구. 마감일이 있으면 "2026년 12월 31일 마감"이다. */
-export function deadlineText(deadline: string | null) {
+export function deadlineText(deadline: string | null | undefined) {
   if (!deadline) return '상시 채용';
   const date = parseDate(deadline);
   return `${date.getFullYear()}년 ${date.getMonth() + 1}월 ${date.getDate()}일 마감`;

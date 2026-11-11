@@ -279,11 +279,8 @@ describe('ExplorePage 채용공고 탭', () => {
     expect(within(cards).getAllByText('상시')).toHaveLength(2);
     expect(within(cards).getByText('D-3')).toBeVisible();
     expect(within(cards).getByText('D-day')).toBeVisible();
-    expect(within(cards).getByRole('img', { name: '토스뱅크 로고' })).toHaveAttribute(
-      'src',
-      expect.stringContaining('data:image/svg+xml'),
-    );
-    expect(within(cards).getByText('#Product')).toBeVisible();
+    // 회사 로고와 해시태그는 서버 응답에 없어 아직 보여 주지 않는다.
+    expect(within(cards).queryByRole('img', { name: /로고$/ })).not.toBeInTheDocument();
     expect(screen.getByRole('searchbox', { name: '채용공고 검색' })).toBeVisible();
   });
 
