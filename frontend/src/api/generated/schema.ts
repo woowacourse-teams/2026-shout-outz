@@ -2887,6 +2887,8 @@ export interface ProjectCareerCardsSuccessResponse {
     }[];
     /** 근거 자료. source_order 순(PR, 팀 문서, 블로그). PR 번호는 PR 주소 끝(/pull/{번호})에서 읽는다 */
     sources: {
+      /** 블로그 출처 아이콘 주소. tistory, velog, rilog 는 플랫폼 공식 아이콘, 그 밖의 블로그(개인 도메인 등)는 원문 페이지의 파비콘. 블로그가 아니거나 아직 수집 전이면 null */
+      faviconUrl?: string | null;
       /** 블로그 플랫폼. 블로그가 아니면 null */
       platform?: string | null;
       /** ISO-8601 원문 게시 시각. 없으면 null */
@@ -3474,6 +3476,8 @@ export interface ProjectTopicResourcesSuccessResponse {
   data: {
     /** 같은 주제의 다른 팀 자료. 점수 높은 순(점수가 없으면 85점) 상위 20건 */
     otherTeamResources: {
+      /** 블로그 출처 아이콘 주소. tistory, velog, rilog 는 플랫폼 공식 아이콘, 그 밖의 블로그(개인 도메인 등)는 원문 페이지의 파비콘. 블로그가 아니거나 아직 수집 전이면 null */
+      faviconUrl?: string | null;
       /** 블로그 플랫폼. 블로그가 아니면 null */
       platform?: string | null;
       /** ISO-8601 원문 게시 시각. 없으면 null */
@@ -3502,6 +3506,8 @@ export interface ProjectTopicResourcesSuccessResponse {
     }[];
     /** 이 팀 자료 전부. 블로그 먼저, 그다음 점수 높은 순, 같으면 최신순 */
     resources: {
+      /** 블로그 출처 아이콘 주소. tistory, velog, rilog 는 플랫폼 공식 아이콘, 그 밖의 블로그(개인 도메인 등)는 원문 페이지의 파비콘. 블로그가 아니거나 아직 수집 전이면 null */
+      faviconUrl?: string | null;
       /** 블로그 플랫폼. 블로그가 아니면 null */
       platform?: string | null;
       /** ISO-8601 원문 게시 시각. 없으면 null */
@@ -3530,6 +3536,8 @@ export interface ProjectTopicResourcesSuccessResponse {
     }[];
     /** 그 주제의 테코톡 전부. 최신 발표순 */
     talks: {
+      /** 블로그 출처 아이콘 주소. tistory, velog, rilog 는 플랫폼 공식 아이콘, 그 밖의 블로그(개인 도메인 등)는 원문 페이지의 파비콘. 블로그가 아니거나 아직 수집 전이면 null */
+      faviconUrl?: string | null;
       /** 블로그 플랫폼. 블로그가 아니면 null */
       platform?: string | null;
       /** ISO-8601 원문 게시 시각. 없으면 null */
@@ -3693,6 +3701,8 @@ export interface ResourceDetailSuccessResponse {
       /** 쓴 기술. 없으면 빈 배열 */
       techs: string[];
     }[];
+    /** 블로그 출처 아이콘 주소. tistory, velog, rilog 는 플랫폼 공식 아이콘, 그 밖의 블로그(개인 도메인 등)는 원문 페이지의 파비콘. 블로그가 아니거나 아직 수집 전이면 null */
+    faviconUrl?: string | null;
     /** 이 자료에서 배울 점. 없으면 빈 배열 */
     keyPoints: string[];
     /** 원문 링크 미리보기. 아직 모으지 못했거나 실패했으면 null */
@@ -3749,6 +3759,8 @@ export interface ResourceDetailSuccessResponse {
 export interface ResourceRecentSuccessResponse {
   /** 자료 카드 목록 */
   data: {
+    /** 블로그 출처 아이콘 주소. tistory, velog, rilog 는 플랫폼 공식 아이콘, 그 밖의 블로그(개인 도메인 등)는 원문 페이지의 파비콘. 블로그가 아니거나 아직 수집 전이면 null */
+    faviconUrl?: string | null;
     /** 블로그 플랫폼. 블로그가 아니면 null */
     platform?: string | null;
     /** 원문 게시 시각(UTC) */
@@ -3880,6 +3892,8 @@ export interface ResourceSearchSuccessResponse {
     blogs?: {
       /** 블로그(blog-post), 최대 20건 */
       items: {
+        /** 블로그 출처 아이콘 주소. tistory, velog, rilog 는 플랫폼 공식 아이콘, 그 밖의 블로그(개인 도메인 등)는 원문 페이지의 파비콘. 블로그가 아니거나 아직 수집 전이면 null */
+        faviconUrl?: string | null;
         /** 블로그 플랫폼. 블로그가 아니면 null */
         platform?: string | null;
         /** 원문 게시 시각(UTC) */
@@ -3910,6 +3924,8 @@ export interface ResourceSearchSuccessResponse {
     documents?: {
       /** PR과 팀 문서(github-pr, github-teamdoc, github-wiki, github-discussion), 최대 20건 */
       items: {
+        /** 블로그 출처 아이콘 주소. tistory, velog, rilog 는 플랫폼 공식 아이콘, 그 밖의 블로그(개인 도메인 등)는 원문 페이지의 파비콘. 블로그가 아니거나 아직 수집 전이면 null */
+        faviconUrl?: string | null;
         /** 블로그 플랫폼. 블로그가 아니면 null */
         platform?: string | null;
         /** 원문 게시 시각(UTC) */
@@ -3940,6 +3956,8 @@ export interface ResourceSearchSuccessResponse {
     talks?: {
       /** 테코톡(youtube-tekotalk), 최대 6건 */
       items: {
+        /** 블로그 출처 아이콘 주소. tistory, velog, rilog 는 플랫폼 공식 아이콘, 그 밖의 블로그(개인 도메인 등)는 원문 페이지의 파비콘. 블로그가 아니거나 아직 수집 전이면 null */
+        faviconUrl?: string | null;
         /** 블로그 플랫폼. 블로그가 아니면 null */
         platform?: string | null;
         /** 원문 게시 시각(UTC) */

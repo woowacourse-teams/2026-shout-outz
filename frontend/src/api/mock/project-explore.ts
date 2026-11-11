@@ -118,6 +118,7 @@ const sourceCard = (source: string, title: string, url: string): Material => ({
   summary: null,
   publishedAt: null,
   platform: source === 'blog-post' ? 'velog' : null,
+  faviconUrl: source === 'blog-post' ? '/about-assets/assets/velog.ico' : null,
   team: { name: '샤라웃', projectSlug: 'shout-outz', logoMediaId: null, logoUrl: null },
 });
 const pr = (title: string, number: number) =>
