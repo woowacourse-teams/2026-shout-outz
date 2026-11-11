@@ -104,9 +104,11 @@ describe('ExplorePage', () => {
     await user.click(within(documents).getAllByRole('button', { name: /^PR/ })[0]!);
 
     const summary = await screen.findByRole('dialog');
-    expect(within(summary).getByText(/에서 이어서 읽어 보세요/)).toBeVisible();
-    expect(within(summary).getByRole('button', { name: '공유' })).toBeVisible();
-    expect(within(summary).getByRole('link', { name: /^원문 보기/ })).toHaveAttribute(
+    expect(within(summary).getByRole('link', { name: /^원문 보기:/ })).toHaveAttribute(
+      'target',
+      '_blank',
+    );
+    expect(within(summary).getByRole('link', { name: '상세 보기' })).toHaveAttribute(
       'href',
       expect.stringMatching(/^\/materials\//),
     );
@@ -122,7 +124,7 @@ describe('ExplorePage', () => {
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   });
 
-  it('요약 아래 원문 보기를 누르면 모달을 닫고 자료 정리 보기 페이지로 간다', async () => {
+  it('요약 아래 상세 보기를 누르면 모달을 닫고 자료 정리 보기 페이지로 간다', async () => {
     const user = userEvent.setup();
     const router = renderRoute('/explore?q=동시성');
 
@@ -130,9 +132,7 @@ describe('ExplorePage', () => {
     await user.click(within(documents).getAllByRole('button', { name: /^PR/ })[0]!);
     const summary = await screen.findByRole('dialog');
     // jsdom에는 vaul 바텀시트가 쓰는 포인터 캡처가 없어 클릭 대신 Enter로 누른다.
-    within(summary)
-      .getByRole('link', { name: /^원문 보기/ })
-      .focus();
+    within(summary).getByRole('link', { name: '상세 보기' }).focus();
     await user.keyboard('{Enter}');
 
     await waitFor(() => expect(router.state.location.pathname).toMatch(/^\/materials\//));

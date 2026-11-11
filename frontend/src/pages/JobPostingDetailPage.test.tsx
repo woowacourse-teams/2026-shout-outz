@@ -68,9 +68,9 @@ describe('JobPostingDetailPage', () => {
     await user.click(within(documents).getAllByRole('button', { name: /^PR/ })[0]!);
 
     const summary = await screen.findByRole('dialog');
-    expect(within(summary).getByRole('link', { name: /^원문 보기/ })).toHaveAttribute(
-      'href',
-      expect.stringMatching(/^\/materials\//),
+    expect(within(summary).getByRole('link', { name: /^원문 보기:/ })).toHaveAttribute(
+      'target',
+      '_blank',
     );
     expect(await within(summary).findByRole('heading', { name: '기술 태그' })).toBeVisible();
   });

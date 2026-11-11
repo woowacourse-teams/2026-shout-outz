@@ -1,10 +1,40 @@
 import { IconShare } from '@tabler/icons-react';
 
-import { useShareLink } from '@/hooks/useShareLink';
+import { ShareResultModal } from '@/components/modals/ShareResultModal';
+import { useModal } from '@/hooks/useModal';
 import { cn } from '@/utils/cn';
 
 export function ShareButton({ className }: { className?: string }) {
-  const share = useShareLink();
+  const { open } = useModal();
+
+  const showResult = (copied: boolean) => {
+    void open<void>((close) => <ShareResultModal copied={copied} onClose={() => close()} />);
+  };
+
+  const copyLink = async (url: string) => {
+    try {
+      await navigator.clipboard.writeText(url);
+      showResult(true);
+    } catch {
+      showResult(false);
+    }
+  };
+
+  const share = async () => {
+    const url = window.location.href;
+
+    if (!navigator.share) {
+      await copyLink(url);
+      return;
+    }
+
+    try {
+      await navigator.share({ title: document.title, url });
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') return;
+      await copyLink(url);
+    }
+  };
 
   return (
     <button

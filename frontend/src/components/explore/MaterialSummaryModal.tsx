@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { IconArrowUpRight, IconShare, IconX } from '@tabler/icons-react';
+import { IconArrowUpRight, IconX } from '@tabler/icons-react';
 import { Link, RouterContextProvider, type AnyRouter } from '@tanstack/react-router';
 import { overlay } from 'overlay-kit';
 import type { ComponentProps, ComponentType, ReactNode } from 'react';
@@ -7,10 +7,10 @@ import type { ComponentProps, ComponentType, ReactNode } from 'react';
 import { materialDetailQuery, type Material, type MaterialDetail } from '@/apis/explore';
 import { hostnameOf, MaterialIcon, MaterialMeta } from '@/components/explore/MaterialParts';
 import { Badge } from '@/components/Badge';
+import { getButtonStyles } from '@/components/Button';
 import { Dialog, DialogClose, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Drawer, DrawerClose, DrawerContent, DrawerTitle } from '@/components/ui/drawer';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
-import { useShareLink } from '@/hooks/useShareLink';
 import { cn } from '@/utils/cn';
 import { getApiErrorMessage } from '@/utils/error';
 
@@ -120,7 +120,7 @@ interface MaterialSummaryProps {
   Title: ComponentType<{ className?: string; children: ReactNode }>;
   /** 메타 줄 오른쪽 끝. 모달에서는 닫기 버튼을 둔다. */
   trailing?: ReactNode;
-  /** 자료 정리 보기 페이지에서는 제목 아래에 원문 카드를 둔다. */
+  /** 제목 아래 원문 카드 모양. 모달은 썸네일 카드, 자료 정리 보기 페이지는 원문 보기 버튼이 있는 카드 */
   variant?: 'modal' | 'page';
 }
 
@@ -146,7 +146,11 @@ export function MaterialSummary({
           <MaterialIcon material={material} className="mt-[calc((1lh-18px)/2)]" />
           <span className="min-w-0">{material.title}</span>
         </Title>
-        {variant === 'page' && <SourceCard material={material} />}
+        {variant === 'page' ? (
+          <SourceCard material={material} />
+        ) : (
+          <SourcePreviewCard material={material} />
+        )}
       </div>
 
       {detail.data && detail.data.techTags.length > 0 && (
@@ -189,7 +193,7 @@ function CloseButton(props: ComponentProps<'button'>) {
   );
 }
 
-/** 모달·바텀시트 아래에 고정한 줄. 원문 출처, 공유, 자료 정리 보기로 가는 버튼 */
+/** 모달·바텀시트 아래에 고정한 줄. 자료 정리 보기 페이지로 가는 버튼 */
 function MaterialSummaryFooter({
   material,
   className,
@@ -200,38 +204,50 @@ function MaterialSummaryFooter({
   /** 자료 정리 보기로 이동할 때 모달을 닫는다. */
   onNavigate: () => void;
 }) {
-  const share = useShareLink();
-  const pageUrl = () => `${window.location.origin}/materials/${encodeURIComponent(material.id)}`;
-
   return (
-    <div
-      className={cn(
-        'bg-background flex shrink-0 items-center gap-2 border-t border-gray-200 py-4',
-        className,
-      )}
-    >
-      <p className="min-w-0 flex-1 truncate text-xs text-gray-500">
-        <b className="font-bold text-gray-600">{hostnameOf(material.url)}</b>에서 이어서 읽어 보세요
-      </p>
-      <button
-        type="button"
-        aria-label="공유"
-        onClick={() => void share({ url: pageUrl(), title: material.title })}
-        className="focus-visible:outline-primary-600 flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 focus-visible:outline-2"
-      >
-        <IconShare className="size-4.5" aria-hidden="true" />
-      </button>
-      {/* ASSUMPTION: 작업자 요청대로 "원문 보기"는 바로 원문으로 가지 않고 자료 정리 보기 페이지를 연다. 원문 링크는 그 페이지의 원문 카드에 있다. */}
+    <div className={cn('bg-background shrink-0 border-t border-gray-200 py-4', className)}>
       <Link
         to="/materials/$materialId"
         params={{ materialId: material.id }}
         onClick={onNavigate}
-        className="focus-visible:outline-primary-600 inline-flex h-11 shrink-0 items-center gap-1.5 rounded-lg bg-gray-900 px-5 text-[0.9375rem] font-bold text-white hover:bg-gray-700 focus-visible:outline-2 focus-visible:outline-offset-2"
+        className={getButtonStyles({ variant: 'outline', size: 'lg', className: 'w-full' })}
       >
-        원문 보기
-        <IconArrowUpRight className="size-4" aria-hidden="true" />
+        상세 보기
       </Link>
     </div>
+  );
+}
+
+/** 모달·바텀시트의 원문 카드. 누르면 원문을 새 탭으로 연다. */
+function SourcePreviewCard({ material }: { material: Material }) {
+  return (
+    <a
+      href={material.url}
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label={`원문 보기: ${material.title}`}
+      className="focus-visible:outline-primary-600 bg-background flex overflow-hidden rounded-lg border border-gray-200 transition-colors hover:bg-gray-50 focus-visible:outline-2"
+    >
+      {material.thumbnailUrl ? (
+        <img
+          src={material.thumbnailUrl}
+          alt=""
+          width={80}
+          height={80}
+          loading="lazy"
+          className="size-20 shrink-0 object-cover"
+        />
+      ) : (
+        <span aria-hidden="true" className="size-20 shrink-0 bg-gray-100" />
+      )}
+      <span className="flex min-w-0 flex-1 flex-col justify-center gap-1 border-l border-gray-200 px-4 py-3">
+        <span className="truncate text-sm font-bold text-gray-900">{material.title}</span>
+        <span className="flex min-w-0 items-center gap-1.5 text-xs text-gray-500">
+          <MaterialIcon material={material} />
+          <span className="truncate">{hostnameOf(material.url)}</span>
+        </span>
+      </span>
+    </a>
   );
 }
 
