@@ -79,6 +79,8 @@ public interface ProjectRepository {
 
     ProjectPage findAll(ProjectSearchCondition condition, Long viewerId);
 
+    List<PublicProjectTitle> findPublicProjectTitles();
+
     /**
      * 승인되고 삭제되지 않은 프로젝트 중 조건에 맞는 프로젝트 수를 필터 선택지별로 조회한다.
      */

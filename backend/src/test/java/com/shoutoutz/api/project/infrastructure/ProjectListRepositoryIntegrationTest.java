@@ -15,6 +15,7 @@ import com.shoutoutz.api.project.domain.ProjectSearchCondition;
 import com.shoutoutz.api.project.domain.ProjectSort;
 import com.shoutoutz.api.project.domain.ProjectSummary;
 import com.shoutoutz.api.project.domain.ProjectTechTag;
+import com.shoutoutz.api.project.domain.PublicProjectTitle;
 import com.shoutoutz.api.user.domain.account.User;
 import com.shoutoutz.api.user.domain.account.UserRepository;
 import java.sql.Timestamp;
@@ -417,6 +418,34 @@ class ProjectListRepositoryIntegrationTest {
         assertThat(ids(bothCohorts)).containsExactly(cohort7, cohort6);
         assertThat(ids(unknownTopic)).isEmpty();
         assertThat(unknownTopic.totalCount()).isZero();
+    }
+
+    @Test
+    @DisplayName("이름 비교에 쓸 프로젝트 이름은 승인되고 삭제되지 않은 프로젝트에서만 조회한다.")
+    void findsTitlesOfPublicProjectsOnly() {
+        long approved = saveProject(token + " 공개", "소개", "APPROVED", 6, BASE_TIME);
+        long pending = saveProject(token + " 대기", "소개", "PENDING", 6, BASE_TIME);
+        long deleted = saveProject(token + " 삭제", "소개", "APPROVED", 6, BASE_TIME);
+        jdbcTemplate.update("UPDATE projects SET deleted_at = now() WHERE id = ?", deleted);
+
+        List<PublicProjectTitle> titles = projectRepository.findPublicProjectTitles();
+
+        assertThat(titles).contains(new PublicProjectTitle(approved, token + " 공개"));
+        assertThat(titles).extracting(PublicProjectTitle::id).doesNotContain(pending, deleted);
+    }
+
+    @Test
+    @DisplayName("프로젝트 id 를 정해 조회하면 그 프로젝트 중 다른 조건에 맞는 것만 조회하고 전체 개수도 같은 조건으로 센다.")
+    void restrictsToGivenProjectIdsWithOtherFilters() {
+        long cohort6 = saveProject("APPROVED", 6, BASE_TIME);
+        long cohort7 = saveProject("APPROVED", 7, BASE_TIME.plus(1, ChronoUnit.HOURS));
+        saveProject("APPROVED", 7, BASE_TIME.plus(2, ChronoUnit.HOURS));
+
+        ProjectPage page = findAll(new ProjectSearchCondition(
+                null, List.of(7), List.of(), null, ProjectSort.LATEST, 50, null, List.of(cohort6, cohort7)));
+
+        assertThat(ids(page)).containsExactly(cohort7);
+        assertThat(page.totalCount()).isEqualTo(1);
     }
 
     private static Map<Long, Long> techTagCounts(ProjectFilterOptions options) {

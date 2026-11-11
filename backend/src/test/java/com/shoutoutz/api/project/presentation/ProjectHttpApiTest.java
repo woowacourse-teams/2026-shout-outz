@@ -505,8 +505,10 @@ class ProjectHttpApiTest {
                                 .description(FIND_ALL_DESCRIPTION)
                                 .queryParameters(
                                         parameterWithName("keyword")
-                                                .description("프로젝트 이름, 한 줄 소개, 참여 크루 이름 검색어. "
-                                                        + "대소문자를 무시한 부분 일치이며 100자 이하")
+                                                .description("검색어. 100자 이하. topicId 없이 보내면 먼저 공개 프로젝트 이름과 비교해, "
+                                                        + "대소문자, 공백, 구두점을 빼고 같은 이름이 있으면 그 프로젝트만 조회한다. "
+                                                        + "같은 이름이 없거나 topicId와 함께 보내면 프로젝트 이름, 한 줄 소개, "
+                                                        + "참여 크루 이름에서 대소문자를 무시한 부분 일치로 찾는다")
                                                 .optional(),
                                         parameterWithName("cohorts")
                                                 .description("기수 필터. 쉼표로 구분 (ex. 6,7). 선택한 기수 중 하나에 해당하면 조회")

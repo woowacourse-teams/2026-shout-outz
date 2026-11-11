@@ -43,12 +43,14 @@ import com.shoutoutz.api.project.domain.ProjectDetail;
 import com.shoutoutz.api.project.domain.ProjectFilterCondition;
 import com.shoutoutz.api.project.domain.ProjectFilterOptions;
 import com.shoutoutz.api.project.domain.ProjectMemberProfile;
+import com.shoutoutz.api.project.domain.NormalizedKeyword;
 import com.shoutoutz.api.project.domain.ProjectMembers;
 import com.shoutoutz.api.project.domain.ProjectPage;
 import com.shoutoutz.api.project.domain.ProjectRepository;
 import com.shoutoutz.api.project.domain.ProjectSearchCondition;
 import com.shoutoutz.api.project.domain.ProjectSort;
 import com.shoutoutz.api.project.domain.ProjectSummary;
+import com.shoutoutz.api.project.domain.PublicProjectTitle;
 import com.shoutoutz.api.project.domain.RestorableProject;
 import com.shoutoutz.api.project.domain.RestoredProject;
 import com.shoutoutz.api.project.domain.Slug;
@@ -223,7 +225,7 @@ public class ProjectService {
     @Transactional(readOnly = true)
     public ProjectFindAllResponse findAll(ProjectFindAllRequest request, Long viewerId) {
         ProjectSort sort = request.resolvedSort();
-        ProjectSearchCondition condition = new ProjectSearchCondition(
+        ProjectSearchCondition condition = resolveKeyword(new ProjectSearchCondition(
                 request.keyword(),
                 request.resolvedCohorts(),
                 request.resolvedTechTagIds(),
@@ -231,7 +233,7 @@ public class ProjectService {
                 sort,
                 request.resolvedSize(),
                 request.resolvedCursor()
-        );
+        ));
         ProjectPage page = viewerId == null
                 ? projectRepository.findAll(condition)
                 : projectRepository.findAll(condition, viewerId);
@@ -244,6 +246,28 @@ public class ProjectService {
                 mediaUrls,
                 userAvatarUrls
         );
+    }
+
+    /**
+     * 프로젝트 탭 검색어를 해석한다. 기술 주제를 함께 고르면 주제 안에서 부분 일치로 찾으므로 해석하지 않는다.
+     * 검색어가 공개 프로젝트 이름과 같으면 그 프로젝트로 가려는 입력으로 보고, 검색어 대신 그 프로젝트들만 조회한다.
+     */
+    private ProjectSearchCondition resolveKeyword(ProjectSearchCondition condition) {
+        if (condition.keyword() == null || condition.topicId() != null) {
+            return condition;
+        }
+        NormalizedKeyword keyword = NormalizedKeyword.of(condition.keyword());
+        if (keyword.isEmpty()) {
+            return condition;
+        }
+        List<Long> titleMatchedIds = projectRepository.findPublicProjectTitles().stream()
+                .filter(project -> NormalizedKeyword.of(project.title()).equals(keyword))
+                .map(PublicProjectTitle::id)
+                .toList();
+        if (titleMatchedIds.isEmpty()) {
+            return condition;
+        }
+        return condition.onlyProjects(titleMatchedIds);
     }
 
     /**

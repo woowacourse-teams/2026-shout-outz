@@ -13,6 +13,7 @@ import com.shoutoutz.api.project.domain.ProjectFilterOptions.TechTagCount;
 import com.shoutoutz.api.project.domain.ProjectMemberProfile;
 import com.shoutoutz.api.project.domain.ProjectPage;
 import com.shoutoutz.api.project.domain.ProjectSearchCondition;
+import com.shoutoutz.api.project.domain.PublicProjectTitle;
 import com.shoutoutz.api.project.domain.ProjectSort;
 import com.shoutoutz.api.project.domain.ProjectSummary;
 import com.shoutoutz.api.project.domain.ProjectTechTag;
@@ -247,7 +248,8 @@ public class ProjectListJdbcRepository implements UserProjectQueryRepository {
     public ProjectPage findAll(ProjectSearchCondition condition, Long viewerId) {
         MapSqlParameterSource parameters = new MapSqlParameterSource();
         String filteredProjectsSql = filteredProjectsSql(condition.filter(), parameters)
-                + topicCondition(condition.topicId(), parameters);
+                + topicCondition(condition.topicId(), parameters)
+                + projectIdsCondition(condition.projectIds(), parameters);
         parameters.addValue("viewerId", viewerId, Types.BIGINT);
 
         List<ProjectSummary> fetched = jdbcTemplate.query(
@@ -265,6 +267,18 @@ public class ProjectListJdbcRepository implements UserProjectQueryRepository {
         boolean hasNext = fetched.size() > condition.size();
         List<ProjectSummary> items = hasNext ? fetched.subList(0, condition.size()) : fetched;
         return new ProjectPage(withTechTagsAndMembers(items), hasNext, totalCount == null ? 0 : totalCount);
+    }
+
+    public List<PublicProjectTitle> findPublicProjectTitles() {
+        return jdbcTemplate.query(
+                """
+                        SELECT id, title
+                        FROM projects
+                        WHERE approval_status = 'APPROVED'
+                          AND deleted_at IS NULL
+                        """,
+                (resultSet, rowNumber) -> new PublicProjectTitle(resultSet.getLong("id"), resultSet.getString("title"))
+        );
     }
 
     /**
@@ -492,6 +506,20 @@ public class ProjectListJdbcRepository implements UserProjectQueryRepository {
         parameters.addValue("topicId", topicId);
         TeamResourceSql.addTeamSources(parameters);
         return TeamResourceSql.HAS_TOPIC_CONDITION;
+    }
+
+    /**
+     * 검색어 해석으로 미리 고른 프로젝트만 남긴다. 고른 프로젝트가 없으면 아무것도 남기지 않는다.
+     */
+    private static String projectIdsCondition(List<Long> projectIds, MapSqlParameterSource parameters) {
+        if (projectIds == null) {
+            return "";
+        }
+        if (projectIds.isEmpty()) {
+            return "  AND FALSE\n";
+        }
+        parameters.addValue("projectIds", projectIds);
+        return "  AND p.id IN (:projectIds)\n";
     }
 
     /**

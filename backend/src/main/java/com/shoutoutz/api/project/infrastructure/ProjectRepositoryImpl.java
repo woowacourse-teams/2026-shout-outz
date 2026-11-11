@@ -16,6 +16,7 @@ import com.shoutoutz.api.project.domain.ProjectFilterOptions;
 import com.shoutoutz.api.project.domain.ProjectPage;
 import com.shoutoutz.api.project.domain.ProjectRepository;
 import com.shoutoutz.api.project.domain.ProjectSearchCondition;
+import com.shoutoutz.api.project.domain.PublicProjectTitle;
 import com.shoutoutz.api.project.domain.RestorableProject;
 import com.shoutoutz.api.project.domain.Slug;
 import com.shoutoutz.api.project.infrastructure.jdbc.ProjectDetailJdbcRepository;
@@ -154,6 +155,11 @@ public class ProjectRepositoryImpl implements ProjectRepository {
     @Override
     public ProjectPage findAll(ProjectSearchCondition condition, Long viewerId) {
         return projectListJdbcRepository.findAll(condition, viewerId);
+    }
+
+    @Override
+    public List<PublicProjectTitle> findPublicProjectTitles() {
+        return projectListJdbcRepository.findPublicProjectTitles();
     }
 
     /**

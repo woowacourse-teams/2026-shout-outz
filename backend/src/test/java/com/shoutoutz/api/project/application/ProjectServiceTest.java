@@ -58,6 +58,7 @@ import com.shoutoutz.api.project.domain.ProjectSummary;
 import com.shoutoutz.api.project.domain.RestorableProject;
 import com.shoutoutz.api.project.domain.RestoredProject;
 import com.shoutoutz.api.project.domain.ProjectTechTag;
+import com.shoutoutz.api.project.domain.PublicProjectTitle;
 import com.shoutoutz.api.project.domain.ServiceStatus;
 import com.shoutoutz.api.user.domain.profile.Track;
 import com.shoutoutz.api.project.domain.Slug;
@@ -727,6 +728,41 @@ class ProjectServiceTest {
         verify(projectRepository).findAll(conditionCaptor.capture());
         assertThat(conditionCaptor.getValue()).isEqualTo(new ProjectSearchCondition(
                 "모아", List.of(7, 6), List.of(2L, 1L), "concurrency", ProjectSort.POPULAR, 20, cursor));
+        verify(projectRepository, never()).findPublicProjectTitles();
+    }
+
+    @Test
+    @DisplayName("검색어가 공개 프로젝트 이름과 대소문자, 공백, 구두점을 빼고 같으면 검색어 대신 그 프로젝트들만 조회한다.")
+    void findsOnlyProjectsWhoseTitleEqualsKeyword() {
+        when(projectRepository.findPublicProjectTitles()).thenReturn(List.of(
+                new PublicProjectTitle(1L, "Rilog."),
+                new PublicProjectTitle(2L, "Rilog 블로그"),
+                new PublicProjectTitle(3L, "rilog")
+        ));
+        when(projectRepository.findAll(any(ProjectSearchCondition.class)))
+                .thenReturn(new ProjectPage(List.of(), false, 0));
+
+        projectService.findAll(new ProjectFindAllRequest(" RILOG ", List.of(8), null, null, null, null, null));
+
+        ArgumentCaptor<ProjectSearchCondition> conditionCaptor = ArgumentCaptor.forClass(ProjectSearchCondition.class);
+        verify(projectRepository).findAll(conditionCaptor.capture());
+        assertThat(conditionCaptor.getValue()).isEqualTo(new ProjectSearchCondition(
+                null, List.of(8), List.of(), null, ProjectSort.LATEST, 8, null, List.of(1L, 3L)));
+    }
+
+    @Test
+    @DisplayName("이름이 같은 공개 프로젝트가 없으면 검색어를 부분 일치 조건으로 넘긴다.")
+    void searchesKeywordWhenNoTitleEqualsKeyword() {
+        when(projectRepository.findPublicProjectTitles()).thenReturn(List.of(new PublicProjectTitle(1L, "Rilog.")));
+        when(projectRepository.findAll(any(ProjectSearchCondition.class)))
+                .thenReturn(new ProjectPage(List.of(), false, 0));
+
+        projectService.findAll(new ProjectFindAllRequest("ril", null, null, null, null, null, null));
+
+        ArgumentCaptor<ProjectSearchCondition> conditionCaptor = ArgumentCaptor.forClass(ProjectSearchCondition.class);
+        verify(projectRepository).findAll(conditionCaptor.capture());
+        assertThat(conditionCaptor.getValue()).isEqualTo(new ProjectSearchCondition(
+                "ril", List.of(), List.of(), null, ProjectSort.LATEST, 8, null));
     }
 
     @Test
