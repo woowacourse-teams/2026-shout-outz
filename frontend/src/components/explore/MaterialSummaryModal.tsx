@@ -55,9 +55,9 @@ export function MaterialSummaryModal({
       >
         <DialogContent
           aria-describedby={undefined}
-          // DESIGN-TOKEN: 화면 위아래로 56px씩 띄운 높이 안에서 스크롤하도록 계산식으로 높이를 제한한다.
+          // DESIGN-TOKEN: 화면 가운데에서 위아래로 56px씩 띄운 높이 안에서 스크롤하도록 계산식으로 높이를 제한한다.
           // 바깥은 모서리를 자르기만 하고 스크롤은 안쪽에서 한다. 둥근 요소 자체가 스크롤되면 스크롤바가 오른쪽 모서리를 덮어 직각으로 보인다.
-          className="top-14 flex max-h-[calc(100dvh-7rem)] translate-y-0 flex-col overflow-hidden rounded-2xl shadow-2xl sm:max-w-150"
+          className="flex max-h-[calc(100dvh-7rem)] flex-col overflow-hidden rounded-2xl shadow-2xl sm:max-w-150"
         >
           <div className="overflow-y-auto px-7 pt-7 pb-10">
             <MaterialSummary
@@ -69,15 +69,14 @@ export function MaterialSummaryModal({
                 </DialogClose>
               }
             />
+            <MaterialDetailLink
+              material={material}
+              onNavigate={() => {
+                onClose();
+                onExit();
+              }}
+            />
           </div>
-          <MaterialSummaryFooter
-            material={material}
-            className="px-7"
-            onNavigate={() => {
-              onClose();
-              onExit();
-            }}
-          />
         </DialogContent>
       </Dialog>
     );
@@ -104,8 +103,8 @@ export function MaterialSummaryModal({
               </DrawerClose>
             }
           />
+          <MaterialDetailLink material={material} onNavigate={onClose} />
         </div>
-        <MaterialSummaryFooter material={material} className="px-5" onNavigate={onClose} />
       </DrawerContent>
     </Drawer>
   );
@@ -193,28 +192,24 @@ function CloseButton(props: ComponentProps<'button'>) {
   );
 }
 
-/** 모달·바텀시트 아래에 고정한 줄. 자료 정리 보기 페이지로 가는 버튼 */
-function MaterialSummaryFooter({
+/** 모달·바텀시트 내용 맨 끝의 자료 정리 보기 버튼. 스크롤을 끝까지 내리면 보인다. */
+function MaterialDetailLink({
   material,
-  className,
   onNavigate,
 }: {
   material: Material;
-  className?: string;
   /** 자료 정리 보기로 이동할 때 모달을 닫는다. */
   onNavigate: () => void;
 }) {
   return (
-    <div className={cn('bg-background shrink-0 border-t border-gray-200 py-4', className)}>
-      <Link
-        to="/materials/$materialId"
-        params={{ materialId: material.id }}
-        onClick={onNavigate}
-        className={getButtonStyles({ variant: 'outline', size: 'lg', className: 'w-full' })}
-      >
-        상세 보기
-      </Link>
-    </div>
+    <Link
+      to="/materials/$materialId"
+      params={{ materialId: material.id }}
+      onClick={onNavigate}
+      className={getButtonStyles({ variant: 'outline', size: 'lg', className: 'mt-10 w-full' })}
+    >
+      상세 보기
+    </Link>
   );
 }
 
