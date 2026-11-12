@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -525,8 +526,12 @@ class ProjectAcceptanceTest {
     /**
      * 로컬 DB 를 다른 테스트와 함께 쓰므로, 제목에 넣고 검색어로 쓸 무작위 토큰으로 이 테스트의 프로젝트만 조회한다.
      */
+    /**
+     * 검색어 해석이 기술 주제 별칭(ddd, e2e, ec2 등)으로 읽지 않도록 영문 접두사 뒤를 숫자로만 만든다.
+     * 16진수 문자열은 "ddd" 같은 별칭을 우연히 포함해 주제 목록으로 해석될 수 있다.
+     */
     private static String uniqueToken() {
-        return "tk" + UUID.randomUUID().toString().replace("-", "").substring(0, 10);
+        return "tk" + String.format("%010d", ThreadLocalRandom.current().nextLong(10_000_000_000L));
     }
 
     private long registerPendingProject(LoginSession author, LoginSession teammate, List<Long> techTagIds) {
