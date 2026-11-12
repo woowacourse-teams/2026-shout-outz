@@ -1,4 +1,4 @@
-import { useEffect, useRef, type ReactNode } from 'react';
+import { useLayoutEffect, useRef, type ReactNode } from 'react';
 
 import { cn } from '@/utils/cn';
 
@@ -13,7 +13,9 @@ export interface ModalProps {
 export function Modal({ children, onClose, className, labelledBy, describedBy }: ModalProps) {
   const ref = useRef<HTMLDialogElement>(null);
 
-  useEffect(() => {
+  // 닫을 때 브라우저가 연 버튼으로 포커스를 돌려주는 것은 dialog가 문서에 붙어 있을 때만이다.
+  // useEffect의 정리는 React가 dialog를 DOM에서 뺀 뒤에 실행되므로, 빼기 전에 실행되는 useLayoutEffect로 닫는다.
+  useLayoutEffect(() => {
     const dialog = ref.current;
     if (!dialog) return;
 
