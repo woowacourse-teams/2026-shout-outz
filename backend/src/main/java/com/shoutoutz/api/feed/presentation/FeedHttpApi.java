@@ -4,6 +4,7 @@ import com.shoutoutz.api.auth.presentation.security.AuthenticatedUser;
 import com.shoutoutz.api.auth.presentation.security.LoginUser;
 import com.shoutoutz.api.common.response.SuccessResponse;
 import com.shoutoutz.api.feed.application.FeedService;
+import com.shoutoutz.api.feed.application.GuestFeedListService;
 import com.shoutoutz.api.feed.application.dto.FeedFindAllResult;
 import com.shoutoutz.api.feed.presentation.dto.request.FeedFindAllRequest;
 import com.shoutoutz.api.feed.presentation.dto.request.FeedSaveRequest;
@@ -33,6 +34,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class FeedHttpApi {
 
     private final FeedService feedService;
+    private final GuestFeedListService guestFeedListService;
 
     @GetMapping
     public ResponseEntity<SuccessResponse<List<FeedResponse>>> findAllFeed(
@@ -41,7 +43,7 @@ public class FeedHttpApi {
     ) {
         Long viewerId = AuthenticatedUser.userIdOrNull(loginUser);
         FeedFindAllResult result = viewerId == null
-                ? feedService.findAllFeed(request)
+                ? guestFeedListService.findAll(request)
                 : feedService.findAllFeed(request, viewerId);
         List<FeedResponse> response = FeedResponse.from(
                 result.items(),

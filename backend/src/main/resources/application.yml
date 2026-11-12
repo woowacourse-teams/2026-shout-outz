@@ -111,6 +111,12 @@ local-cache:
       refresh-after: ${LOCAL_CACHE_HOME_STATISTICS_REFRESH_AFTER:1m}
       expire-after: ${LOCAL_CACHE_HOME_STATISTICS_EXPIRE_AFTER:5m}
       maximum-size: 1
+    # 비로그인 피드 목록 첫 페이지. 정렬·카테고리·종류·크기 조합마다 하나씩 보관한다.
+    # 새 글이 늦게 보이지 않도록 갱신 시간을 짧게 둔다.
+    guest-feed-first-page:
+      refresh-after: ${LOCAL_CACHE_GUEST_FEED_FIRST_PAGE_REFRESH_AFTER:5s}
+      expire-after: ${LOCAL_CACHE_GUEST_FEED_FIRST_PAGE_EXPIRE_AFTER:30s}
+      maximum-size: 100
 
 github:
   oauth:
