@@ -77,6 +77,7 @@ import com.shoutoutz.api.project.domain.exception.InvalidLogoException;
 import com.shoutoutz.api.project.domain.exception.InvalidThumbnailException;
 import com.shoutoutz.api.project.domain.exception.ProjectRegistrationForbiddenException;
 import com.shoutoutz.api.project.presentation.dto.request.ProjectCreateRequest;
+import com.shoutoutz.api.projectresource.application.ProjectResourceLinkRepository;
 import com.shoutoutz.api.projectresource.application.ProjectResourceQueryRepository;
 import com.shoutoutz.api.projectresource.domain.ResourceTopic;
 import com.shoutoutz.api.resourcesearch.application.ResourceSearchService;
@@ -184,6 +185,9 @@ class ProjectServiceTest {
     private ProjectResourceQueryRepository projectResourceQueryRepository;
 
     @Mock
+    private ProjectResourceLinkRepository projectResourceLinkRepository;
+
+    @Mock
     private ResourceSearchService resourceSearchService;
 
     private final TopicAliases topicAliases = TopicAliases.of(
@@ -213,6 +217,7 @@ class ProjectServiceTest {
                 blogSourceRepository,
                 topicAliases,
                 projectResourceQueryRepository,
+                projectResourceLinkRepository,
                 resourceSearchService,
                 Clock.fixed(NOW, ZoneOffset.UTC)
         );
@@ -385,6 +390,26 @@ class ProjectServiceTest {
         InOrder inOrder = inOrder(blogSourceRepository);
         inOrder.verify(blogSourceRepository).attachUnregistered(100L, GITHUB_REPOSITORY_URL);
         inOrder.verify(blogSourceRepository).syncServiceInputs(100L, TeamBlogUrls.empty());
+    }
+
+    @Test
+    @DisplayName("등록하면 팀 블로그 등록부를 맞춘 뒤 수집한 기술 자료와 전체 경험 카드를 프로젝트에 잇는다.")
+    void linksCollectedResourcesAfterSyncingTeamBlogsOnCreate() {
+        givenRegistrant(UserType.WOOWACOURSE_CREW);
+        givenMember(MEMBER_HANDLE, MEMBER_ID, UserType.WOOWACOURSE_CREW);
+        when(projectRepository.existsBySlug(new Slug("loop"))).thenReturn(false);
+        when(techTagRepository.findAllActiveByIds(TECH_TAG_IDS)).thenReturn(activeTags(1L, 2L));
+        when(mediaMetadataRepository.findById(THUMBNAIL_ID))
+                .thenReturn(Optional.of(thumbnail(REGISTERED_BY, MediaPurpose.PROJECT_THUMBNAIL, MediaStatus.READY)));
+        when(projectRepository.save(any(Project.class), eq(TECH_TAG_IDS), anyList()))
+                .thenAnswer(invocation -> withId(invocation.getArgument(0), 100L));
+
+        projectService.create(REGISTERED_BY, request(6, THUMBNAIL_ID, TECH_TAG_IDS));
+
+        InOrder inOrder = inOrder(blogSourceRepository, projectResourceLinkRepository);
+        inOrder.verify(blogSourceRepository).syncServiceInputs(100L, TeamBlogUrls.empty());
+        inOrder.verify(projectResourceLinkRepository).link(100L, GITHUB_REPOSITORY_URL);
+        verify(projectResourceLinkRepository, never()).unlink(anyLong(), any());
     }
 
     @Test
@@ -1632,6 +1657,36 @@ class ProjectServiceTest {
         verify(blogSourceRepository).attachUnregistered(
                 PROJECT_ID, new GithubRepositoryUrl("https://github.com/woowacourse-teams/2026-loop-renewal"));
         verify(blogSourceRepository, never()).syncServiceInputs(anyLong(), any());
+    }
+
+    @Test
+    @DisplayName("수정에서 레포 주소가 바뀌면 예전 레포의 기술 자료와 카드를 푼 뒤 새 레포로 다시 잇는다.")
+    void relinksCollectedResourcesWhenRepositoryChanges() {
+        givenValidProjectUpdate(existingProject(ApprovalStatus.APPROVED, THUMBNAIL_ID));
+        ProjectUpdateRequest request = updateRequestWithoutThumbnail();
+        request.setGithubRepositoryUrl("https://github.com/woowacourse-teams/2026-loop-renewal");
+
+        projectService.update(SLUG, REGISTERED_BY, request);
+
+        InOrder inOrder = inOrder(projectResourceLinkRepository);
+        inOrder.verify(projectResourceLinkRepository).unlink(PROJECT_ID, GITHUB_REPOSITORY_URL);
+        inOrder.verify(projectResourceLinkRepository).link(
+                PROJECT_ID, new GithubRepositoryUrl("https://github.com/woowacourse-teams/2026-loop-renewal"));
+    }
+
+    @Test
+    @DisplayName("수정에서 레포 주소가 그대로면 아무것도 풀지 않고, 더한 팀 블로그 글까지 잇도록 수집한 자료를 다시 잇는다.")
+    void linksCollectedResourcesAfterSyncingTeamBlogsWhenRepositoryKept() {
+        givenValidProjectUpdate(existingProject(ApprovalStatus.APPROVED, THUMBNAIL_ID));
+        ProjectUpdateRequest request = updateRequestWithoutThumbnail();
+        request.setTeamBlogUrls(List.of("https://velog.io/@loop"));
+
+        projectService.update(SLUG, REGISTERED_BY, request);
+
+        InOrder inOrder = inOrder(blogSourceRepository, projectResourceLinkRepository);
+        inOrder.verify(blogSourceRepository).syncServiceInputs(PROJECT_ID, TeamBlogUrls.of(List.of("https://velog.io/@loop")));
+        inOrder.verify(projectResourceLinkRepository).link(PROJECT_ID, GITHUB_REPOSITORY_URL);
+        verify(projectResourceLinkRepository, never()).unlink(anyLong(), any());
     }
 
     @Test
