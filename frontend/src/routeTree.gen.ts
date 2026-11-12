@@ -35,6 +35,8 @@ import { Route as UsersHandleRouteImport } from './routes/users/$handle'
 import { Route as CommunityFeedIdEditRouteImport } from './routes/community/$feedId_.edit'
 import { Route as FeedsFeedIdEditRouteImport } from './routes/feeds/$feedId_.edit'
 import { Route as ProjectsSlugEditRouteImport } from './routes/projects/$slug_.edit'
+import { Route as ProjectsSlugIntroRouteImport } from './routes/projects/$slug_.intro'
+import { Route as ProjectsSlugMaterialsRouteImport } from './routes/projects/$slug_.materials'
 import { Route as ProjectsSlugExperiencesCardIdRouteImport } from './routes/projects/$slug_.experiences.$cardId'
 
 const IndexRoute = IndexRouteImport.update({
@@ -168,6 +170,16 @@ const ProjectsSlugEditRoute = ProjectsSlugEditRouteImport.update({
   path: '/projects/$slug/edit',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProjectsSlugIntroRoute = ProjectsSlugIntroRouteImport.update({
+  id: '/projects/$slug_/intro',
+  path: '/projects/$slug/intro',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProjectsSlugMaterialsRoute = ProjectsSlugMaterialsRouteImport.update({
+  id: '/projects/$slug_/materials',
+  path: '/projects/$slug/materials',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProjectsSlugExperiencesCardIdRoute =
   ProjectsSlugExperiencesCardIdRouteImport.update({
     id: '/projects/$slug_/experiences/$cardId',
@@ -202,6 +214,8 @@ export interface FileRoutesByFullPath {
   '/community/$feedId/edit': typeof CommunityFeedIdEditRoute
   '/feeds/$feedId/edit': typeof FeedsFeedIdEditRoute
   '/projects/$slug/edit': typeof ProjectsSlugEditRoute
+  '/projects/$slug/intro': typeof ProjectsSlugIntroRoute
+  '/projects/$slug/materials': typeof ProjectsSlugMaterialsRoute
   '/projects/$slug/experiences/$cardId': typeof ProjectsSlugExperiencesCardIdRoute
 }
 export interface FileRoutesByTo {
@@ -231,6 +245,8 @@ export interface FileRoutesByTo {
   '/community/$feedId/edit': typeof CommunityFeedIdEditRoute
   '/feeds/$feedId/edit': typeof FeedsFeedIdEditRoute
   '/projects/$slug/edit': typeof ProjectsSlugEditRoute
+  '/projects/$slug/intro': typeof ProjectsSlugIntroRoute
+  '/projects/$slug/materials': typeof ProjectsSlugMaterialsRoute
   '/projects/$slug/experiences/$cardId': typeof ProjectsSlugExperiencesCardIdRoute
 }
 export interface FileRoutesById {
@@ -261,6 +277,8 @@ export interface FileRoutesById {
   '/community/$feedId_/edit': typeof CommunityFeedIdEditRoute
   '/feeds/$feedId_/edit': typeof FeedsFeedIdEditRoute
   '/projects/$slug_/edit': typeof ProjectsSlugEditRoute
+  '/projects/$slug_/intro': typeof ProjectsSlugIntroRoute
+  '/projects/$slug_/materials': typeof ProjectsSlugMaterialsRoute
   '/projects/$slug_/experiences/$cardId': typeof ProjectsSlugExperiencesCardIdRoute
 }
 export interface FileRouteTypes {
@@ -292,6 +310,8 @@ export interface FileRouteTypes {
     | '/community/$feedId/edit'
     | '/feeds/$feedId/edit'
     | '/projects/$slug/edit'
+    | '/projects/$slug/intro'
+    | '/projects/$slug/materials'
     | '/projects/$slug/experiences/$cardId'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -321,6 +341,8 @@ export interface FileRouteTypes {
     | '/community/$feedId/edit'
     | '/feeds/$feedId/edit'
     | '/projects/$slug/edit'
+    | '/projects/$slug/intro'
+    | '/projects/$slug/materials'
     | '/projects/$slug/experiences/$cardId'
   id:
     | '__root__'
@@ -350,6 +372,8 @@ export interface FileRouteTypes {
     | '/community/$feedId_/edit'
     | '/feeds/$feedId_/edit'
     | '/projects/$slug_/edit'
+    | '/projects/$slug_/intro'
+    | '/projects/$slug_/materials'
     | '/projects/$slug_/experiences/$cardId'
   fileRoutesById: FileRoutesById
 }
@@ -380,6 +404,8 @@ export interface RootRouteChildren {
   CommunityFeedIdEditRoute: typeof CommunityFeedIdEditRoute
   FeedsFeedIdEditRoute: typeof FeedsFeedIdEditRoute
   ProjectsSlugEditRoute: typeof ProjectsSlugEditRoute
+  ProjectsSlugIntroRoute: typeof ProjectsSlugIntroRoute
+  ProjectsSlugMaterialsRoute: typeof ProjectsSlugMaterialsRoute
   ProjectsSlugExperiencesCardIdRoute: typeof ProjectsSlugExperiencesCardIdRoute
 }
 
@@ -567,6 +593,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProjectsSlugEditRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/projects/$slug_/intro': {
+      id: '/projects/$slug_/intro'
+      path: '/projects/$slug/intro'
+      fullPath: '/projects/$slug/intro'
+      preLoaderRoute: typeof ProjectsSlugIntroRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/projects/$slug_/materials': {
+      id: '/projects/$slug_/materials'
+      path: '/projects/$slug/materials'
+      fullPath: '/projects/$slug/materials'
+      preLoaderRoute: typeof ProjectsSlugMaterialsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/projects/$slug_/experiences/$cardId': {
       id: '/projects/$slug_/experiences/$cardId'
       path: '/projects/$slug/experiences/$cardId'
@@ -604,6 +644,8 @@ const rootRouteChildren: RootRouteChildren = {
   CommunityFeedIdEditRoute: CommunityFeedIdEditRoute,
   FeedsFeedIdEditRoute: FeedsFeedIdEditRoute,
   ProjectsSlugEditRoute: ProjectsSlugEditRoute,
+  ProjectsSlugIntroRoute: ProjectsSlugIntroRoute,
+  ProjectsSlugMaterialsRoute: ProjectsSlugMaterialsRoute,
   ProjectsSlugExperiencesCardIdRoute: ProjectsSlugExperiencesCardIdRoute,
 }
 export const routeTree = rootRouteImport
