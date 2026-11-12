@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { IconLoader2 } from '@tabler/icons-react';
 import {
   useMutation,
   useQuery,
@@ -501,6 +502,7 @@ function JobPostingForm({
         >
           {extract.isPending ? '추출하는 중…' : '본문에서 추출'}
         </Button>
+        {extract.isPending && <ExtractProgress />}
         {extract.error != null && (
           <p role="alert" className="text-xs text-red-600">
             {getApiErrorMessage(extract.error)}
@@ -668,7 +670,7 @@ function JobPostingForm({
         </p>
       )}
       <div className="flex gap-2">
-        <Button type="submit" disabled={!canSave || save.isPending}>
+        <Button type="submit" disabled={!canSave || save.isPending || extract.isPending}>
           {jobPostingId == null ? '등록' : '저장'}
         </Button>
         <Button type="button" variant="ghost" onClick={() => onDone()}>
@@ -676,5 +678,25 @@ function JobPostingForm({
         </Button>
       </div>
     </form>
+  );
+}
+
+/**
+ * 추출을 기다리는 동안의 안내. 서버가 LLM을 불러 10~20초 걸려서, 반응이 없다고 여러 번 누르지 않게
+ * 걸린 시간을 1초마다 보여 준다.
+ */
+function ExtractProgress() {
+  const [seconds, setSeconds] = useState(0);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setSeconds((prev) => prev + 1), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  return (
+    <p role="status" className="flex items-center gap-1.5 text-xs text-gray-600">
+      <IconLoader2 className="size-4 animate-spin" aria-hidden="true" />
+      추출 중이에요. 공고를 읽고 역량을 뽑느라 보통 10~20초 걸려요. ({seconds}초)
+    </p>
   );
 }
