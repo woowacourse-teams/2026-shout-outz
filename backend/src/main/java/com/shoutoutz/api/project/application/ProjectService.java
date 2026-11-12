@@ -77,6 +77,7 @@ import com.shoutoutz.api.project.presentation.dto.response.ProjectDetailResponse
 import com.shoutoutz.api.project.presentation.dto.response.ProjectFilterOptionsResponse;
 import com.shoutoutz.api.project.presentation.dto.response.ProjectFindAllResponse;
 import com.shoutoutz.api.project.presentation.dto.response.ProjectUpdateResponse;
+import com.shoutoutz.api.projectresource.application.ProjectResourceLinkRepository;
 import com.shoutoutz.api.projectresource.application.ProjectResourceQueryRepository;
 import com.shoutoutz.api.projectresource.domain.ResourceTopic;
 import com.shoutoutz.api.resourcesearch.application.ResourceSearchService;
@@ -138,6 +139,7 @@ public class ProjectService {
     private final BlogSourceRepository blogSourceRepository;
     private final TopicAliases topicAliases;
     private final ProjectResourceQueryRepository projectResourceQueryRepository;
+    private final ProjectResourceLinkRepository projectResourceLinkRepository;
     private final ResourceSearchService resourceSearchService;
     private final Clock clock;
 
@@ -173,6 +175,7 @@ public class ProjectService {
         Project savedProject = projectRepository.save(project, request.techTagIds(), members.getUserIds());
         blogSourceRepository.attachUnregistered(savedProject.getId(), savedProject.getGithubRepositoryUrl());
         blogSourceRepository.syncServiceInputs(savedProject.getId(), teamBlogUrls);
+        projectResourceLinkRepository.link(savedProject.getId(), savedProject.getGithubRepositoryUrl());
         projectApprovalHistoryRepository.save(
                 ProjectApprovalHistory.initial(savedProject.getId(), clock.instant())
         );
@@ -185,6 +188,8 @@ public class ProjectService {
      * 기술 스택과 팀원은 받은 목록으로 통째로 바꾼다.
      * 팀 블로그 주소는 필드를 보낸 경우에만 받은 목록으로 맞춘다.
      * 레포 주소가 바뀌면, 바뀐 레포 주소로 넣어 둔 프로젝트 없는 팀 블로그를 이 프로젝트에 이어 붙인다.
+     * 수집한 기술 자료와 전체 경험 카드는 수정할 때마다 지금 레포 주소와 팀 블로그 주소로 다시 잇는다(팀 블로그를 더하면 그 글도 이어진다).
+     * 레포 주소가 바뀌면 예전 레포의 자료와 카드는 먼저 푼다.
      */
     @Transactional
     public ProjectUpdateResponse update(String slug, long loginUserId, ProjectUpdateRequest request) {
@@ -226,12 +231,17 @@ public class ProjectService {
                 : null;
 
         Project savedProject = projectRepository.update(updated, request.techTagIds(), members.getUserIds());
-        if (!updated.getGithubRepositoryUrl().equals(project.getGithubRepositoryUrl())) {
+        boolean repositoryChanged = !updated.getGithubRepositoryUrl().equals(project.getGithubRepositoryUrl());
+        if (repositoryChanged) {
             blogSourceRepository.attachUnregistered(projectId, updated.getGithubRepositoryUrl());
         }
         if (teamBlogUrls != null) {
             blogSourceRepository.syncServiceInputs(projectId, teamBlogUrls);
         }
+        if (repositoryChanged) {
+            projectResourceLinkRepository.unlink(projectId, project.getGithubRepositoryUrl());
+        }
+        projectResourceLinkRepository.link(projectId, updated.getGithubRepositoryUrl());
         if (project.getApprovalStatus() == ApprovalStatus.REJECTED
                 && savedProject.getApprovalStatus() == ApprovalStatus.PENDING) {
             projectApprovalHistoryRepository.save(
