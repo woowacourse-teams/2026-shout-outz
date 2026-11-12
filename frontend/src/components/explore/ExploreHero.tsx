@@ -56,7 +56,9 @@ export const chipClass = cn(tabItemBaseStyle, tabItemSizeStyles.sm, tabItemStyle
 interface ExploreHeroProps {
   tab: ExploreTab;
   onTabChange: (tab: ExploreTab) => void;
+  /** 검색창에 보일 검색어. 있으면 검색한 상태로 보고 추천 검색어를 숨긴다. */
   query: string;
+  /** 빈 검색어로 검색하면 검색을 푼다. */
   onSearch: (query: string) => void;
   /** 추천 검색어 중 눌린 것. 없으면 검색어와 같은 것을 눌린 것으로 본다. */
   activeSuggestion?: string | null;
@@ -132,24 +134,27 @@ export function ExploreHero({
         onSearch={onSearch}
       />
 
-      <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
-        <span className="mr-1 text-xs font-medium text-gray-500">{search.suggestionLabel}</span>
-        <ul aria-label="추천 검색어" className="flex flex-wrap gap-2">
-          {suggestionItems.map((suggestion) => (
-            <li key={suggestion}>
-              <button
-                type="button"
-                data-status={suggestion === activeSuggestion ? 'active' : 'inactive'}
-                aria-pressed={suggestion === activeSuggestion}
-                className={chipClass}
-                onClick={() => onSuggestionSelect(suggestion)}
-              >
-                {suggestion}
-              </button>
-            </li>
-          ))}
-        </ul>
-      </div>
+      {/* 추천 검색어는 검색하기 전에만 보여 준다. */}
+      {!query && (
+        <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+          <span className="mr-1 text-xs font-medium text-gray-500">{search.suggestionLabel}</span>
+          <ul aria-label="추천 검색어" className="flex flex-wrap gap-2">
+            {suggestionItems.map((suggestion) => (
+              <li key={suggestion}>
+                <button
+                  type="button"
+                  data-status={suggestion === activeSuggestion ? 'active' : 'inactive'}
+                  aria-pressed={suggestion === activeSuggestion}
+                  className={chipClass}
+                  onClick={() => onSuggestionSelect(suggestion)}
+                >
+                  {suggestion}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </section>
   );
 }
@@ -170,7 +175,8 @@ function SearchForm({ query, label, placeholder, onSearch }: SearchFormProps) {
       className="mx-auto mt-6 flex max-w-2xl min-w-0 items-center gap-2"
       onSubmit={(event) => {
         event.preventDefault();
-        if (input.trim()) onSearch(input.trim());
+        // 검색어를 지우고 검색하면 검색을 풀어 추천 검색어를 다시 보여 준다.
+        if (input.trim() || query) onSearch(input.trim());
       }}
     >
       <div className="focus-within:border-primary-400 focus-within:ring-primary-100 bg-background flex h-12 min-w-0 flex-1 items-center gap-2 rounded-xl border border-gray-200 px-4 shadow-sm focus-within:ring-4">
