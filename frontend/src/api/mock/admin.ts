@@ -145,6 +145,48 @@ const resourceReports = [
   },
 ];
 
+const adminJobPostingListItem = {
+  jobPostingId: 1,
+  title: '백엔드 개발자',
+  companyName: '우아한형제들',
+  jobRole: 'BACKEND',
+  status: 'READY',
+  failedRequirementCount: 1,
+  hiddenAt: null,
+  createdAt: '2026-09-10T00:00:00Z',
+};
+
+const adminJobPostingDetail = {
+  ...adminJobPostingListItem,
+  sourceUrl: 'https://career.woowahan.com/recruitment/1',
+  careerRequirement: '신입',
+  employmentType: '정규직',
+  deadline: '2026-10-31',
+  registeredBy: 7,
+  requirements: [
+    {
+      requirementId: 1,
+      category: 'REQUIRED',
+      displayOrder: 0,
+      name: 'Java',
+      summary: 'Java 개발 경험',
+      status: 'READY',
+      lastError: null,
+      recommendations: [],
+    },
+    {
+      requirementId: 2,
+      category: 'PREFERRED',
+      displayOrder: 1,
+      name: '대용량 트래픽',
+      summary: '대용량 트래픽 처리 경험',
+      status: 'FAILED',
+      lastError: 'NO_CANDIDATES',
+      recommendations: [],
+    },
+  ],
+};
+
 export const adminHandlers = [
   http.get('/api/v1/admin/resource-reports', ({ request }) => {
     const params = new URL(request.url).searchParams;
@@ -377,4 +419,140 @@ export const adminHandlers = [
   http.delete('/api/v1/admin/home/banners/:bannerId', ({ params }) =>
     HttpResponse.json({ status: 'success', data: { id: Number(params.bannerId) } }),
   ),
+  // ── 심사 이력 ──
+  http.get('/api/v1/admin/projects/:projectId/history', ({ params }) =>
+    HttpResponse.json({
+      status: 'success',
+      data: {
+        projectId: Number(params.projectId),
+        items: [
+          {
+            historyId: 1,
+            fromStatus: null,
+            toStatus: 'PENDING',
+            changedBy: { userId: 7, handle: 'woowa-admin' },
+            reason: null,
+            changedAt: '2026-09-15T00:00:00Z',
+          },
+        ],
+      },
+    }),
+  ),
+
+  http.get('/api/v1/admin/verification-requests/:requestId/history', ({ params }) =>
+    HttpResponse.json({
+      status: 'success',
+      data: {
+        requestId: Number(params.requestId),
+        items: [
+          {
+            historyId: 1,
+            fromStatus: null,
+            toStatus: 'PENDING',
+            changedBy: { userId: 42, handle: 'charles' },
+            reason: null,
+            changedAt: '2026-09-16T02:30:00Z',
+          },
+        ],
+      },
+    }),
+  ),
+
+  // ── 채용공고 ──
+  http.get('/api/v1/admin/job-postings', () =>
+    HttpResponse.json({
+      status: 'success',
+      data: [adminJobPostingListItem],
+      meta: { hasNext: false, nextCursor: null, totalCount: 1 },
+    }),
+  ),
+
+  http.get('/api/v1/admin/job-postings/:jobPostingId', ({ params }) =>
+    HttpResponse.json({
+      status: 'success',
+      data: { ...adminJobPostingDetail, jobPostingId: Number(params.jobPostingId) },
+    }),
+  ),
+
+  http.post('/api/v1/admin/job-postings/extractions', () =>
+    HttpResponse.json({
+      status: 'success',
+      data: {
+        title: '백엔드 개발자',
+        companyName: '우아한형제들',
+        jobRole: 'BACKEND',
+        careerRequirement: '신입',
+        employmentType: '정규직',
+        deadline: null,
+        registeredJobPostingId: null,
+        requirements: [
+          { category: 'REQUIRED', name: 'Java', summary: 'Java 개발 경험' },
+          { category: 'PREFERRED', name: '대용량 트래픽', summary: '대용량 트래픽 처리 경험' },
+        ],
+      },
+    }),
+  ),
+
+  http.post('/api/v1/admin/job-postings', () =>
+    HttpResponse.json({ status: 'success', data: { jobPostingId: 2 } }, { status: 201 }),
+  ),
+
+  http.put('/api/v1/admin/job-postings/:jobPostingId', ({ params }) =>
+    HttpResponse.json({ status: 'success', data: { jobPostingId: Number(params.jobPostingId) } }),
+  ),
+
+  http.patch('/api/v1/admin/job-postings/:jobPostingId/visibility', async ({ params, request }) => {
+    const { hidden } = (await request.json()) as { hidden: boolean };
+    return HttpResponse.json({
+      status: 'success',
+      data: {
+        jobPostingId: Number(params.jobPostingId),
+        hiddenAt: hidden ? '2026-09-20T00:00:00Z' : null,
+      },
+    });
+  }),
+
+  http.post('/api/v1/admin/job-postings/:jobPostingId/reanalysis', ({ params }) =>
+    HttpResponse.json({
+      status: 'success',
+      data: {
+        jobPostingId: Number(params.jobPostingId),
+        reanalyzedRequirementCount: 1,
+        status: 'PROCESSING',
+      },
+    }),
+  ),
+
+  http.delete(
+    '/api/v1/admin/job-postings/:jobPostingId',
+    () => new HttpResponse(null, { status: 204 }),
+  ),
+
+  // ── 소식 수정·삭제 ──
+  http.put('/api/v1/news/:newsId', ({ params }) =>
+    HttpResponse.json({ status: 'success', data: { id: Number(params.newsId) } }),
+  ),
+
+  http.delete('/api/v1/news/:newsId', ({ params }) =>
+    HttpResponse.json({ status: 'success', data: { id: Number(params.newsId) } }),
+  ),
+
+  // ── 카테고리 ──
+  http.post('/api/v1/categories', async ({ request }) => {
+    const body = (await request.json()) as Record<string, unknown>;
+    return HttpResponse.json(
+      { status: 'success', data: { ...body, categoryId: 99 } },
+      { status: 201 },
+    );
+  }),
+
+  http.put('/api/v1/categories/:categoryId', async ({ params, request }) => {
+    const body = (await request.json()) as Record<string, unknown>;
+    return HttpResponse.json({
+      status: 'success',
+      data: { ...body, categoryId: Number(params.categoryId) },
+    });
+  }),
+
+  http.delete('/api/v1/categories/:categoryId', () => new HttpResponse(null, { status: 204 })),
 ];

@@ -1,6 +1,26 @@
 import { infiniteQueryOptions, mutationOptions, queryOptions } from '@tanstack/react-query';
 import { httpClient, type ApiSuccessBody } from '@/utils/client';
 import type {
+  AdminJobPostingDetailSuccessResponse,
+  AdminJobPostingExtractRequest,
+  AdminJobPostingExtractSuccessResponse,
+  AdminJobPostingFindAllSuccessResponse,
+  AdminJobPostingReanalysisRequest,
+  AdminJobPostingReanalysisSuccessResponse,
+  AdminJobPostingSaveRequest,
+  AdminJobPostingSaveSuccessResponse,
+  AdminJobPostingUpdateSuccessResponse,
+  AdminJobPostingVisibilityUpdateRequest,
+  AdminJobPostingVisibilityUpdateSuccessResponse,
+  AdminProjectHistorySuccessResponse,
+  AdminVerificationRequestHistorySuccessResponse,
+  CategorySaveRequest,
+  CategorySaveSuccessResponse,
+  CategoryUpdateRequest,
+  CategoryUpdateSuccessResponse,
+  NewsDeleteSuccessResponse,
+  NewsUpdateRequest,
+  NewsUpdateSuccessResponse,
   AdminProjectMigrationUpdateSuccessResponse,
   AdminVerificationRequestApproveSuccessResponse,
   AdminVerificationRequestFindAllSuccessResponse,
@@ -499,3 +519,210 @@ export const unpublishMagazineMutation = mutationOptions({
   mutationFn: unpublishMagazine,
   retry: false,
 });
+
+// ── 심사 이력 ─────────────────────────────────────────────────────────────────────────────
+
+export async function fetchAdminProjectHistory(projectId: number) {
+  const path = `${PROJECT_PATH}/${projectId}/history`;
+  const body = await httpClient<AdminProjectHistorySuccessResponse>(path, { method: 'get' });
+  if (!body) throw new Error(`프로젝트 심사 이력 응답이 비어 있습니다: ${path}`);
+  return body.data.items;
+}
+
+export async function fetchAdminVerificationHistory(requestId: number) {
+  const path = `${VERIFICATION_PATH}/${requestId}/history`;
+  const body = await httpClient<AdminVerificationRequestHistorySuccessResponse>(path, {
+    method: 'get',
+  });
+  if (!body) throw new Error(`인증 심사 이력 응답이 비어 있습니다: ${path}`);
+  return body.data.items;
+}
+
+// ── 채용공고 ──────────────────────────────────────────────────────────────────────────────
+
+const JOB_POSTING_PATH = '/api/v1/admin/job-postings';
+
+export async function fetchAdminJobPostings(cursor?: string) {
+  const body = await httpClient<AdminJobPostingFindAllSuccessResponse>(JOB_POSTING_PATH, {
+    method: 'get',
+    searchParams: cursor ? { cursor } : {},
+  });
+  if (!body) throw new Error(`관리자 채용공고 목록 응답이 비어 있습니다: ${JOB_POSTING_PATH}`);
+  return body;
+}
+
+/** 숨긴 공고까지 포함한 전체 채용공고. */
+export const adminJobPostingsQuery = infiniteQueryOptions({
+  queryKey: ['admin', 'job-postings'],
+  initialPageParam: undefined as string | undefined,
+  queryFn: ({ pageParam }) => fetchAdminJobPostings(pageParam),
+  getNextPageParam: (last) => (last.meta.hasNext ? (last.meta.nextCursor ?? undefined) : undefined),
+});
+
+export async function fetchAdminJobPosting(jobPostingId: number) {
+  const path = `${JOB_POSTING_PATH}/${jobPostingId}`;
+  const body = await httpClient<AdminJobPostingDetailSuccessResponse>(path, { method: 'get' });
+  if (!body) throw new Error(`관리자 채용공고 상세 응답이 비어 있습니다: ${path}`);
+  return body.data;
+}
+
+export const adminJobPostingQuery = (jobPostingId: number) =>
+  queryOptions({
+    queryKey: ['admin', 'job-posting', jobPostingId],
+    queryFn: () => fetchAdminJobPosting(jobPostingId),
+  });
+
+/** 공고 본문을 붙여 넣으면 서버가 회사·직군·요구사항을 뽑아 등록 폼 초안을 준다. 저장하지는 않는다. */
+export async function extractJobPosting(input: AdminJobPostingExtractRequest) {
+  const body = await httpClient<AdminJobPostingExtractSuccessResponse>(
+    `${JOB_POSTING_PATH}/extractions`,
+    { method: 'post', json: input },
+  );
+  if (!body) throw new Error('채용공고 추출 결과를 확인하지 못했습니다.');
+  return body.data;
+}
+
+export const extractJobPostingMutation = mutationOptions({
+  mutationFn: extractJobPosting,
+  retry: false,
+});
+
+export async function createJobPosting(input: AdminJobPostingSaveRequest) {
+  const body = await httpClient<AdminJobPostingSaveSuccessResponse>(JOB_POSTING_PATH, {
+    method: 'post',
+    json: input,
+  });
+  if (!body) throw new Error('채용공고 등록 결과를 확인하지 못했습니다.');
+  return body.data;
+}
+
+export const createJobPostingMutation = mutationOptions({
+  mutationFn: createJobPosting,
+  retry: false,
+});
+
+export async function updateJobPosting({
+  jobPostingId,
+  input,
+}: {
+  jobPostingId: number;
+  input: AdminJobPostingSaveRequest;
+}) {
+  const body = await httpClient<AdminJobPostingUpdateSuccessResponse>(
+    `${JOB_POSTING_PATH}/${jobPostingId}`,
+    { method: 'put', json: input },
+  );
+  if (!body) throw new Error('채용공고 수정 결과를 확인하지 못했습니다.');
+  return body.data;
+}
+
+export const updateJobPostingMutation = mutationOptions({
+  mutationFn: updateJobPosting,
+  retry: false,
+});
+
+export async function updateJobPostingVisibility({
+  jobPostingId,
+  hidden,
+}: {
+  jobPostingId: number;
+} & AdminJobPostingVisibilityUpdateRequest) {
+  const body = await httpClient<AdminJobPostingVisibilityUpdateSuccessResponse>(
+    `${JOB_POSTING_PATH}/${jobPostingId}/visibility`,
+    { method: 'patch', json: { hidden } },
+  );
+  if (!body) throw new Error('채용공고 공개 상태 변경 결과를 확인하지 못했습니다.');
+  return body.data;
+}
+
+export const updateJobPostingVisibilityMutation = mutationOptions({
+  mutationFn: updateJobPostingVisibility,
+  retry: false,
+});
+
+/** 요구사항별 추천 자료를 다시 찾는다. FAILED는 실패한 요구사항만, ALL은 전부. */
+export async function reanalyzeJobPosting({
+  jobPostingId,
+  scope,
+}: {
+  jobPostingId: number;
+} & AdminJobPostingReanalysisRequest) {
+  const body = await httpClient<AdminJobPostingReanalysisSuccessResponse>(
+    `${JOB_POSTING_PATH}/${jobPostingId}/reanalysis`,
+    { method: 'post', json: { scope } },
+  );
+  if (!body) throw new Error('채용공고 재분석 결과를 확인하지 못했습니다.');
+  return body.data;
+}
+
+export const reanalyzeJobPostingMutation = mutationOptions({
+  mutationFn: reanalyzeJobPosting,
+  retry: false,
+});
+
+export async function deleteJobPosting(jobPostingId: number) {
+  // 204 No Content라 본문이 없다.
+  await httpClient<null>(`${JOB_POSTING_PATH}/${jobPostingId}`, { method: 'delete' });
+}
+
+export const deleteJobPostingMutation = mutationOptions({
+  mutationFn: deleteJobPosting,
+  retry: false,
+});
+
+// ── 소식 수정·삭제 ────────────────────────────────────────────────────────────────────────
+
+export async function updateNews({ newsId, input }: { newsId: number; input: NewsUpdateRequest }) {
+  const body = await httpClient<NewsUpdateSuccessResponse>(`/api/v1/news/${newsId}`, {
+    method: 'put',
+    json: input,
+  });
+  if (!body) throw new Error('소식 수정 결과를 확인하지 못했습니다.');
+  return body.data;
+}
+
+export const updateNewsMutation = mutationOptions({ mutationFn: updateNews, retry: false });
+
+export async function deleteNews(newsId: number) {
+  await httpClient<NewsDeleteSuccessResponse>(`/api/v1/news/${newsId}`, { method: 'delete' });
+}
+
+export const deleteNewsMutation = mutationOptions({ mutationFn: deleteNews, retry: false });
+
+// ── 카테고리 ──────────────────────────────────────────────────────────────────────────────
+
+const CATEGORY_PATH = '/api/v1/categories';
+
+export async function createCategory(input: CategorySaveRequest) {
+  const body = await httpClient<CategorySaveSuccessResponse>(CATEGORY_PATH, {
+    method: 'post',
+    json: input,
+  });
+  if (!body) throw new Error('카테고리 추가 결과를 확인하지 못했습니다.');
+  return body.data;
+}
+
+export const createCategoryMutation = mutationOptions({ mutationFn: createCategory, retry: false });
+
+export async function updateCategory({
+  categoryId,
+  input,
+}: {
+  categoryId: number;
+  input: CategoryUpdateRequest;
+}) {
+  const body = await httpClient<CategoryUpdateSuccessResponse>(`${CATEGORY_PATH}/${categoryId}`, {
+    method: 'put',
+    json: input,
+  });
+  if (!body) throw new Error('카테고리 수정 결과를 확인하지 못했습니다.');
+  return body.data;
+}
+
+export const updateCategoryMutation = mutationOptions({ mutationFn: updateCategory, retry: false });
+
+export async function deleteCategory(categoryId: number) {
+  await httpClient<null>(`${CATEGORY_PATH}/${categoryId}`, { method: 'delete' });
+}
+
+export const deleteCategoryMutation = mutationOptions({ mutationFn: deleteCategory, retry: false });
