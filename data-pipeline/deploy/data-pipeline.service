@@ -1,7 +1,7 @@
-# 샤라웃 원본 수집기(08 문서 C10, 7-5). data-pipeline.timer 가 매일 띄운다.
+# 샤라웃 원본 수집기와 정제(08 문서 C10, 7-5, 09 문서 R20). data-pipeline.timer 가 매일 띄운다.
 # 설치: sudo cp deploy/data-pipeline.{service,timer} /etc/systemd/system/ && sudo systemctl daemon-reload
 [Unit]
-Description=샤라웃 원본 수집기 (collect)
+Description=샤라웃 원본 수집과 정제 (collect, refine)
 Wants=network-online.target
 After=network-online.target
 
@@ -14,8 +14,12 @@ WorkingDirectory=/home/ec2-user/2026-shout-outz/data-pipeline
 EnvironmentFile=/etc/shout-outz/data-pipeline.env
 Environment=PIPELINE_HOST=ec2
 Environment=PIPELINE_TRIGGER=schedule
-ExecStart=/home/ec2-user/2026-shout-outz/data-pipeline/.venv/bin/python -m collector collect
-# 첫 실행은 PR 때문에 5~6시간 걸릴 수 있다(07 문서 3-3). 잠금(C9)은 12시간 뒤 풀린 것으로 본다
+# 수집이 일부 실패해도(블로그 글 몇 편 등) 받은 원본은 정제하도록 수집의 종료 코드는 보지 않는다(앞의 -).
+# 수집의 결과는 수집 보고서(reports/{run_id}.json)에 남는다
+ExecStart=-/home/ec2-user/2026-shout-outz/data-pipeline/.venv/bin/python -m collector collect
+# ② 정제: 수집이 끝나면 같은 실행 묶음(같은 run_id)으로 이어서 정제한다(09 문서 R20-1). 한 번에 최대 1만 건(R20-6)
+ExecStart=/home/ec2-user/2026-shout-outz/data-pipeline/.venv/bin/python -m refine run --after-collect
+# 첫 실행은 PR 때문에 5~6시간 걸릴 수 있다(07 문서 3-3). 정제는 1만 건에 십몇 분(R20-6). 잠금(C9)은 12시간 뒤 풀린 것으로 본다
 TimeoutStartSec=13h
 # t4g.micro 1GB 에서 다른 프로세스(관리 웹)를 지키려고 위를 막아 둔다. 수집기 최대 약 240MB(11-09 측정).
 # 2026-11-09: 700MB 와 스왑 허용은 EC2 전체를 스왑으로 굳게 할 수 있어, 넘으면 수집기만 꺼지도록 낮추고 스왑을 막는다
