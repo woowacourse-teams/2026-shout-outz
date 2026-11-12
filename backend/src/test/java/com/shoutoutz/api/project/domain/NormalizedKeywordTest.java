@@ -2,6 +2,7 @@ package com.shoutoutz.api.project.domain;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.text.Normalizer;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -21,6 +22,15 @@ class NormalizedKeywordTest {
     @DisplayName("대소문자, 공백, 구두점을 지우고 글자와 숫자만 남긴다.")
     void keepsOnlyLowercaseLettersAndDigits(String raw, String expected) {
         assertThat(NormalizedKeyword.of(raw).value()).isEqualTo(expected);
+    }
+
+    @Test
+    @DisplayName("자모로 분해된 한글(NFD)도 조합된 한글(NFC)과 같게 본다.")
+    void treatsDecomposedHangulAsComposed() {
+        String decomposed = Normalizer.normalize("자리하나?", Normalizer.Form.NFD);
+
+        assertThat(decomposed).isNotEqualTo("자리하나?");
+        assertThat(NormalizedKeyword.of(decomposed)).isEqualTo(NormalizedKeyword.of("자리하나"));
     }
 
     @Test
