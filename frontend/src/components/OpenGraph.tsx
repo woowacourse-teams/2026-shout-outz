@@ -1,4 +1,5 @@
-const SITE_ORIGIN = 'https://shout-ou.tz';
+import { SITE_ORIGIN } from '@/constants/site';
+
 const DEFAULT_IMAGE = `${SITE_ORIGIN}/og-image.jpg`;
 const DEFAULT_DESCRIPTION = '궁금한 건 편하게 묻고, 서로의 이야기에 응원을 보내 보세요.';
 
@@ -6,8 +7,11 @@ interface OpenGraphProps {
   title?: string;
   description?: string;
   image?: string | null;
+  /** 있으면 og:url과 canonical을 넣는다. 주소 뒤 ?도 함께 줄 수 있다. */
   pathname?: string;
   article?: boolean;
+  /** 검색 결과처럼 색인하지 않을 화면 */
+  noindex?: boolean;
 }
 
 /** 기본 메타데이터와 상세 메타데이터를 한 곳에서 렌더링해 중복 태그를 방지합니다. */
@@ -17,6 +21,7 @@ export function OpenGraph({
   image,
   pathname,
   article = false,
+  noindex = false,
 }: OpenGraphProps) {
   const text = description?.trim() || DEFAULT_DESCRIPTION;
   const imageUrl = image ? new URL(image, SITE_ORIGIN).href : DEFAULT_IMAGE;
@@ -39,7 +44,9 @@ export function OpenGraph({
       <meta name="twitter:title" content={title} />
       <meta name="twitter:description" content={text} />
       <meta name="twitter:image" content={imageUrl} />
-      {article && <meta name="description" content={text} />}
+      {/* 기본 문구는 페이지마다 같아 description으로 넣지 않고, 화면이 설명을 줄 때만 넣는다. */}
+      {(article || description?.trim()) && <meta name="description" content={text} />}
+      {noindex && <meta name="robots" content="noindex" />}
       {url && <link rel="canonical" href={url} />}
     </>
   );

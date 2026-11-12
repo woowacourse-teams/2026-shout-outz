@@ -40,6 +40,47 @@ describe('ExplorePage', () => {
     );
   });
 
+  describe('<head>', () => {
+    const meta = (selector: string) => document.querySelector(selector)?.getAttribute('content');
+    const canonical = () => document.querySelector('link[rel="canonical"]')?.getAttribute('href');
+
+    it('홈 첫 화면은 서비스 제목·설명과 canonical(/)을 넣는다', async () => {
+      renderRoute('/');
+
+      await waitFor(() =>
+        expect(document.title).toBe('shout-outz | 우테코 크루들의 프로젝트 경험과 취업 과정'),
+      );
+      expect(meta('meta[name="description"]')).toMatch(
+        /^우테코 크루들의 프로젝트 경험과 취업 과정/,
+      );
+      expect(meta('meta[property="og:title"]')).toBe(document.title);
+      expect(canonical()).toBe('https://shout-ou.tz/');
+      expect(document.querySelector('meta[name="robots"]')).toBeNull();
+      const jsonLd = document.querySelector('script[type="application/ld+json"]');
+      expect(JSON.parse(jsonLd?.textContent ?? '{}')).toMatchObject({
+        '@type': 'WebSite',
+        name: 'shout-outz',
+        url: 'https://shout-ou.tz/',
+      });
+    });
+
+    it('채용 공고 탭은 탭 주소를 canonical로 둔다', async () => {
+      renderRoute('/?tab=job');
+
+      await waitFor(() => expect(document.title).toBe('채용 공고 | shout-outz'));
+      expect(canonical()).toBe('https://shout-ou.tz/?tab=job');
+      expect(document.querySelector('script[type="application/ld+json"]')).toBeNull();
+    });
+
+    it('검색 결과는 색인하지 않는다', async () => {
+      renderRoute('/?q=동시성');
+
+      await waitFor(() => expect(document.title).toBe('동시성 검색 결과 | shout-outz'));
+      expect(meta('meta[name="robots"]')).toBe('noindex');
+      expect(canonical()).toBeUndefined();
+    });
+  });
+
   it('예전 /explore 주소로 들어오면 검색어와 탭을 그대로 들고 홈으로 간다', async () => {
     const router = renderRoute('/explore?tab=job&q=토스');
 
