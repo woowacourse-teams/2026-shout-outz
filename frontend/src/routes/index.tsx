@@ -21,6 +21,7 @@ const text = (value: unknown) => (typeof value === 'string' ? value.trim() : '')
 export const Route = createFileRoute('/')({
   staticData: {
     ssr: true,
+    sitemap: true,
   },
   validateSearch: (search: Record<string, unknown>): ExploreSearch => {
     const tab = search.tab === 'job' || search.tab === 'project' ? search.tab : undefined;

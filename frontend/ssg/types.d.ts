@@ -7,6 +7,11 @@ declare module '@tanstack/react-router' {
     prerender?: boolean;
     /** 동적 라우트($param 포함)에서 프리렌더할 파라미터 조합을 반환합니다. */
     generateStaticParams?: () => Promise<Array<Record<string, string>>>;
+    /**
+     * true면 빌드 때 만드는 sitemap.xml에 넣습니다. prerender 라우트는 만든 페이지가 모두 들어가므로,
+     * 미리 만들지 않는 고정 경로($param 없음) 중 검색에 노출할 것에만 붙입니다.
+     */
+    sitemap?: boolean;
     /** true인 라우트는 요청마다 SSR 서버(server/index.ts)에서 렌더합니다. */
     ssr?: boolean;
     /**
