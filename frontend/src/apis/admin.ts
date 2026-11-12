@@ -601,12 +601,20 @@ export const createJobPostingMutation = mutationOptions({
   retry: false,
 });
 
+/**
+ * 채용공고 수정. 서버가 원문을 저장하지 않아, 본문을 보내지 않으면 기존 원문 기준을 그대로 둔다.
+ * 명세(schema.ts)가 아직 content를 필수로 두고 있어 여기서 선택으로 연다.
+ */
+export type AdminJobPostingUpdateBody = Omit<AdminJobPostingSaveRequest, 'content'> & {
+  content?: string | null;
+};
+
 export async function updateJobPosting({
   jobPostingId,
   input,
 }: {
   jobPostingId: number;
-  input: AdminJobPostingSaveRequest;
+  input: AdminJobPostingUpdateBody;
 }) {
   const body = await httpClient<AdminJobPostingUpdateSuccessResponse>(
     `${JOB_POSTING_PATH}/${jobPostingId}`,

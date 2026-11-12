@@ -86,7 +86,7 @@ const toSaveBody = (values: AdminJobPostingSaveRequest): AdminJobPostingSaveRequ
 
 const fromDetail = (detail: JobPostingDetail): AdminJobPostingSaveRequest => ({
   sourceUrl: detail.sourceUrl,
-  // 상세 응답에 원문이 없어 수정할 때 다시 붙여 넣어야 한다.
+  // 서버가 원문을 저장하지 않아 상세에 없다. 비워 두면 수정 때 보내지 않는다.
   content: '',
   title: detail.title,
   companyName: detail.companyName,
@@ -385,9 +385,10 @@ function JobPostingForm({
   const create = useMutation({ ...createJobPostingMutation, onSuccess: onSaved });
   const update = useMutation({ ...updateJobPostingMutation, onSuccess: onSaved });
   const save = jobPostingId == null ? create : update;
+  // 새로 등록할 때만 본문이 필요하다. 수정은 본문을 비워 두면 서버가 기존 원문 기준을 그대로 둔다.
   const canSave =
     values.sourceUrl.trim() &&
-    values.content.trim() &&
+    (jobPostingId != null || values.content.trim()) &&
     values.title.trim() &&
     values.companyName.trim();
 
@@ -412,7 +413,11 @@ function JobPostingForm({
         if (!canSave || save.isPending) return;
         const input = toSaveBody(values);
         if (jobPostingId == null) create.mutate(input);
-        else update.mutate({ jobPostingId, input });
+        else
+          update.mutate({
+            jobPostingId,
+            input: { ...input, content: input.content.trim() ? input.content : undefined },
+          });
       }}
     >
       <h2 className="font-bold">{jobPostingId == null ? '새 채용공고' : '채용공고 수정'}</h2>
@@ -426,7 +431,7 @@ function JobPostingForm({
           />
         )}
       </Field>
-      <Field label="공고 본문 *">
+      <Field label={jobPostingId == null ? '공고 본문 *' : '공고 본문'}>
         {(id) => (
           <textarea
             id={id}
@@ -437,7 +442,7 @@ function JobPostingForm({
             placeholder={
               jobPostingId == null
                 ? '공고 본문을 붙여 넣고 추출을 누르면 아래 항목을 채워 줘요.'
-                : '수정할 때도 공고 본문을 다시 붙여 넣어야 해요.'
+                : '비워 두면 기존 원문 기준을 그대로 둬요. 새 본문으로 다시 추출할 때만 붙여 넣으세요.'
             }
           />
         )}

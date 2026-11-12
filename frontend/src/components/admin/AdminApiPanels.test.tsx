@@ -88,6 +88,28 @@ describe('채용공고', () => {
     );
   });
 
+  test('수정할 때 본문을 비워 두면 content를 보내지 않는다', async () => {
+    const user = userEvent.setup();
+    let saved: Record<string, unknown> | undefined;
+    server.use(
+      http.put('/api/v1/admin/job-postings/:id', async ({ request }) => {
+        saved = (await request.json()) as Record<string, unknown>;
+        return HttpResponse.json({ status: 'success', data: { jobPostingId: 1 } });
+      }),
+    );
+    renderRoute('/admin?tab=job-postings');
+
+    const row = await rowOf('백엔드 개발자');
+    await user.click(within(row).getByRole('button', { name: '수정' }));
+    const title = await within(row).findByLabelText('제목 *');
+    await user.clear(title);
+    await user.type(title, '서버 개발자');
+    await user.click(within(row).getByRole('button', { name: '저장' }));
+
+    await waitFor(() => expect(saved).toMatchObject({ title: '서버 개발자', jobRole: 'BACKEND' }));
+    expect(saved).not.toHaveProperty('content');
+  });
+
   test('상세를 열면 요구사항별 분석 상태를 보여 준다', async () => {
     const user = userEvent.setup();
     renderRoute('/admin?tab=job-postings');
