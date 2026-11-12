@@ -1,44 +1,28 @@
-import { createFileRoute } from '@tanstack/react-router';
-import { fetchProjectList } from '@/api/project-list';
-import type { ProjectDetailTab } from '@/components/projects/ProjectDetailContent';
-import { ProjectDetailPage } from '@/pages/ProjectDetailPage';
-import { toProjectSlug, toProjectSlugParam } from '@/utils/project';
+import { createFileRoute, Navigate } from '@tanstack/react-router';
+
+import {
+  PROJECT_TAB_PATHS,
+  ProjectDetailRoute,
+  projectDetailStaticData,
+} from '@/routes/projects/-project-detail';
 
 interface ProjectDetailSearch {
-  /** 비어 있으면 경험 탭 */
-  tab?: Exclude<ProjectDetailTab, 'experience'>;
+  /** 탭을 주소 뒤에 붙이던 예전 링크(?tab=material). 들어오면 그 탭 주소로 보낸다. */
+  tab?: 'material' | 'intro';
 }
 
+// 경험 탭. 자료·소개 탭은 $slug_.materials.tsx, $slug_.intro.tsx다.
 export const Route = createFileRoute('/projects/$slug')({
   validateSearch: (search: Record<string, unknown>): ProjectDetailSearch =>
     search.tab === 'material' || search.tab === 'intro' ? { tab: search.tab } : {},
+  staticData: projectDetailStaticData,
   component: RouteComponent,
-  staticData: {
-    prerender: true,
-    generateStaticParams: async () => {
-      const projects = await fetchProjectList();
-      return projects.map((project) => ({ slug: toProjectSlugParam(project.slug) }));
-    },
-  },
 });
 
 function RouteComponent() {
   const { slug } = Route.useParams();
   const { tab } = Route.useSearch();
-  const navigate = Route.useNavigate();
 
-  return (
-    <ProjectDetailPage
-      slug={toProjectSlug(slug)}
-      // 프로토타입 탭 순서대로 처음에는 경험 탭을 보여 준다.
-      tab={tab ?? 'experience'}
-      onTabChange={(next) =>
-        void navigate({
-          search: next === 'experience' ? {} : { tab: next },
-          replace: true,
-          resetScroll: false,
-        })
-      }
-    />
-  );
+  if (tab) return <Navigate to={PROJECT_TAB_PATHS[tab]} params={{ slug }} replace />;
+  return <ProjectDetailRoute slug={slug} tab="experience" />;
 }

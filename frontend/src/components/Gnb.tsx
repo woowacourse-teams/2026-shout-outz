@@ -16,7 +16,7 @@ import { cn } from '@/utils/cn';
 import { analytics, toPathPattern, type NavTab } from '@/utils/analytics';
 
 export const GNB_ITEMS = linkOptions([
-  { to: '/explore', label: '탐색' },
+  { to: '/', label: '탐색' },
   { to: '/community', label: '커뮤니티' },
   { to: '/magazines', label: '매거진' },
   { to: '/news', label: '소식' },
@@ -24,14 +24,14 @@ export const GNB_ITEMS = linkOptions([
 
 /** 모바일 메뉴 서랍에서 항목 앞에 두는 아이콘 */
 const ITEM_ICONS: Record<(typeof GNB_ITEMS)[number]['to'], Icon> = {
-  '/explore': IconSearch,
+  '/': IconSearch,
   '/community': IconMessageCircle,
   '/magazines': IconNotebook,
   '/news': IconBell,
 };
 
 const NAV_TAB_BY_PATH: Record<string, NavTab> = {
-  '/explore': 'explore',
+  '/': 'explore',
   '/community': 'feeds',
   '/magazines': 'magazines',
   '/news': 'news',
@@ -42,7 +42,7 @@ const NAV_TAB_BY_PATH: Record<string, NavTab> = {
  * 프로토타입에서 프로젝트·채용공고·자료 정리 보기는 탐색 안의 화면이라 탐색이 활성이다.
  */
 const EXTRA_ACTIVE_PATHS: Partial<Record<string, string[]>> = {
-  '/explore': ['/projects', '/job-postings', '/materials'],
+  '/': ['/projects', '/job-postings', '/materials'],
 };
 
 const isUnder = (pathname: string, path: string) =>

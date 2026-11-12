@@ -151,9 +151,8 @@ function ResourceReportRow({ item }: { item: AdminResourceReport }) {
             {RESOURCE_REPORT_STATUS_LABELS[item.status]}
           </Badge>
           <Link
-            to="/projects/$slug"
+            to="/projects/$slug/materials"
             params={{ slug: `@${item.project.slug}` }}
-            search={{ tab: 'material' }}
             className="font-semibold text-gray-700 hover:underline"
           >
             {item.project.title}

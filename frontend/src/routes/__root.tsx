@@ -5,8 +5,16 @@ import { magazineQuery } from '@/apis/magazine';
 import { ClientOnly } from '@/components/ClientOnly';
 import { FirstVisitGuide } from '@/components/FirstVisitGuide';
 import { AsyncBoundary } from '@/components/AsyncBoundary';
+import { exploreHead } from '@/components/explore/exploreHead';
 import { OpenGraph } from '@/components/OpenGraph';
-import { createRootRoute, Outlet, useLocation, useNavigate } from '@tanstack/react-router';
+import { SITE_ORIGIN } from '@/constants/site';
+import {
+  createRootRoute,
+  Outlet,
+  useLocation,
+  useMatch,
+  useNavigate,
+} from '@tanstack/react-router';
 import { TanStackRouterDevtools } from '@tanstack/react-router-devtools';
 
 import { ResumeQuestionDraft } from '@/components/recommendations/ResumeQuestionDraft';
@@ -43,6 +51,13 @@ const DETAIL_OPEN_GRAPHS: Array<{
 
 function RouteOpenGraph() {
   const pathname = useLocation({ select: (location) => location.pathname });
+  const exploreSearch = useMatch({
+    from: '/',
+    shouldThrow: false,
+    select: (match) => match.search,
+  });
+
+  if (exploreSearch) return <ExploreOpenGraph {...exploreSearch} />;
 
   for (const { pattern, Component } of DETAIL_OPEN_GRAPHS) {
     const match = pattern.exec(pathname);
@@ -54,6 +69,44 @@ function RouteOpenGraph() {
     );
   }
   return <OpenGraph />;
+}
+
+// 홈(탐색 화면)은 요청마다 서버 렌더하므로, 탭·검색어에 맞는 설명과 canonical이 서버 HTML의 <head>에 들어간다.
+function ExploreOpenGraph({
+  tab = 'keyword',
+  q = '',
+  topic = '',
+}: {
+  tab?: 'job' | 'project' | 'keyword';
+  q?: string;
+  topic?: string;
+}) {
+  const head = exploreHead({ tab, query: q, topic: topic || null });
+  return (
+    <>
+      <OpenGraph
+        title={head.title}
+        description={head.description}
+        pathname={head.canonicalPath ?? undefined}
+        noindex={!head.canonicalPath}
+      />
+      {/* 검색 결과에 사이트 이름을 shout-outz로 보여 주도록 구글에 알린다. */}
+      {head.canonicalPath === '/' && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              '@context': 'https://schema.org',
+              '@type': 'WebSite',
+              name: 'shout-outz',
+              alternateName: '샤라웃',
+              url: `${SITE_ORIGIN}/`,
+            }),
+          }}
+        />
+      )}
+    </>
+  );
 }
 
 function MagazineOpenGraph({ id: magazineId }: { id: number }) {

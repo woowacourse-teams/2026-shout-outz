@@ -2,6 +2,8 @@ import { createFileRoute } from '@tanstack/react-router';
 import { FeedsPage } from '@/pages/FeedsPage';
 import type { FeedSort, FeedType } from '@/apis/feed';
 export const Route = createFileRoute('/community/')({
+  // 미리 만들지 않는 목록 화면이지만 검색에 노출하도록 sitemap.xml에 넣는다.
+  staticData: { sitemap: true },
   validateSearch: (search: Record<string, unknown>): { sort?: FeedSort; type?: FeedType } => {
     const type = search.type === 'POST' ? 'POST' : 'QUESTION';
     return {

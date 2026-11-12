@@ -54,7 +54,7 @@ function ProjectList({
   );
   const projects = query.data.pages.flatMap((page) => page.projects);
   const totalCount = query.data.pages[0]?.meta.totalCount ?? projects.length;
-  // 검색어와 기술 주제는 함께 걸리지 않는다(routes/explore.tsx).
+  // 검색어와 기술 주제는 함께 걸리지 않는다(routes/index.tsx).
   const searchedBy = filter.topic ?? filter.keyword.trim();
 
   return (

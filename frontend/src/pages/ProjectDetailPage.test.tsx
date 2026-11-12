@@ -30,17 +30,18 @@ function renderPage(path = '/projects/@dropit') {
     history: createMemoryHistory({ initialEntries: [path] }),
     scrollRestoration: false,
   });
-  return render(
+  render(
     <QueryClientProvider client={queryClient}>
       <ModalProvider>
         <RouterProvider router={router} />
       </ModalProvider>
     </QueryClientProvider>,
   );
+  return router;
 }
 
 test('상세 직접 진입 시 API 정보와 공통 레이아웃을 표시한다', async () => {
-  renderPage('/projects/@dropit?tab=intro');
+  renderPage('/projects/@dropit/intro');
   expect(await screen.findByRole('heading', { level: 1, name: 'Dropit' })).toBeInTheDocument();
   const member = screen.getByRole('link', { name: '정우진 프로필 보기' });
   expect(within(member).getByText('정우진')).toBeInTheDocument();
@@ -144,7 +145,7 @@ test('빈 멤버·태그·본문을 안내하고 누락된 링크를 숨긴다',
       }),
     ),
   );
-  renderPage('/projects/@dropit?tab=intro');
+  renderPage('/projects/@dropit/intro');
   expect(await screen.findByText('등록된 참여 크루가 없습니다.')).toBeInTheDocument();
   expect(screen.getByText('등록된 기술 스택이 없습니다.')).toBeInTheDocument();
   expect(screen.getByText('등록된 프로젝트 소개가 없습니다.')).toBeInTheDocument();
@@ -291,11 +292,38 @@ describe('프로젝트 상세 탭', () => {
     expect(await screen.findByText('아직 정리된 경험이 없어요.')).toBeInTheDocument();
   });
 
-  test('자료 탭에서 주제를 고르면 그 주제의 팀 자료와 다른 팀 자료를 보여준다', async () => {
-    renderPage('/projects/@shout-outz');
+  test('탭마다 주소가 따로 있어, 탭을 누르면 그 탭 주소로 바뀐다', async () => {
+    const router = renderPage('/projects/@shout-outz');
+    // 탭마다 라우트가 달라 탭을 누를 때마다 탭 목록을 새로 찾는다.
+    const clickTab = async (name: string) => {
+      const tabs = await screen.findByRole('tablist', { name: '프로젝트 정보' });
+      await userEvent.click(within(tabs).getByRole('tab', { name }));
+    };
 
-    const tabs = await screen.findByRole('tablist', { name: '프로젝트 정보' });
-    await userEvent.click(within(tabs).getByRole('tab', { name: '자료' }));
+    await clickTab('자료');
+    await waitFor(() =>
+      expect(router.state.location.pathname).toBe('/projects/@shout-outz/materials'),
+    );
+    await clickTab('소개');
+    await waitFor(() => expect(router.state.location.pathname).toBe('/projects/@shout-outz/intro'));
+    await clickTab('경험');
+    await waitFor(() => expect(router.state.location.pathname).toBe('/projects/@shout-outz'));
+  });
+
+  test('예전 ?tab= 주소로 들어오면 그 탭 주소로 보낸다', async () => {
+    const router = renderPage('/projects/@shout-outz?tab=material');
+
+    await waitFor(() =>
+      expect(router.state.location.pathname).toBe('/projects/@shout-outz/materials'),
+    );
+    expect(router.state.location.search).toEqual({});
+    expect(
+      await screen.findByRole('heading', { level: 2, name: '인덱스/쿼리 최적화' }),
+    ).toBeInTheDocument();
+  });
+
+  test('자료 탭에서 주제를 고르면 그 주제의 팀 자료와 다른 팀 자료를 보여준다', async () => {
+    renderPage('/projects/@shout-outz/materials');
 
     expect(
       await screen.findByRole('heading', { level: 2, name: '인덱스/쿼리 최적화' }),

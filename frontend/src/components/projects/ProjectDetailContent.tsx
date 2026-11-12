@@ -2,7 +2,6 @@ import { useSuspenseQuery } from '@tanstack/react-query';
 
 import { projectDetailQueryOptions } from '@/api/project-detail';
 import { AsyncBoundary } from '@/components/AsyncBoundary';
-import { ClientOnly } from '@/components/ClientOnly';
 import { ProjectDetailHeader } from '@/components/projects/detail/ProjectDetailHeader';
 import { ProjectExperiences } from '@/components/projects/detail/ProjectExperiences';
 import { ProjectIntro } from '@/components/projects/detail/ProjectIntro';
@@ -35,7 +34,8 @@ export function ProjectDetailContent({ slug, tab, onTabChange }: ProjectDetailCo
 
   return (
     <>
-      <title>{project.title} | shout-outz</title>
+      {/* <title> 안 글자가 여러 조각이면 React가 제목을 비워 두어 한 문자열로 넘긴다. */}
+      <title>{`${project.title} | shout-outz`}</title>
       <meta name="description" content={project.tagline} />
       <ProjectDetailHeader project={project} />
       <Tab
@@ -67,20 +67,18 @@ export function ProjectDetailContent({ slug, tab, onTabChange }: ProjectDetailCo
         {tab === 'intro' ? (
           <ProjectIntro project={project} />
         ) : (
-          // 경험·자료는 서버 렌더 때 비우고 브라우저 렌더에서만 불러온다. 제보 링크가 로그인 정보에 따라 달라진다.
-          <ClientOnly>
-            <AsyncBoundary>
-              {tab === 'experience' ? (
-                <ProjectExperiences slug={slug} memberUserIds={memberUserIds} />
-              ) : (
-                <ProjectMaterials
-                  slug={slug}
-                  projectName={project.title}
-                  memberUserIds={memberUserIds}
-                />
-              )}
-            </AsyncBoundary>
-          </ClientOnly>
+          // 경험·자료도 빌드할 때 미리 그린다. 팀원에게만 보이는 제보 링크는 useIsProjectMember가 브라우저 렌더에서만 켠다.
+          <AsyncBoundary>
+            {tab === 'experience' ? (
+              <ProjectExperiences slug={slug} memberUserIds={memberUserIds} />
+            ) : (
+              <ProjectMaterials
+                slug={slug}
+                projectName={project.title}
+                memberUserIds={memberUserIds}
+              />
+            )}
+          </AsyncBoundary>
         )}
       </div>
     </>
