@@ -78,7 +78,8 @@ public class ProjectResourceQueryRepositoryImpl implements ProjectResourceQueryR
                 project.title AS project_title,
                 project.slug AS project_slug,
                 project.logo_media_id,
-                CASE WHEN document.project_id IS NULL THEN document.extra ->> 'project_name' END AS unregistered_team_name
+                CASE WHEN document.project_id IS NULL THEN document.extra ->> 'project_name' END AS unregistered_team_name,
+                CASE WHEN document.project_id IS NULL THEN document.repo END AS unlinked_repository
             """;
 
     private static final String PUBLIC_PROJECT_JOIN = """
@@ -331,6 +332,9 @@ public class ProjectResourceQueryRepositoryImpl implements ProjectResourceQueryR
         );
     }
 
+    /**
+     * 공개된 프로젝트, 수집 때 저장한 팀 이름, 저장소 이름 순으로 팀을 정한다. 기술 자료 검색 카드와 같은 규칙이다.
+     */
     private static ResourceCard.Team toTeam(ResultSet resultSet) throws SQLException {
         String projectSlug = resultSet.getString("project_slug");
         if (projectSlug != null) {
@@ -341,6 +345,9 @@ public class ProjectResourceQueryRepositoryImpl implements ProjectResourceQueryR
             );
         }
         String unregisteredTeamName = resultSet.getString("unregistered_team_name");
-        return unregisteredTeamName == null ? null : new ResourceCard.Team(unregisteredTeamName, null, null);
+        if (unregisteredTeamName != null && !unregisteredTeamName.isBlank()) {
+            return new ResourceCard.Team(unregisteredTeamName, null, null);
+        }
+        return ResourceCard.Team.fromRepository(resultSet.getString("unlinked_repository"));
     }
 }

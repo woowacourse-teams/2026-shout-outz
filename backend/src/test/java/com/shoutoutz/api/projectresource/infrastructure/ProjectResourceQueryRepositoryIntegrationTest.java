@@ -196,6 +196,28 @@ class ProjectResourceQueryRepositoryIntegrationTest {
     }
 
     @Test
+    @DisplayName("다른 팀 자료 중 프로젝트에 연결되지 않고 수집한 팀 이름도 없는 자료는 저장소 이름에서 연도를 뗀 이름을 팀 이름으로 담는다")
+    void mapsUnlinkedOtherTeamFromRepository() {
+        long pendingProjectId = fixtures.project("심사 중", "PENDING", false, null);
+        long unlinkedPr = fixtures.document("github-pr", "unlinked").repo("woowacourse-teams/2026-poudy")
+                .topic(TOPIC).score(90).insert();
+        long pendingPr = fixtures.document("github-pr", "pending-linked").project(pendingProjectId)
+                .repo("woowacourse-teams/2026-pending").topic(TOPIC).score(80).insert();
+
+        List<ResourceCard> cards = projectResourceQueryRepository.findOtherTeamResources(
+                projectId,
+                TOPIC,
+                ProjectResourceJobRole.ALL,
+                20
+        );
+
+        assertThat(cards).extracting(ResourceCard::resourceId).contains(unlinkedPr).doesNotContain(pendingPr);
+        assertThat(cards).filteredOn(card -> card.resourceId() == unlinkedPr).singleElement()
+                .extracting(ResourceCard::team)
+                .isEqualTo(new ResourceCard.Team("poudy", null, null));
+    }
+
+    @Test
     @DisplayName("직군을 고르면 다른 팀 자료도 그 직군, ALL, 직군 없는 자료만 읽는다")
     void filtersOtherTeamResourcesByTrack() {
         long otherProjectId = fixtures.publicProject("다른 팀");

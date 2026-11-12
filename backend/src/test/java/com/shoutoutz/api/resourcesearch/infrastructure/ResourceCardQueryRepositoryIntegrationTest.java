@@ -104,12 +104,37 @@ class ResourceCardQueryRepositoryIntegrationTest {
     }
 
     @Test
-    @DisplayName("승인되지 않았거나 삭제된 프로젝트의 자료는 수집 때 저장한 팀 이름도 보여주지 않는다")
+    @DisplayName("프로젝트에 연결되지 않고 수집한 팀 이름도 없는 자료는 저장소 이름에서 연도를 뗀 이름을 팀 이름으로 담는다")
+    void mapsUnlinkedTeamFromRepository() {
+        long id = fixture.document("github-pr").repo("woowacourse-teams/2026-career-form").save();
+
+        ResourceCard.Team team = resourceCardQueryRepository.findByIds(List.of(id)).getFirst().team();
+
+        assertThat(team).isEqualTo(new ResourceCard.Team("career-form", null, null));
+    }
+
+    @Test
+    @DisplayName("수집 때 저장한 팀 이름이 있으면 저장소 이름보다 그 이름을 쓴다")
+    void prefersCollectedTeamNameOverRepository() {
+        long id = fixture.document("blog-post")
+                .repo("woowacourse-teams/2025-feed-zupzup")
+                .extra("{\"project_name\": \"피드줍줍\"}")
+                .save();
+
+        ResourceCard.Team team = resourceCardQueryRepository.findByIds(List.of(id)).getFirst().team();
+
+        assertThat(team).isEqualTo(new ResourceCard.Team("피드줍줍", null, null));
+    }
+
+    @Test
+    @DisplayName("승인되지 않았거나 삭제된 프로젝트의 자료는 수집 때 저장한 팀 이름도, 저장소 이름도 보여주지 않는다")
     void hidesTeamOfHiddenProjects() {
         long pending = fixture.pendingProject("pending-team", "대기 팀");
         long deleted = fixture.deletedProject("deleted-team", "삭제 팀");
-        long pendingDoc = fixture.document("blog-post").projectId(pending).extra("{\"project_name\": \"대기 팀\"}").save();
-        long deletedDoc = fixture.document("github-pr").projectId(deleted).extra("{\"project_name\": \"삭제 팀\"}").save();
+        long pendingDoc = fixture.document("blog-post").projectId(pending).repo("woowacourse-teams/2026-pending-team")
+                .extra("{\"project_name\": \"대기 팀\"}").save();
+        long deletedDoc = fixture.document("github-pr").projectId(deleted).repo("woowacourse-teams/2026-deleted-team")
+                .extra("{\"project_name\": \"삭제 팀\"}").save();
 
         List<ResourceCard> cards = resourceCardQueryRepository.findByIds(List.of(pendingDoc, deletedDoc));
 

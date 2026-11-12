@@ -108,6 +108,7 @@ final class ProjectResourceFixtures {
         private final String source;
         private final String externalKey;
         private Long projectId;
+        private String repo;
         private String topic;
         private String track;
         private Integer score;
@@ -122,6 +123,11 @@ final class ProjectResourceFixtures {
 
         Document project(Long projectId) {
             this.projectId = projectId;
+            return this;
+        }
+
+        Document repo(String repo) {
+            this.repo = repo;
             return this;
         }
 
@@ -158,12 +164,12 @@ final class ProjectResourceFixtures {
         long insert() {
             return jdbcTemplate.queryForObject("""
                     INSERT INTO resource_documents (source, external_key, version, title, url, summary, project_id,
-                                                    track, published_at, score, prompt_version, extra, topic,
+                                                    repo, track, published_at, score, prompt_version, extra, topic,
                                                     updated_at, deleted_at)
-                    VALUES (?, ?, 1, ?, ?, ?, ?, ?, ?, ?, 'v1', CAST(? AS jsonb), ?, now(), CASE WHEN ? THEN now() END)
+                    VALUES (?, ?, 1, ?, ?, ?, ?, ?, ?, ?, ?, 'v1', CAST(? AS jsonb), ?, now(), CASE WHEN ? THEN now() END)
                     RETURNING id
                     """, Long.class, source, externalKey, "제목 " + externalKey, "https://example.com/" + externalKey,
-                    "한 줄 " + externalKey, projectId, track, utc(publishedAt), score, extra, topic, deleted);
+                    "한 줄 " + externalKey, projectId, repo, track, utc(publishedAt), score, extra, topic, deleted);
         }
     }
 

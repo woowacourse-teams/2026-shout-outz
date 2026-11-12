@@ -25,6 +25,7 @@ public class ResourceCardQueryRepositoryImpl implements ResourceCardQueryReposit
             d.id, d.source, d.title, d.url, d.summary, d.published_at,
             d.extra ->> 'platform' AS platform,
             CASE WHEN d.project_id IS NULL THEN d.extra ->> 'project_name' END AS collected_team_name,
+            CASE WHEN d.project_id IS NULL THEN d.repo END AS unlinked_repository,
             p.title AS project_title, p.slug, p.logo_media_id
             """;
 
@@ -91,7 +92,8 @@ public class ResourceCardQueryRepositoryImpl implements ResourceCardQueryReposit
 
     private String onePerAuthorKey(ResourceSection kind) {
         return switch (kind) {
-            case BLOG -> "COALESCE('project:' || d.project_id, 'team:' || NULLIF(btrim(d.extra ->> 'project_name'), ''), 'resource:' || d.id)";
+            case BLOG -> "COALESCE('project:' || d.project_id, 'team:' || NULLIF(btrim(d.extra ->> 'project_name'), ''), "
+                    + "'repo:' || NULLIF(btrim(d.repo), ''), 'resource:' || d.id)";
             case TALK -> "COALESCE('speaker:' || NULLIF(btrim(d.extra ->> 'speaker'), ''), 'resource:' || d.id)";
             case DOCUMENT -> throw new IllegalArgumentException("최근 자료는 블로그와 테코톡만 조회할 수 있습니다.");
         };
@@ -110,6 +112,10 @@ public class ResourceCardQueryRepositoryImpl implements ResourceCardQueryReposit
         );
     }
 
+    /**
+     * 승인된 프로젝트, 수집 때 저장한 팀 이름, 저장소 이름 순으로 팀을 정한다.
+     * 승인 전이거나 삭제된 프로젝트의 자료는 project_id가 있어 뒤의 둘을 읽지 않으므로 팀이 null로 남아 노출되지 않는다.
+     */
     private static ResourceCard.Team teamOf(ResultSet resultSet) throws SQLException {
         String projectSlug = resultSet.getString("slug");
         if (projectSlug != null) {
@@ -120,10 +126,10 @@ public class ResourceCardQueryRepositoryImpl implements ResourceCardQueryReposit
             );
         }
         String collectedTeamName = resultSet.getString("collected_team_name");
-        if (collectedTeamName == null || collectedTeamName.isBlank()) {
-            return null;
+        if (collectedTeamName != null && !collectedTeamName.isBlank()) {
+            return new ResourceCard.Team(collectedTeamName, null, null);
         }
-        return new ResourceCard.Team(collectedTeamName, null, null);
+        return ResourceCard.Team.fromRepository(resultSet.getString("unlinked_repository"));
     }
 
     private static Instant toInstant(Timestamp timestamp) {

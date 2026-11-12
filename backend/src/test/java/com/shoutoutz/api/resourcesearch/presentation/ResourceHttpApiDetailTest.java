@@ -93,8 +93,8 @@ class ResourceHttpApiDetailTest {
                                         fieldWithPath("data.contentType").type(STRING)
                                                 .description("PR과 팀 문서의 종류(problem_solving, tech_decision, implementation, chore, design, "
                                                         + "operation, experiment, convention, plan, other). 블로그와 테코톡은 null").optional(),
-                                        fieldWithPath("data.team").type(OBJECT).description("자료를 만든 팀. 없으면 null").optional(),
-                                        fieldWithPath("data.team.name").type(STRING).description("등록된 프로젝트면 프로젝트 이름, 등록 전 팀이면 수집 때 저장한 프로젝트 이름").optional(),
+                                        fieldWithPath("data.team").type(OBJECT).description("자료를 만든 팀. 등록된 프로젝트, 수집 때 저장한 팀 이름, 저장소 이름 순으로 정한다. 팀을 알 수 없거나 승인 전, 삭제된 프로젝트의 자료면 null").optional(),
+                                        fieldWithPath("data.team.name").type(STRING).description("등록된 프로젝트면 프로젝트 이름, 등록 전 팀이면 수집 때 저장한 프로젝트 이름, 그것도 없으면 저장소 이름에서 조직명과 기수 연도 접두사를 뗀 이름(예: woowacourse-teams/2026-career-form → career-form)").optional(),
                                         fieldWithPath("data.team.projectSlug").type(STRING)
                                                 .description("등록된 프로젝트 slug. 등록 전 팀이면 null").optional(),
                                         fieldWithPath("data.team.logoMediaId").type(NUMBER)

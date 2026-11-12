@@ -78,6 +78,16 @@ class ResourceDetailQueryRepositoryIntegrationTest {
     }
 
     @Test
+    @DisplayName("프로젝트에 연결되지 않은 자료의 상세도 저장소 이름으로 팀 이름을 준다")
+    void findsTeamFromRepositoryForUnlinkedResource() {
+        long id = fixture.document("github-pr").repo("woowacourse-teams/2026-bibbidi").save();
+
+        ResourceDetail detail = resourceDetailQueryRepository.findById(id).orElseThrow();
+
+        assertThat(detail.card().team()).isEqualTo(new ResourceCard.Team("bibbidi", null, null));
+    }
+
+    @Test
     @DisplayName("주제가 없는 자료는 주제를 null로 둔다")
     void leavesTopicEmptyWhenMissing() {
         long id = fixture.document("youtube-tekotalk").save();

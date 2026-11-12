@@ -63,7 +63,8 @@ class ResourceHttpApiRecentTest {
                                 .summary("최근 기술 자료 조회")
                                 .description("""
                                         검색 첫 화면의 '이런 컨텐츠는 어때요?'에 보여줄 최근 크루 블로그와 테코톡을 원문 게시 시각 최신순으로 준다. 로그인 없이 볼 수 있다.
-                                        한 팀이나 한 발표자의 글이 몰리지 않게 블로그는 팀마다, 테코톡은 발표자마다 최신 하나만 고른다. 팀이나 발표자를 모르면 자료마다 따로 본다.
+                                        한 팀이나 한 발표자의 글이 몰리지 않게 블로그는 팀마다, 테코톡은 발표자마다 최신 하나만 고른다.
+                                        블로그의 팀은 등록된 프로젝트, 수집 때 저장한 팀 이름, 저장소 순으로 정한다. 팀이나 발표자를 모르면 자료마다 따로 본다.
                                         한줄 소개나 게시 시각이 없는 자료는 뺀다. size는 이렇게 고른 뒤의 개수다.
                                         kind가 BLOG, TALK가 아니거나 size가 1~20이 아니면 400(VALIDATION_FAILED)으로 응답한다.""")
                                 .queryParameters(
@@ -84,8 +85,8 @@ class ResourceHttpApiRecentTest {
                                         fieldWithPath("data[].publishedAt").type(STRING).description("원문 게시 시각(UTC)"),
                                         fieldWithPath("data[].platform").type(STRING).description("블로그 플랫폼. 블로그가 아니면 null").optional(),
                                         fieldWithPath("data[].faviconUrl").type(STRING).description("원문 사이트 아이콘 주소. PR, 팀 문서, 위키, 디스커션은 GitHub 아이콘, tistory, velog, rilog 블로그는 플랫폼 공식 아이콘으로 고정. 그 밖의 블로그(개인 도메인 등)는 원문 페이지의 파비콘이고 아직 수집 전이면 null. 테코톡은 null").optional(),
-                                        fieldWithPath("data[].team").type(OBJECT).description("자료를 만든 팀. 없으면 null").optional(),
-                                        fieldWithPath("data[].team.name").type(STRING).description("등록된 프로젝트면 프로젝트 이름, 등록 전 팀이면 수집 때 저장한 프로젝트 이름").optional(),
+                                        fieldWithPath("data[].team").type(OBJECT).description("자료를 만든 팀. 등록된 프로젝트, 수집 때 저장한 팀 이름, 저장소 이름 순으로 정한다. 팀을 알 수 없거나 승인 전, 삭제된 프로젝트의 자료면 null").optional(),
+                                        fieldWithPath("data[].team.name").type(STRING).description("등록된 프로젝트면 프로젝트 이름, 등록 전 팀이면 수집 때 저장한 프로젝트 이름, 그것도 없으면 저장소 이름에서 조직명과 기수 연도 접두사를 뗀 이름(예: woowacourse-teams/2026-career-form → career-form)").optional(),
                                         fieldWithPath("data[].team.projectSlug").type(STRING)
                                                 .description("등록된 프로젝트 slug. 등록 전 팀이면 null").optional(),
                                         fieldWithPath("data[].team.logoMediaId").type(NUMBER)
