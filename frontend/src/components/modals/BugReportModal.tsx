@@ -6,6 +6,7 @@ import { BUG_REPORT_MAX_LENGTH, createBugReportMutation } from '@/apis/bug-repor
 import { sessionQuery } from '@/apis/session';
 import { Button } from '@/components/Button';
 import { SelectionModal } from '@/components/modals/SelectionModal';
+import { analytics } from '@/utils/analytics';
 import { getApiErrorMessage } from '@/utils/error';
 
 export interface BugReportModalProps {
@@ -43,6 +44,7 @@ export function BugReportModal({ pagePath, onClose }: BugReportModalProps) {
       // 로그인하지 않은 사람도 CSRF 토큰이 있어야 보낼 수 있다. 세션 조회가 토큰을 받아 둔다.
       await client.ensureQueryData(sessionQuery);
       await mutation.mutateAsync({ content: `${content.trim()}${pageNote}` });
+      analytics.track({ name: 'bug_report_submitted' });
     } catch {
       // 오류 문구는 mutation.error로 보여 준다.
     }
