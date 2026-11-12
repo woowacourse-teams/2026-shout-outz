@@ -1,4 +1,4 @@
-import { useId, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { IconCircleCheckFilled } from '@tabler/icons-react';
 
@@ -11,6 +11,7 @@ import {
 import { Button } from '@/components/Button';
 import { SelectionModal } from '@/components/modals/SelectionModal';
 import { getApiErrorMessage } from '@/utils/error';
+import { analytics } from '@/utils/analytics';
 
 const fieldClass =
   'focus-visible:outline-primary-600 block w-full rounded-lg bg-gray-100 px-4 py-3 text-sm leading-6 text-gray-900 outline-none placeholder:text-gray-500 focus-visible:outline-2';
@@ -52,6 +53,12 @@ export function ResourceReportModal(props: ResourceReportModalProps) {
   const memoLength = Array.from(memo.trim()).length;
   const title = props.kind === 'addition' ? '빠진 자료 알려 주기' : '필요 없는 자료 알려 주기';
 
+  useEffect(() => {
+    analytics.track({ name: 'resource_report_opened', slug, kind: props.kind });
+    // 모달을 연 순간 한 번만 남긴다.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   async function submit() {
     if (mutation.isPending) return;
     if (props.kind === 'addition' && !url.trim()) return setError('GitHub 주소를 적어 주세요.');
@@ -63,8 +70,15 @@ export function ResourceReportModal(props: ResourceReportModalProps) {
     try {
       if (props.kind === 'addition') {
         await addition.mutateAsync({ url: url.trim(), memo: trimmedMemo });
+        analytics.track({ name: 'resource_report_submitted', slug, kind: 'addition', count: 1 });
       } else {
         await removal.mutateAsync({ resourceIds: props.resourceIds, memo: trimmedMemo });
+        analytics.track({
+          name: 'resource_report_submitted',
+          slug,
+          kind: 'removal',
+          count: props.resourceIds.length,
+        });
       }
       // 보낸 자료에 "필요 없어요 보냄"을 붙이도록 내 제보 목록을 다시 받는다.
       await client.invalidateQueries({ queryKey: myResourceReportsQuery(slug).queryKey });

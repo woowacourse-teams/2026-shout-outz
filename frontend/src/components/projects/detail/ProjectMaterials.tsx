@@ -23,6 +23,7 @@ import { useIsProjectMember } from '@/components/projects/detail/useIsProjectMem
 import { useModal } from '@/hooks/useModal';
 import { cn } from '@/utils/cn';
 import { getApiErrorMessage } from '@/utils/error';
+import { analytics } from '@/utils/analytics';
 
 const JOB_ROLE_LABELS: Record<MaterialJobRole, string> = {
   ALL: '전체',
@@ -106,7 +107,11 @@ export function ProjectMaterials({ slug, projectName, memberUserIds }: ProjectMa
   );
   const { data } = useSuspenseQuery(projectResourceTopicsQuery(slug, jobRole));
   const topics = data.fields.flatMap((field) => field.topics);
-  const [chosenTopicId, setChosenTopicId] = useState<string | null>(null);
+  const [chosenTopicId, setChosenTopicIdState] = useState<string | null>(null);
+  const setChosenTopicId = (topicId: string) => {
+    analytics.track({ name: 'project_material_topic_selected', slug, topicId });
+    setChosenTopicIdState(topicId);
+  };
   // 처음이나 직군을 바꿔 고른 주제가 목록에 없으면 첫 주제를 보여 준다.
   const topic = topics.find((item) => item.topicId === chosenTopicId) ?? topics[0] ?? null;
 
@@ -137,7 +142,14 @@ export function ProjectMaterials({ slug, projectName, memberUserIds }: ProjectMa
             selected={jobRole === item.jobRole}
             count={item.count}
             // 새 직군 주제를 불러오는 동안 지금 화면을 그대로 둔다.
-            onSelect={() => startTransition(() => setJobRole(item.jobRole))}
+            onSelect={() => {
+              analytics.track({
+                name: 'project_material_job_role_changed',
+                slug,
+                jobRole: item.jobRole,
+              });
+              startTransition(() => setJobRole(item.jobRole));
+            }}
           >
             {JOB_ROLE_LABELS[item.jobRole]}
           </DotTab>
