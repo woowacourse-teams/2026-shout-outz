@@ -9,7 +9,7 @@ import java.util.List;
  * 프로젝트 필터 옵션 조회 응답
  * cohorts 는 최신 기수부터, techTags 는 displayName 이름순이며, 프로젝트 수가 0인 선택지도 포함한다.
  *
- * @param matchedProjectCount 검색어와 필터를 모두 적용한 프로젝트 수.
+ * @param matchedProjectCount 검색어(이름, 소개, 크루 이름 부분 일치)와 필터를 모두 적용한 프로젝트 수.
  */
 public record ProjectFilterOptionsResponse(
         List<CohortItem> cohorts,
