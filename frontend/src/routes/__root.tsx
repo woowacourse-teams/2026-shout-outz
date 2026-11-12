@@ -13,6 +13,7 @@ import { ResumeQuestionDraft } from '@/components/recommendations/ResumeQuestion
 import { AnalyticsIdentifier } from '@/components/AnalyticsIdentifier';
 import { BugReportButton } from '@/components/BugReportButton';
 import { DevelopmentBanner } from '@/components/DevelopmentBanner';
+import { RouteFocusReset } from '@/components/RouteFocusReset';
 import { toPlainText } from '@/utils/markdown';
 
 // html/head/body는 Document(src/Document.tsx)의 책임입니다. 이 라우트는 라우팅 레이아웃
@@ -22,6 +23,7 @@ const RootLayout = () => (
     <RouteOpenGraph />
     <FirstVisitGuideRoute />
     <AnalyticsIdentifier />
+    <RouteFocusReset />
     <ResumeQuestionDraft />
     <DevelopmentBanner />
     <Outlet />
