@@ -10,7 +10,10 @@ export type {
   AnalyticsClient,
   AnalyticsEvent,
   AnalyticsUser,
+  ExploreSearchSource,
+  ExploreTabName,
   FeedSurface,
+  MaterialSurface,
   NavTab,
   RecommendationSurface,
 } from '@/utils/analytics/types';

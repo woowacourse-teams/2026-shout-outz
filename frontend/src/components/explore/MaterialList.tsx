@@ -10,6 +10,7 @@ import {
   MaterialMeta,
   techTalkThumbnailOf,
 } from '@/components/explore/MaterialParts';
+import { analytics } from '@/utils/analytics';
 import { cn } from '@/utils/cn';
 
 /** 목록에서 자료를 고르는 동안의 상태. 프로젝트 상세 자료 탭의 "필요 없는 자료 고르기"가 쓴다. */
@@ -99,6 +100,9 @@ export function TechTalkList({ talks, columns }: { talks: Material[]; columns: 1
           <li key={talk.resourceId} className="min-w-0">
             <a
               href={talk.url}
+              onClick={() =>
+                analytics.track({ name: 'tech_talk_clicked', resourceId: talk.resourceId })
+              }
               target="_blank"
               rel="noopener noreferrer"
               className="focus-visible:outline-primary-600 group block rounded-xl focus-visible:outline-2"

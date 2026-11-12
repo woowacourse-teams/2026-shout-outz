@@ -3,6 +3,7 @@ import { useState, type ReactNode } from 'react';
 
 import { materialSearchQuery, type Material } from '@/apis/explore';
 import { MaterialList, TechTalkList } from '@/components/explore/MaterialList';
+import { analytics } from '@/utils/analytics';
 import { Tab } from '@/components/Tab';
 
 type KindFilter = 'ALL' | 'BLOG' | 'DOCUMENT' | 'TECH_TALK';
@@ -44,7 +45,14 @@ export function ExploreSearchResult({ query }: { query: string }) {
           variant="chip"
           size="sm"
           value={filter}
-          onChange={(value) => setFilter(value as KindFilter)}
+          onChange={(value) => {
+            analytics.track({
+              name: 'explore_result_filter_changed',
+              filter: value,
+              queryLength: query.length,
+            });
+            setFilter(value as KindFilter);
+          }}
           aria-label="자료 종류"
           className="mt-3 flex-wrap"
         >

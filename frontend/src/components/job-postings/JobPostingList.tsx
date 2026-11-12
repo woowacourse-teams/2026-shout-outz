@@ -40,9 +40,9 @@ export function JobPostingList({ keyword }: { keyword: string }) {
   return (
     <div>
       <ul aria-label="공고" className="grid gap-3 md:grid-cols-3 md:gap-4">
-        {jobPostings.map((jobPosting) => (
+        {jobPostings.map((jobPosting, position) => (
           <li key={jobPosting.jobPostingId}>
-            <JobPostingCard jobPosting={jobPosting} />
+            <JobPostingCard jobPosting={jobPosting} position={position} />
           </li>
         ))}
         {!keyword && !hasNextPage && (
