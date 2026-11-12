@@ -1,5 +1,5 @@
 import type { FeedSort, FeedType } from '@/apis/feed';
-import { IconPlus } from '@tabler/icons-react';
+import { IconPencil, IconPlus } from '@tabler/icons-react';
 import { Button } from '@/components/Button';
 import { Footer } from '@/components/Footer';
 import { AppGnb } from '@/components/AppGnb';
@@ -49,9 +49,10 @@ export function FeedsPage({
                 궁금한 건 편하게 묻고, 서로의 이야기에 응원을 보내 보세요.
               </p>
             </div>
+            {/* 모바일은 아래 플로팅 버튼을 쓴다. */}
             <Button
               size="md"
-              className="shrink-0 bg-gray-900 px-4 font-bold text-white hover:bg-gray-700"
+              className="hidden shrink-0 bg-gray-900 px-4 font-bold text-white hover:bg-gray-700 md:inline-flex"
               onClick={onCreate}
             >
               <IconPlus className="mr-1.5 size-4" aria-hidden="true" />
@@ -112,6 +113,16 @@ export function FeedsPage({
           </div>
         )}
       </main>
+      {/* 모바일 질문하기·글쓰기. 우측 하단의 버그 제보 버튼(48px)과 겹치지 않게 그 위에 띄운다. */}
+      <Button
+        aria-label={isQuestion ? '질문하기' : '글쓰기'}
+        onClick={onCreate}
+        // 버그 제보 버튼 아래 여백 16px + 높이 48px + 사이 12px = 76px(bottom-19)
+        className="fixed right-4 bottom-19 z-40 h-12 gap-1.5 rounded-full bg-gray-900 px-4.5 text-base font-bold text-white shadow-lg hover:bg-gray-700 md:hidden"
+      >
+        <IconPencil className="size-4.5 shrink-0" aria-hidden="true" />
+        {isQuestion ? '질문하기' : '글쓰기'}
+      </Button>
       <Footer />
     </div>
   );

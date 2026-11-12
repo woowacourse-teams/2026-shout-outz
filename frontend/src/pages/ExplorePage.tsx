@@ -35,6 +35,9 @@ export function ExplorePage({
   onSortChange,
 }: ExplorePageProps) {
   const popularKeywords = useQuery({ ...popularKeywordsQuery(), enabled: tab === 'keyword' });
+  // 프로젝트 탭에서 기술 주제를 고르면 그 주제로 검색한 것으로 보고 검색창에 주제 이름을 넣는다.
+  const projectTopic = tab === 'project' ? topic : null;
+  const searchText = query || projectTopic || '';
 
   return (
     <div className="bg-background flex min-h-dvh flex-col text-gray-900">
@@ -44,8 +47,12 @@ export function ExplorePage({
         <ExploreHero
           tab={tab}
           onTabChange={onTabChange}
-          query={query}
-          onSearch={onSearch}
+          query={searchText}
+          // 검색창에 넣어 둔 주제 이름을 그대로 다시 검색하면 주제로 거른 상태를 유지한다.
+          onSearch={(next) => {
+            if (projectTopic && next === projectTopic) return;
+            onSearch(next);
+          }}
           {...(tab === 'keyword' &&
             popularKeywords.data && {
               suggestions: popularKeywords.data.map(({ keyword }) => keyword),

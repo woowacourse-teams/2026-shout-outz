@@ -233,7 +233,8 @@ test('목록에서 작성 페이지 진입 후 등록하면 생성한 상세 페
   );
   const user = userEvent.setup();
   await user.click(await screen.findByRole('tab', { name: '피드' }));
-  await user.click(await screen.findByRole('button', { name: '글쓰기' }));
+  // 데스크톱 머리의 버튼을 누른다(모바일 플로팅 버튼도 같은 이름으로 함께 있다).
+  await user.click((await screen.findAllByRole('button', { name: '글쓰기' }))[0]!);
   await fillTitle(user);
   await user.type(
     await screen.findByRole('textbox', { name: '내용' }),
@@ -288,7 +289,7 @@ test('질문 탭에서 질문 전용 카테고리로 작성하고 질문 목록�
   const user = userEvent.setup();
   await user.click(await screen.findByRole('tab', { name: '질문' }));
   expect(await screen.findByRole('tab', { name: '질문', selected: true })).toBeInTheDocument();
-  await user.click(screen.getByRole('button', { name: '질문하기' }));
+  await user.click(screen.getAllByRole('button', { name: '질문하기' })[0]!);
   expect(router.state.location.search.type).toBe('QUESTION');
   await fillTitle(user, '진로 질문');
   await user.type(await screen.findByRole('textbox', { name: '내용' }), '어떤 방향이 좋을까요?');

@@ -1,8 +1,10 @@
 package com.shoutoutz.api.resourcesearch.application.dto;
 
 import com.shoutoutz.api.resourcesearch.domain.BlogPlatformIcon;
+import com.shoutoutz.api.resourcesearch.domain.ResourceSection;
 import java.net.URI;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * 응답 하나에 담긴 자료 카드들의 이미지 주소. 카드마다 따로 조회하지 않게 한 번에 구해 둔 결과다.
@@ -15,6 +17,9 @@ public record ResourceCardImages(Map<Long, URI> logoUrls, Map<Long, String> favi
     public static final ResourceCardImages NONE = new ResourceCardImages(Map.of(), Map.of());
 
     private static final String BLOG_SOURCE = "blog-post";
+
+    /** github.com 페이지가 PR, 팀 문서, 위키, 디스커션 모두 같은 {@code <link rel="icon">} 으로 쓰는 아이콘이다. */
+    private static final String GITHUB_ICON_URL = "https://github.githubassets.com/favicons/favicon.svg";
 
     public ResourceCardImages {
         logoUrls = Map.copyOf(logoUrls);
@@ -30,22 +35,30 @@ public record ResourceCardImages(Map<Long, URI> logoUrls, Map<Long, String> favi
     }
 
     /**
-     * 블로그만 파비콘을 준다. PR, 팀 문서, 테코톡은 프론트가 GitHub, YouTube 아이콘을 고정으로 쓴다.
-     * tistory, velog, rilog 는 플랫폼 공식 아이콘, 그 밖의 블로그는 원문 페이지의 파비콘이다.
+     * 원문 사이트의 아이콘 주소.
+     * PR, 팀 문서, 위키, 디스커션은 GitHub 아이콘, tistory, velog, rilog 블로그는 플랫폼 공식 아이콘으로 고정한다.
+     * 고정 아이콘은 링크 미리보기 수집 결과와 관계없어, 수집이 실패한 자료도 아이콘이 보인다.
+     * 그 밖의 블로그(개인 도메인 등)는 링크 미리보기 수집 때 원문 페이지에서 뽑은 파비콘이고, 아직 수집하지 못했으면 null 이다.
+     * 테코톡은 null 이다.
      */
     public String faviconUrlOf(ResourceCard card) {
-        if (!BLOG_SOURCE.equals(card.source())) {
-            return null;
-        }
-        return BlogPlatformIcon.of(card.platform(), card.url())
-                .map(BlogPlatformIcon::iconUrl)
-                .orElseGet(() -> faviconUrls.get(card.resourceId()));
+        return fixedIconOf(card).orElseGet(() -> faviconUrls.get(card.resourceId()));
     }
 
     /**
-     * 플랫폼 공식 아이콘이 없는 블로그만 수집한 파비콘을 조회하면 된다.
+     * 고정 아이콘이 없는 블로그만 수집한 파비콘을 조회하면 된다.
      */
     public static boolean needsCollectedFavicon(ResourceCard card) {
-        return BLOG_SOURCE.equals(card.source()) && BlogPlatformIcon.of(card.platform(), card.url()).isEmpty();
+        return BLOG_SOURCE.equals(card.source()) && fixedIconOf(card).isEmpty();
+    }
+
+    private static Optional<String> fixedIconOf(ResourceCard card) {
+        if (ResourceSection.of(card.source()).filter(ResourceSection.DOCUMENT::equals).isPresent()) {
+            return Optional.of(GITHUB_ICON_URL);
+        }
+        if (BLOG_SOURCE.equals(card.source())) {
+            return BlogPlatformIcon.of(card.platform(), card.url()).map(BlogPlatformIcon::iconUrl);
+        }
+        return Optional.empty();
     }
 }

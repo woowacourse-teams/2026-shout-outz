@@ -84,6 +84,21 @@ describe('ExplorePage', () => {
       '무중단 배포',
     );
     expect(await resultSection(/^블로그/)).toBeVisible();
+    // 검색한 뒤에는 추천 검색어를 숨긴다.
+    expect(screen.queryByRole('list', { name: '추천 검색어' })).not.toBeInTheDocument();
+  });
+
+  it('검색어를 지우고 검색하면 검색을 풀고 추천 검색어를 다시 보여준다', async () => {
+    const user = userEvent.setup();
+    renderRoute('/explore?q=LLM');
+
+    const searchbox = await screen.findByRole('searchbox', { name: '기술 이야기 검색' });
+    expect(screen.queryByRole('list', { name: '추천 검색어' })).not.toBeInTheDocument();
+
+    await user.clear(searchbox);
+    await user.click(screen.getByRole('button', { name: '검색' }));
+
+    expect(await screen.findByRole('list', { name: '추천 검색어' })).toBeVisible();
   });
 
   it('자료 종류 탭을 고르면 그 종류만 보여준다', async () => {
@@ -252,6 +267,64 @@ describe('ExplorePage', () => {
     expect(within(summary).queryByText('결과')).not.toBeInTheDocument();
   });
 
+  it.each([
+    ['링크 미리보기가 아직 없으면', null],
+    ['대표 이미지가 열리지 않으면(429 등)', 'https://opengraph.githubassets.com/x/sample/8'],
+  ])(
+    '원문 카드는 %s 원문 사이트 파비콘, 그것도 안 열리면 회색 칸을 보여준다',
+    async (_, imageUrl) => {
+      const user = userEvent.setup();
+      server.use(
+        http.get('*/api/v1/resources/search', () =>
+          HttpResponse.json({
+            status: 'success',
+            data: {
+              blogs: { items: [] },
+              documents: { items: [serverMaterial(8, 'github-pr', '미리보기 없는 PR')] },
+              talks: { items: [] },
+            },
+          }),
+        ),
+        http.get('*/api/v1/resources/8', () =>
+          HttpResponse.json({
+            status: 'success',
+            data: {
+              ...serverMaterial(8, 'github-pr', '미리보기 없는 PR'),
+              contentType: null,
+              techTags: [],
+              keyPoints: [],
+              experiences: [],
+              linkPreview: imageUrl
+                ? { title: null, description: null, imageUrl, siteName: null }
+                : null,
+              topic: { topicId: 'cache', name: '캐시' },
+            },
+          }),
+        ),
+      );
+      renderRoute('/explore?q=미리보기');
+
+      const documents = await resultSection(/^PR과 팀 문서/);
+      await user.click(within(documents).getByRole('button', { name: /미리보기 없는 PR/ }));
+      const card = within(await screen.findByRole('dialog')).getByRole('link', {
+        name: /^원문 보기:/,
+      });
+      const thumbnail = () => card.querySelector('img');
+
+      if (imageUrl) {
+        await waitFor(() => expect(thumbnail()).toHaveAttribute('src', imageUrl));
+        fireEvent.error(thumbnail()!);
+      }
+      await waitFor(() =>
+        expect(thumbnail()).toHaveAttribute('src', 'https://github.com/favicon.ico'),
+      );
+
+      fireEvent.error(thumbnail()!);
+      expect(thumbnail()).not.toBeInTheDocument();
+      expect(card.querySelector('.bg-gray-100')).toBeInTheDocument();
+    },
+  );
+
   it('찾은 자료가 하나도 없으면 안내를 보여준다', async () => {
     renderRoute('/explore?q=없는검색어123');
 
@@ -398,6 +471,17 @@ describe('ExplorePage 프로젝트 탭', () => {
     );
   });
 
+  it('목록 아래에서 우리 팀 프로젝트 등록으로 이어진다', async () => {
+    renderRoute('/explore?tab=project');
+
+    await screen.findByRole('list', { name: '프로젝트' });
+    expect(screen.getByText(/찾는 프로젝트가 없나요\?/)).toBeVisible();
+    expect(screen.getByRole('link', { name: '우리 팀 프로젝트 등록하기 →' })).toHaveAttribute(
+      'href',
+      '/projects/new',
+    );
+  });
+
   it('기술 주제를 고르면 그 주제를 다룬 프로젝트만 보여주고, 다시 누르면 푼다', async () => {
     const user = userEvent.setup();
     renderRoute('/explore?tab=project');
@@ -412,9 +496,14 @@ describe('ExplorePage 프로젝트 탭', () => {
     expect(within(cards).getByRole('link', { name: /Shout-outz/ })).toBeVisible();
     expect(within(cards).queryByRole('link', { name: /Dropit/ })).not.toBeInTheDocument();
     expect(topic).toHaveAttribute('aria-pressed', 'true');
+    // 주제를 고르면 그 주제로 검색한 것으로 보고 검색창에 넣고 추천 검색어를 숨긴다.
+    expect(screen.getByRole('searchbox', { name: '프로젝트 검색' })).toHaveValue('트랜잭션/데드락');
+    expect(screen.queryByRole('list', { name: '추천 검색어' })).not.toBeInTheDocument();
 
     await user.click(topic);
     expect(await screen.findByRole('heading', { name: '프로젝트 13' })).toBeVisible();
+    expect(screen.getByRole('searchbox', { name: '프로젝트 검색' })).toHaveValue('');
+    expect(screen.getByRole('list', { name: '추천 검색어' })).toBeVisible();
   });
 
   it('검색어와 기술 주제는 마지막에 고른 것 하나로만 거른다', async () => {
@@ -425,23 +514,26 @@ describe('ExplorePage 프로젝트 탭', () => {
       'Dropit 키워드로 찾은 결과',
     );
 
-    const suggestions = screen.getByRole('list', { name: '추천 검색어' });
-    await user.click(within(suggestions).getByRole('button', { name: '트랜잭션/데드락' }));
+    const nav = await screen.findByRole('navigation', { name: '기술 주제' });
+    await user.click(within(nav).getByRole('button', { name: 'BE' }));
+    await user.click(within(nav).getByRole('button', { name: /트랜잭션\/데드락/ }));
     await waitFor(() =>
       expect(screen.getByText('키워드로 찾은 결과', { exact: false })).toHaveTextContent(
         '트랜잭션/데드락 키워드로 찾은 결과',
       ),
     );
-    expect(screen.getByRole('searchbox', { name: '프로젝트 검색' })).toHaveValue('');
+    const searchbox = screen.getByRole('searchbox', { name: '프로젝트 검색' });
+    expect(searchbox).toHaveValue('트랜잭션/데드락');
 
-    await user.type(screen.getByRole('searchbox', { name: '프로젝트 검색' }), 'Knot');
+    await user.clear(searchbox);
+    await user.type(searchbox, 'Knot');
     await user.click(screen.getByRole('button', { name: '검색' }));
     await waitFor(() =>
       expect(screen.getByText('키워드로 찾은 결과', { exact: false })).toHaveTextContent(
         'Knot 키워드로 찾은 결과',
       ),
     );
-    expect(within(suggestions).getByRole('button', { name: '트랜잭션/데드락' })).toHaveAttribute(
+    expect(within(nav).getByRole('button', { name: /트랜잭션\/데드락/ })).toHaveAttribute(
       'aria-pressed',
       'false',
     );
@@ -455,10 +547,8 @@ describe('ExplorePage 프로젝트 탭', () => {
     await user.click(within(suggestions).getByRole('button', { name: '트랜잭션/데드락' }));
 
     expect(await screen.findByRole('heading', { name: '프로젝트 1' })).toBeVisible();
-    expect(within(suggestions).getByRole('button', { name: '트랜잭션/데드락' })).toHaveAttribute(
-      'aria-pressed',
-      'true',
-    );
+    expect(screen.getByRole('searchbox', { name: '프로젝트 검색' })).toHaveValue('트랜잭션/데드락');
+    expect(screen.queryByRole('list', { name: '추천 검색어' })).not.toBeInTheDocument();
   });
 
   it('좋아요순으로 바꾸면 좋아요가 많은 프로젝트부터 보여준다', async () => {

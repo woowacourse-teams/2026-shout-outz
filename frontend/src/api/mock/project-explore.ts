@@ -245,14 +245,73 @@ const SHOUT_OUTZ_EXPERIENCES: Omit<ProjectCareerCard, 'cardId' | 'sections' | 't
   },
 ];
 
+// 프로토타입(경험 상세 · 포트폴리오)에 있는 첫 경험의 포트폴리오 글과 기술, 출처 한 줄 소개다. 나머지 경험은 비워 둔다.
+const EXPERIENCE_DETAILS: Partial<
+  Record<
+    string,
+    Pick<ProjectCareerCard, 'sections' | 'techs'> & {
+      sources: Pick<Material, 'summary' | 'publishedAt'>[];
+    }
+  >
+> = {
+  '저사양 EC2의 JVM 메모리 반복 종료 대응': {
+    techs: ['JVM', '-Xmx', 'Metaspace', 'swap', 'systemd', 'EC2'],
+    sections: [
+      {
+        heading: '해결하려던 문제',
+        body: '1GB EC2에서 백엔드가 강제 종료됐고, dev 서버는 Metaspace 부족으로 1분마다 꺼졌습니다.',
+      },
+      {
+        heading: '원인',
+        body: 'OS와 에이전트가 메모리 절반 가까이를 쓰는데 비율 기반 힙 설정이 물리 메모리를 넘었고, Metaspace 상한 128MB가 부족했습니다.',
+      },
+      {
+        heading: '고려한 방법',
+        body: 'MaxRAMPercentage 유지, 인스턴스 사양 업그레이드, fwupd disable',
+      },
+      {
+        heading: '해결 과정',
+        body: '903MB 예산에서 힙 상한을 -Xmx320m으로 정하고, Metaspace 256MB와 fwupd mask를 배포 파일에 반영했습니다.',
+      },
+      {
+        heading: '확인한 결과',
+        body: '이미지 업로드까지 수행해도 서버가 종료되지 않는 것을 확인했습니다.',
+      },
+      {
+        heading: '측정 범위와 고려한 점',
+        body: '힙 상한은 추정값이라 2~3일 관측이 필요했고, 사양 변경 시 고정값을 다시 수정해야 합니다.',
+      },
+    ],
+    sources: [
+      {
+        summary:
+          '1GB 서버에서 OS·에이전트·힙 외 영역을 빼고 힙 상한을 정한 계산이 있어, 저사양 서버 JVM 설정할 때 참고하기 좋아요.',
+        publishedAt: '2026-07-12T09:00:00Z',
+      },
+      {
+        summary:
+          'Metaspace 상한을 올리고 배포 서비스 파일에 반영한 과정이라, 반복 종료 장애의 원인을 좁힐 때 참고하기 좋아요.',
+        publishedAt: '2026-09-03T09:00:00Z',
+      },
+    ],
+  },
+};
+
 export const getProjectCareerCards = (slug: string): ProjectCareerCard[] =>
   slug === 'shout-outz'
-    ? SHOUT_OUTZ_EXPERIENCES.map((experience, index) => ({
-        ...experience,
-        cardId: index + 1,
-        sections: [],
-        techs: [],
-      }))
+    ? SHOUT_OUTZ_EXPERIENCES.map((experience, index) => {
+        const detail = EXPERIENCE_DETAILS[experience.title];
+        return {
+          ...experience,
+          cardId: index + 1,
+          sections: detail?.sections ?? [],
+          techs: detail?.techs ?? [],
+          sources: experience.sources.map((source, sourceIndex) => ({
+            ...source,
+            ...detail?.sources[sourceIndex],
+          })),
+        };
+      })
     : [];
 
 /** 자료 탭에서 주제를 묶는 분야 */

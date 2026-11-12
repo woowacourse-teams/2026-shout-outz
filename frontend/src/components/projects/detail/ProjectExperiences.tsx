@@ -1,4 +1,5 @@
 import { useSuspenseQuery } from '@tanstack/react-query';
+import { Link } from '@tanstack/react-router';
 import { useId, useState } from 'react';
 
 import {
@@ -17,6 +18,7 @@ import { ResourceReportModal } from '@/components/projects/detail/ResourceReport
 import { useIsProjectMember } from '@/components/projects/detail/useIsProjectMember';
 import { useModal } from '@/hooks/useModal';
 import { cn } from '@/utils/cn';
+import { toProjectSlugParam } from '@/utils/project';
 
 // 서버는 직군을 BE, FE, AN 순으로 준다.
 const JOB_ROLES: { jobRole: string; label: string }[] = [
@@ -76,7 +78,7 @@ export function ProjectExperiences({
           .map((experience, index) => (
             <li key={experience.cardId} className="border-t border-gray-100 first:border-t-0">
               {/* 프로토타입처럼 첫 경험의 출처만 펼쳐 둔다. */}
-              <ExperienceItem experience={experience} defaultOpen={index === 0} />
+              <ExperienceItem slug={slug} experience={experience} defaultOpen={index === 0} />
             </li>
           ))}
       </ul>
@@ -100,11 +102,17 @@ export function ProjectExperiences({
   );
 }
 
-// 프로토타입은 경험 카드 전체가 "자세히 보기"지만 경험 카드는 눌러도 아무것도 열지 않는다. 출처는 펼쳐서 원문으로 간다.
+/**
+ * 경험 카드. 카드 어디를 눌러도 경험 상세(포트폴리오) 페이지로 간다.
+ * 카드 안에 출처 펼치기 버튼과 원문 링크가 있어 카드 전체를 링크로 감싸지 않고,
+ * 제목 링크의 누르는 영역을 카드 전체로 넓힌 뒤 버튼과 출처 목록을 그 위에 올린다.
+ */
 function ExperienceItem({
+  slug,
   experience,
   defaultOpen,
 }: {
+  slug: string;
   experience: ProjectCareerCard;
   defaultOpen: boolean;
 }) {
@@ -112,9 +120,17 @@ function ExperienceItem({
   const sourcesId = useId();
 
   return (
-    <article className="flex flex-col gap-2.5 py-7">
+    <article className="group relative flex flex-col gap-2.5 py-7">
       <span className="text-sm font-medium text-gray-500">{experience.category}</span>
-      <h3 className="text-lg font-bold text-gray-900">{experience.title}</h3>
+      <h3 className="text-lg font-bold text-gray-900 group-hover:underline">
+        <Link
+          to="/projects/$slug/experiences/$cardId"
+          params={{ slug: toProjectSlugParam(slug), cardId: String(experience.cardId) }}
+          className="focus-visible:outline-primary-600 rounded-sm after:absolute after:inset-0 focus-visible:outline-2"
+        >
+          {experience.title}
+        </Link>
+      </h3>
       <ul className="flex flex-col gap-2">
         {experience.resumeBullets.map((bullet) => (
           <li key={bullet} className="flex gap-2.5 text-sm leading-relaxed text-gray-600">
@@ -128,7 +144,7 @@ function ExperienceItem({
         ))}
       </ul>
       {experience.sources.length > 0 && (
-        <div className="mt-1.5 flex flex-col items-start gap-2">
+        <div className="relative z-10 mt-1.5 flex flex-col items-start gap-2">
           <button
             type="button"
             aria-expanded={open}
