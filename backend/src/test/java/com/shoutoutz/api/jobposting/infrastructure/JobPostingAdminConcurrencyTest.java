@@ -103,7 +103,7 @@ class JobPostingAdminConcurrencyTest {
         runWhileWorkerSaving(() -> new TransactionTemplate(transactionManager).execute(status -> {
             JobPosting saved = jobPostingRepository.findByIdForUpdate(postingId).orElseThrow();
             JobPosting updated = saved.update(sourceUrl, "바뀐 공고 원문", "우테코", JobRole.BACKEND, null,
-                    "백엔드 개발자", null, null,
+                    "백엔드 개발자", null, null, null,
                     List.of(JobRequirement.create(1, "Kotlin", RequirementCategory.REQUIRED, "Kotlin 개발 경험")), NOW);
             jobPostingRepository.update(updated, true);
             return null;

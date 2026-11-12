@@ -25,6 +25,7 @@ public final class JobPosting {
     private final String title;
     private final String employmentType;
     private final LocalDate deadline;
+    private final Long logoMediaId;
     private final MatchingStatus status;
     private final Instant hiddenAt;
     private final Long registeredBy;
@@ -42,6 +43,7 @@ public final class JobPosting {
             String title,
             String employmentType,
             LocalDate deadline,
+            Long logoMediaId,
             MatchingStatus status,
             Instant hiddenAt,
             Long registeredBy,
@@ -79,6 +81,7 @@ public final class JobPosting {
         this.title = sanitizedTitle;
         this.employmentType = sanitizedEmploymentType;
         this.deadline = deadline;
+        this.logoMediaId = logoMediaId;
         this.status = status;
         this.hiddenAt = hiddenAt;
         this.registeredBy = registeredBy;
@@ -100,6 +103,7 @@ public final class JobPosting {
             String title,
             String employmentType,
             LocalDate deadline,
+            Long logoMediaId,
             long registeredBy,
             List<JobRequirement> requirements,
             Instant now
@@ -114,6 +118,7 @@ public final class JobPosting {
                 title,
                 employmentType,
                 deadline,
+                logoMediaId,
                 MatchingStatus.PENDING,
                 null,
                 registeredBy,
@@ -127,6 +132,7 @@ public final class JobPosting {
      * 기업이 바꾼 공고를 운영자가 다시 붙여넣었을 때 쓴다. 주소가 다르면 다른 공고이므로 받지 않는다.
      * 원문 해시가 같으면 공고 정보만 고치고, 역량과 분석 상태는 그대로 둔다. 요청의 역량은 쓰지 않는다.
      * 해시가 다르면 받은 역량으로 바꾸고 PENDING 으로 되돌려 다시 분석한다.
+     * 회사 로고는 원문과 상관없이 받은 값으로 바꾼다. 받은 값이 null 이면 로고를 지운다.
      * 숨김 시각, 등록자, 등록 시각은 바꾸지 않는다.
      */
     public JobPosting update(
@@ -138,6 +144,7 @@ public final class JobPosting {
             String title,
             String employmentType,
             LocalDate deadline,
+            Long logoMediaId,
             List<JobRequirement> requirements,
             Instant now
     ) {
@@ -156,6 +163,7 @@ public final class JobPosting {
                 title,
                 employmentType,
                 deadline,
+                logoMediaId,
                 sameContent ? status : MatchingStatus.PENDING,
                 hiddenAt,
                 registeredBy,
@@ -219,6 +227,7 @@ public final class JobPosting {
             String title,
             String employmentType,
             LocalDate deadline,
+            Long logoMediaId,
             MatchingStatus status,
             Instant hiddenAt,
             long registeredBy,
@@ -236,6 +245,7 @@ public final class JobPosting {
                 title,
                 employmentType,
                 deadline,
+                logoMediaId,
                 status,
                 hiddenAt,
                 registeredBy,

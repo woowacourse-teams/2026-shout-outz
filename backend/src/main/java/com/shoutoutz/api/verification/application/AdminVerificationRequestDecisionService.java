@@ -6,6 +6,7 @@ import com.shoutoutz.api.common.exception.custom.ConflictException;
 import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
 import com.shoutoutz.api.common.exception.custom.ForbiddenException;
 import com.shoutoutz.api.project.application.ArchivedProjectMemberMatchService;
+import com.shoutoutz.api.user.application.UserService;
 import com.shoutoutz.api.user.domain.account.User;
 import com.shoutoutz.api.user.domain.account.UserErrorCode;
 import com.shoutoutz.api.user.domain.account.UserRepository;
@@ -39,6 +40,7 @@ public class AdminVerificationRequestDecisionService {
     private final UserRepository userRepository;
     private final OAuthAccountRepository oauthAccountRepository;
     private final ArchivedProjectMemberMatchService archivedProjectMemberMatchService;
+    private final UserService userService;
     private final Clock clock;
 
     @Transactional
@@ -68,6 +70,7 @@ public class AdminVerificationRequestDecisionService {
         );
         requestRepository.save(approvedRequest);
         userProfileRepository.save(approvedProfile);
+        userService.evictSummaryCache(request.getUserId());
         historyRepository.save(UserVerificationRequestHistory.decision(
                 requestId,
                 adminUserId,

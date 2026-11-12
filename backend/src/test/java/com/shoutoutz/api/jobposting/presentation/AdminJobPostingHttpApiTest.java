@@ -250,6 +250,8 @@ class AdminJobPostingHttpApiTest {
                         "백엔드 개발자",
                         "정규직",
                         LocalDate.of(2026, 12, 31),
+                        50L,
+                        "https://cdn.example.com/media/job-posting-company-logo/50-thumbnail.webp",
                         MatchingStatus.READY,
                         null,
                         ADMIN_ID,
@@ -542,6 +544,7 @@ class AdminJobPostingHttpApiTest {
                   "title": "백엔드 개발자",
                   "employmentType": "정규직",
                   "deadline": "2026-12-31",
+                  "logoImageId": 50,
                   "requirements": [
                     {"name": "Java, Spring", "category": "REQUIRED", "summary": "Spring으로 API 서버를 개발한 경험이 필요해요."}
                   ]
@@ -583,6 +586,12 @@ class AdminJobPostingHttpApiTest {
                 fieldWithPath("title").type(STRING).description("공고 제목(200자 이하)"),
                 fieldWithPath("employmentType").type(STRING).description("고용 형태(30자 이하)").optional(),
                 fieldWithPath("deadline").type(STRING).description("마감일(yyyy-MM-dd)").optional(),
+                fieldWithPath("logoImageId").type(NUMBER)
+                        .description("회사 로고 이미지 ID. JOB_POSTING_COMPANY_LOGO 용도로 올려 처리가 끝난 이미지만 받는다. "
+                                + "다른 용도이거나 없는 이미지면 400(JOB_POSTING_INVALID_LOGO), "
+                                + "처리 중이면 400(JOB_POSTING_LOGO_NOT_READY). "
+                                + "수정은 전체 교체라서 빼거나 null 이면 로고를 지운다.")
+                        .optional(),
                 fieldWithPath("requirements").type(ARRAY).description("역량 목록(1~50개)"),
                 fieldWithPath("requirements[].name").type(STRING).description("역량 이름(100자 이하)"),
                 new EnumFields(RequirementCategory.class).withPath("requirements[].category").description("역량 구분"),
@@ -602,6 +611,11 @@ class AdminJobPostingHttpApiTest {
                 fieldWithPath("data.title").type(STRING).description("공고 제목"),
                 fieldWithPath("data.employmentType").type(STRING).description("고용 형태").optional(),
                 fieldWithPath("data.deadline").type(STRING).description("마감일(yyyy-MM-dd)").optional(),
+                fieldWithPath("data.logoImageId").type(NUMBER)
+                        .description("회사 로고 이미지 ID. 수정 요청에 그대로 다시 보내야 로고가 유지된다. 없으면 null").optional(),
+                fieldWithPath("data.logoUrl").type(STRING)
+                        .description("회사 로고 작은 이미지(THUMBNAIL) 주소. 로고가 없거나 이미지가 준비되지 않았으면 null")
+                        .optional(),
                 new EnumFields(MatchingStatus.class).withPath("data.status").description("자료 분석 상태"),
                 fieldWithPath("data.hiddenAt").type(STRING).description("숨긴 시각. 숨기지 않았으면 null").optional(),
                 fieldWithPath("data.registeredBy").type(NUMBER).description("등록한 관리자 ID"),
