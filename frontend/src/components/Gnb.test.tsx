@@ -23,7 +23,16 @@ const ROUTE_PATHS = [
 ];
 
 const renderGnb = async (path: string, props: GnbProps = {}) => {
-  const rootRoute = createRootRoute({ component: () => <Gnb {...props} /> });
+  const rootRoute = createRootRoute({
+    component: () => (
+      <>
+        <Gnb {...props} />
+        <main>
+          <h1>본문 제목</h1>
+        </main>
+      </>
+    ),
+  });
   const router = createRouter({
     routeTree: rootRoute.addChildren(
       ROUTE_PATHS.map((routePath) =>
@@ -125,6 +134,29 @@ describe('Gnb', () => {
       await renderGnb('/', { trailing: <span>정우진</span> });
 
       expect(screen.getByText('정우진')).toBeInTheDocument();
+    });
+  });
+
+  describe('본문 바로가기', () => {
+    it('헤더의 첫 번째 링크로 렌더한다', async () => {
+      await renderGnb('/');
+
+      expect(within(screen.getByRole('banner')).getAllByRole('link')[0]).toHaveAccessibleName(
+        '본문으로 바로가기',
+      );
+    });
+
+    it('누르면 본문으로 포커스를 옮기고, 본문을 벗어나면 원래 상태로 되돌린다', async () => {
+      await renderGnb('/');
+      const main = screen.getByRole('main');
+
+      fireEvent.click(screen.getByRole('link', { name: '본문으로 바로가기' }));
+
+      expect(main).toHaveFocus();
+
+      fireEvent.blur(main);
+
+      expect(main).not.toHaveAttribute('tabindex');
     });
   });
 });

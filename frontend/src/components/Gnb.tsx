@@ -10,6 +10,7 @@ import {
 } from '@tabler/icons-react';
 
 import { SIDE_DRAWER_ITEM, SideDrawerHeader } from '@/components/SideDrawerHeader';
+import { SkipToMainLink } from '@/components/SkipToMainLink';
 import { tabItemBaseStyle, tabItemStyles } from '@/components/Tab';
 import { Drawer, DrawerSideContent } from '@/components/ui/drawer';
 import { cn } from '@/utils/cn';
@@ -79,6 +80,7 @@ export function Gnb({ trailing, className, ...props }: GnbProps) {
 
   return (
     <header className={cn('bg-background sticky top-0 z-50', className)} {...props}>
+      <SkipToMainLink />
       <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-3 px-4 md:grid md:h-16 md:grid-cols-[1fr_auto_1fr]">
         <div className="flex items-center gap-1.5 md:gap-0">
           <MobileMenu pathname={pathname} />
