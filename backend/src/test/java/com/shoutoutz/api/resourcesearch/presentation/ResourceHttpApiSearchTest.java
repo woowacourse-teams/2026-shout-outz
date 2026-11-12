@@ -196,8 +196,8 @@ class ResourceHttpApiSearchTest {
                 fieldWithPath("publishedAt").type(STRING).description("원문 게시 시각(UTC)").optional(),
                 fieldWithPath("platform").type(STRING).description("블로그 플랫폼. 블로그가 아니면 null").optional(),
                 fieldWithPath("faviconUrl").type(STRING).description("원문 사이트 아이콘 주소. PR, 팀 문서, 위키, 디스커션은 GitHub 아이콘, tistory, velog, rilog 블로그는 플랫폼 공식 아이콘으로 고정. 그 밖의 블로그(개인 도메인 등)는 원문 페이지의 파비콘이고 아직 수집 전이면 null. 테코톡은 null").optional(),
-                fieldWithPath("team").type(OBJECT).description("자료를 만든 팀. 팀이 없거나 알 수 없으면 null").optional(),
-                fieldWithPath("team.name").type(STRING).description("등록된 프로젝트면 프로젝트 이름, 등록 전 팀이면 수집 때 저장한 프로젝트 이름").optional(),
+                fieldWithPath("team").type(OBJECT).description("자료를 만든 팀. 등록된 프로젝트, 수집 때 저장한 팀 이름, 저장소 이름 순으로 정한다. 팀을 알 수 없거나 승인 전, 삭제된 프로젝트의 자료면 null").optional(),
+                fieldWithPath("team.name").type(STRING).description("등록된 프로젝트면 프로젝트 이름, 등록 전 팀이면 수집 때 저장한 프로젝트 이름, 그것도 없으면 저장소 이름에서 조직명과 기수 연도 접두사를 뗀 이름(예: woowacourse-teams/2026-career-form → career-form)").optional(),
                 fieldWithPath("team.projectSlug").type(STRING).description("등록된 프로젝트 slug. 등록 전 팀이면 null").optional(),
                 fieldWithPath("team.logoMediaId").type(NUMBER).description("프로젝트 로고 미디어 ID. 없으면 null").optional(),
                 fieldWithPath("team.logoUrl").type(STRING).description("팀 로고 이미지 주소(작은 크기). logoMediaId가 없거나 이미지가 준비되지 않았으면 null").optional()
