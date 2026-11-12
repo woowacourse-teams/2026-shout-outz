@@ -92,7 +92,8 @@ public class ResourceCardQueryRepositoryImpl implements ResourceCardQueryReposit
 
     private String onePerAuthorKey(ResourceSection kind) {
         return switch (kind) {
-            case BLOG -> "COALESCE('project:' || d.project_id, 'team:' || NULLIF(btrim(d.extra ->> 'project_name'), ''), 'resource:' || d.id)";
+            case BLOG -> "COALESCE('project:' || d.project_id, 'team:' || NULLIF(btrim(d.extra ->> 'project_name'), ''), "
+                    + "'repo:' || NULLIF(btrim(d.repo), ''), 'resource:' || d.id)";
             case TALK -> "COALESCE('speaker:' || NULLIF(btrim(d.extra ->> 'speaker'), ''), 'resource:' || d.id)";
             case DOCUMENT -> throw new IllegalArgumentException("최근 자료는 블로그와 테코톡만 조회할 수 있습니다.");
         };

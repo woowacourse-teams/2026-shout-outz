@@ -82,6 +82,16 @@ class RecentResourceQueryIntegrationTest {
     }
 
     @Test
+    @DisplayName("수집한 팀 이름이 없는 등록 전 팀의 블로그는 화면에 보이는 팀 이름처럼 저장소로 묶는다")
+    void groupsUnlinkedBlogsByRepository() {
+        fixture.document("blog-post").publishedAt(DAY1).repo("woowacourse-teams/2026-poudy").save();
+        long latest = fixture.document("blog-post").publishedAt(DAY2).repo("woowacourse-teams/2026-poudy").save();
+        long otherRepository = fixture.document("blog-post").publishedAt(DAY1).repo("woowacourse-teams/2026-bibbidi").save();
+
+        assertThat(ids(ResourceSection.BLOG, 10)).containsExactly(latest, otherRepository);
+    }
+
+    @Test
     @DisplayName("팀을 알 수 없는 블로그끼리는 묶지 않는다")
     void doesNotGroupBlogsWithoutTeam() {
         long first = blog(DAY1, "{}");
