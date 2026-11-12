@@ -10,9 +10,9 @@ import com.shoutoutz.api.jobposting.application.JobRequirementMatchingRepository
 import com.shoutoutz.api.jobposting.application.dto.CandidateChunk;
 import com.shoutoutz.api.jobposting.application.dto.CandidateChunk.ChunkKind;
 import com.shoutoutz.api.jobposting.application.dto.ClaimedJobRequirement;
-import com.shoutoutz.api.jobposting.application.dto.JobPostingCursor;
-import com.shoutoutz.api.jobposting.application.dto.JobPostingPage;
-import com.shoutoutz.api.jobposting.application.dto.JobPostingSummary;
+import com.shoutoutz.api.jobposting.application.dto.JobPostingAdminCursor;
+import com.shoutoutz.api.jobposting.application.dto.JobPostingAdminPage;
+import com.shoutoutz.api.jobposting.application.dto.JobPostingAdminSummary;
 import com.shoutoutz.api.jobposting.application.dto.RequirementRecommendation;
 import com.shoutoutz.api.jobposting.application.dto.RequirementRecommendationDetail;
 import com.shoutoutz.api.jobposting.domain.JobPosting;
@@ -25,12 +25,14 @@ import com.shoutoutz.api.jobposting.domain.JobRequirement;
 import com.shoutoutz.api.jobposting.domain.JobRole;
 import com.shoutoutz.api.jobposting.domain.MatchingFailure;
 import com.shoutoutz.api.jobposting.domain.MatchingStatus;
+import com.shoutoutz.api.jobposting.domain.ReanalysisScope;
 import com.shoutoutz.api.jobposting.domain.RecommendationVerdict;
 import com.shoutoutz.api.jobposting.domain.RequirementCategory;
 import jakarta.persistence.EntityManager;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -150,13 +152,13 @@ class JobPostingRepositoryIntegrationTest {
         long second = jobPostingRepository.save(posting("https://careers.example.com/jobs/2", NOW.plusSeconds(1))).getId();
         long third = jobPostingRepository.save(posting("https://careers.example.com/jobs/3", NOW.plusSeconds(2))).getId();
 
-        JobPostingPage firstPage = jobPostingAdminQueryRepository.findAll(null, 2);
-        JobPostingPage secondPage = jobPostingAdminQueryRepository.findAll(new JobPostingCursor(second), 2);
+        JobPostingAdminPage firstPage = jobPostingAdminQueryRepository.findAll(null, 2);
+        JobPostingAdminPage secondPage = jobPostingAdminQueryRepository.findAll(new JobPostingAdminCursor(second), 2);
 
-        assertThat(firstPage.items()).extracting(JobPostingSummary::id).containsExactly(third, second);
+        assertThat(firstPage.items()).extracting(JobPostingAdminSummary::id).containsExactly(third, second);
         assertThat(firstPage.hasNext()).isTrue();
         assertThat(firstPage.totalCount()).isEqualTo(3);
-        assertThat(secondPage.items()).extracting(JobPostingSummary::id).containsExactly(first);
+        assertThat(secondPage.items()).extracting(JobPostingAdminSummary::id).containsExactly(first);
         assertThat(secondPage.hasNext()).isFalse();
         assertThat(secondPage.totalCount()).isEqualTo(3);
     }
@@ -165,10 +167,29 @@ class JobPostingRepositoryIntegrationTest {
     void 공고_목록의_한_줄에_목록에_보여_줄_값을_담는다() {
         JobPosting saved = jobPostingRepository.save(posting("https://careers.example.com/jobs/1", NOW));
 
-        JobPostingSummary summary = jobPostingAdminQueryRepository.findAll(null, 20).items().getFirst();
+        JobPostingAdminSummary summary = jobPostingAdminQueryRepository.findAll(null, 20).items().getFirst();
 
-        assertThat(summary).isEqualTo(new JobPostingSummary(
-                saved.getId(), "예시 회사", "백엔드 개발자", JobRole.BACKEND, MatchingStatus.PENDING, null, NOW));
+        assertThat(summary).isEqualTo(new JobPostingAdminSummary(
+                saved.getId(), "예시 회사", "백엔드 개발자", JobRole.BACKEND, MatchingStatus.PENDING, 0, null, NOW));
+    }
+
+    @Test
+    void 공고_목록의_한_줄에_최종_실패한_역량_수만_센다() {
+        long failedPosting = jobPostingRepository.save(posting("https://careers.example.com/jobs/1", NOW)).getId();
+        long otherPosting = jobPostingRepository.save(posting("https://careers.example.com/jobs/2", NOW.plusSeconds(1))).getId();
+        jdbcTemplate.update("UPDATE job_postings SET status = 'FAILED' WHERE id = ?", failedPosting);
+        jdbcTemplate.update("UPDATE job_requirements SET status = 'FAILED' WHERE job_posting_id = ? AND display_order = 1",
+                failedPosting);
+        jdbcTemplate.update("""
+                UPDATE job_requirements SET status = 'PENDING', last_error = 'SEARCH_FAILED'
+                WHERE job_posting_id = ? AND display_order = 2
+                """, failedPosting);
+        jdbcTemplate.update("UPDATE job_requirements SET status = 'FAILED' WHERE job_posting_id = ?", otherPosting);
+
+        List<JobPostingAdminSummary> items = jobPostingAdminQueryRepository.findAll(null, 20).items();
+
+        assertThat(items).extracting(JobPostingAdminSummary::id, JobPostingAdminSummary::failedRequirementCount)
+                .containsExactly(tuple(otherPosting, 2), tuple(failedPosting, 1));
     }
 
     @Test
@@ -176,7 +197,7 @@ class JobPostingRepositoryIntegrationTest {
         long id = jobPostingRepository.save(posting("https://careers.example.com/jobs/1", NOW)).getId();
         jobPostingRepository.updateHiddenAt(id, true, NOW.plusSeconds(60));
 
-        JobPostingSummary summary = jobPostingAdminQueryRepository.findAll(null, 20).items().getFirst();
+        JobPostingAdminSummary summary = jobPostingAdminQueryRepository.findAll(null, 20).items().getFirst();
 
         assertThat(summary.hiddenAt()).isEqualTo(NOW.plusSeconds(60));
     }
@@ -278,7 +299,7 @@ class JobPostingRepositoryIntegrationTest {
         JobPosting locked = jobPostingRepository.findByIdForUpdate(saved.getId()).orElseThrow();
         JobPosting updated = locked.update(
                 "https://careers.example.com/jobs/1", CONTENT + "\n- Kotlin 개발 경험", "예시 회사", JobRole.BACKEND,
-                "3년 이상", "백엔드 개발자", null, LocalDate.of(2026, 12, 31),
+                "3년 이상", "백엔드 개발자", null, LocalDate.of(2026, 12, 31), null,
                 List.of(JobRequirement.create(1, "Kotlin", RequirementCategory.REQUIRED, "Kotlin 개발 경험")),
                 NOW.plusSeconds(60));
         jobPostingRepository.update(updated, true);
@@ -316,7 +337,7 @@ class JobPostingRepositoryIntegrationTest {
         JobPosting locked = jobPostingRepository.findByIdForUpdate(saved.getId()).orElseThrow();
         JobPosting updated = locked.update(
                 "https://careers.example.com/jobs/1", CONTENT, "바뀐 회사", JobRole.BACKEND, "3년 이상", "백엔드 개발자",
-                null, LocalDate.of(2026, 12, 31), List.of(), NOW.plusSeconds(60));
+                null, LocalDate.of(2026, 12, 31), null, List.of(), NOW.plusSeconds(60));
         jobPostingRepository.update(updated, false);
         clearPersistenceContext();
 
@@ -331,6 +352,159 @@ class JobPostingRepositoryIntegrationTest {
         assertThat(jdbcTemplate.queryForObject(
                 "SELECT count(*) FROM requirement_recommendations WHERE job_requirement_id = ?", Integer.class,
                 requirementIds.getFirst())).isOne();
+    }
+
+    @Test
+    void 회사_로고를_고치면_받은_로고로_바꾸고_비워서_보내면_지운다() {
+        JobPosting saved = jobPostingRepository.save(posting("https://careers.example.com/jobs/1", NOW));
+        long logoId = insertLogo();
+        clearPersistenceContext();
+
+        JobPosting withLogo = jobPostingRepository.findByIdForUpdate(saved.getId()).orElseThrow().update(
+                "https://careers.example.com/jobs/1", CONTENT, "예시 회사", JobRole.BACKEND, "3년 이상", "백엔드 개발자",
+                null, LocalDate.of(2026, 11, 30), logoId, List.of(), NOW.plusSeconds(60));
+        jobPostingRepository.update(withLogo, false);
+        clearPersistenceContext();
+        assertThat(jobPostingRepository.findById(saved.getId()).orElseThrow().getLogoMediaId()).isEqualTo(logoId);
+
+        JobPosting withoutLogo = jobPostingRepository.findByIdForUpdate(saved.getId()).orElseThrow().update(
+                "https://careers.example.com/jobs/1", CONTENT, "예시 회사", JobRole.BACKEND, "3년 이상", "백엔드 개발자",
+                null, LocalDate.of(2026, 11, 30), null, List.of(), NOW.plusSeconds(120));
+        jobPostingRepository.update(withoutLogo, false);
+        clearPersistenceContext();
+        assertThat(jobPostingRepository.findById(saved.getId()).orElseThrow().getLogoMediaId()).isNull();
+    }
+
+    @Test
+    void 실패한_역량만_다시_분석하면_실패한_역량만_대기로_되돌리고_분석_중인_역량은_그대로_둔다() {
+        JobPosting saved = jobPostingRepository.save(posting("https://careers.example.com/jobs/1", NOW));
+        long failedId = saved.getRequirements().get(0).getId();
+        long processingId = saved.getRequirements().get(1).getId();
+        jdbcTemplate.update("UPDATE job_postings SET status = 'FAILED' WHERE id = ?", saved.getId());
+        setMatchingColumns(failedId, "FAILED", 3, NOW, NOW, "JUDGE_FAILED");
+        // 검색 실패 뒤 두 번째 시도를 처리하는 중인 역량
+        setMatchingColumns(processingId, "PROCESSING", 2, NOW.plusSeconds(180), null, "SEARCH_FAILED");
+        clearPersistenceContext();
+
+        jobPostingRepository.findByIdForUpdate(saved.getId()).orElseThrow();
+        int resetCount = jobPostingRepository.resetForReanalysis(
+                saved.getId(), ReanalysisScope.FAILED, NOW.plusSeconds(60));
+
+        assertThat(resetCount).isOne();
+        assertThat(matchingColumns(failedId)).containsExactly("PENDING", 0, null, null, null);
+        assertThat(claimToken(failedId)).isNull();
+        assertThat(matchingColumns(processingId))
+                .containsExactly("PROCESSING", 2, Timestamp.from(NOW.plusSeconds(180)), null, "SEARCH_FAILED");
+        assertThat(claimToken(processingId)).isNotNull();
+        assertThat(postingStatus(saved.getId())).isEqualTo("PENDING");
+        assertThat(updatedAt("job_requirements", failedId)).isEqualTo(NOW.plusSeconds(60));
+        assertThat(updatedAt("job_requirements", processingId)).isEqualTo(NOW);
+        assertThat(updatedAt("job_postings", saved.getId())).isEqualTo(NOW.plusSeconds(60));
+    }
+
+    @Test
+    void 실패한_역량만_다시_분석하면_완료된_역량과_그_추천_자료는_그대로_둔다() {
+        JobPosting saved = jobPostingRepository.save(posting("https://careers.example.com/jobs/1", NOW));
+        long readyId = saved.getRequirements().get(0).getId();
+        long failedId = saved.getRequirements().get(1).getId();
+        jdbcTemplate.update("UPDATE job_postings SET status = 'FAILED' WHERE id = ?", saved.getId());
+        setMatchingColumns(readyId, "READY", 2, null, null, null);
+        setMatchingColumns(failedId, "FAILED", 3, NOW, NOW, "NO_CANDIDATES");
+        insertRecommendation(readyId);
+        clearPersistenceContext();
+
+        jobPostingRepository.findByIdForUpdate(saved.getId()).orElseThrow();
+        int resetCount = jobPostingRepository.resetForReanalysis(
+                saved.getId(), ReanalysisScope.FAILED, NOW.plusSeconds(60));
+
+        assertThat(resetCount).isOne();
+        assertThat(matchingColumns(readyId)).containsExactly("READY", 2, null, null, null);
+        assertThat(recommendationCount(readyId)).isOne();
+        assertThat(updatedAt("job_requirements", readyId)).isEqualTo(NOW);
+        assertThat(matchingColumns(failedId)).containsExactly("PENDING", 0, null, null, null);
+    }
+
+    @Test
+    void 전체를_다시_분석하면_모든_역량을_id는_그대로_대기로_되돌리고_그_공고의_추천_자료만_지운다() {
+        JobPosting saved = jobPostingRepository.save(posting("https://careers.example.com/jobs/1", NOW));
+        long readyId = saved.getRequirements().get(0).getId();
+        long failedId = saved.getRequirements().get(1).getId();
+        jdbcTemplate.update("UPDATE job_postings SET status = 'FAILED' WHERE id = ?", saved.getId());
+        setMatchingColumns(readyId, "READY", 1, null, null, null);
+        setMatchingColumns(failedId, "FAILED", 3, NOW, NOW, "UNEXPECTED");
+        insertRecommendation(readyId);
+        JobPosting other = jobPostingRepository.save(posting("https://careers.example.com/jobs/2", NOW));
+        long otherRequirementId = other.getRequirements().getFirst().getId();
+        jdbcTemplate.update("UPDATE job_postings SET status = 'READY' WHERE id = ?", other.getId());
+        setMatchingColumns(otherRequirementId, "READY", 2, null, null, null);
+        insertRecommendation(otherRequirementId);
+        clearPersistenceContext();
+
+        jobPostingRepository.findByIdForUpdate(saved.getId()).orElseThrow();
+        int resetCount = jobPostingRepository.resetForReanalysis(
+                saved.getId(), ReanalysisScope.ALL, NOW.plusSeconds(60));
+        clearPersistenceContext();
+
+        assertThat(resetCount).isEqualTo(2);
+        assertThat(matchingColumns(readyId)).containsExactly("PENDING", 0, null, null, null);
+        assertThat(matchingColumns(failedId)).containsExactly("PENDING", 0, null, null, null);
+        assertThat(claimToken(readyId)).isNull();
+        assertThat(claimToken(failedId)).isNull();
+        assertThat(jobPostingRepository.findById(saved.getId()).orElseThrow().getRequirements())
+                .extracting(JobRequirement::getId)
+                .containsExactly(readyId, failedId);
+        assertThat(recommendationCount(readyId)).isZero();
+        assertThat(postingStatus(saved.getId())).isEqualTo("PENDING");
+        assertThat(updatedAt("job_requirements", readyId)).isEqualTo(NOW.plusSeconds(60));
+        assertThat(updatedAt("job_requirements", failedId)).isEqualTo(NOW.plusSeconds(60));
+        assertThat(updatedAt("job_postings", saved.getId())).isEqualTo(NOW.plusSeconds(60));
+        assertThat(matchingColumns(otherRequirementId)).containsExactly("READY", 2, null, null, null);
+        assertThat(recommendationCount(otherRequirementId)).isOne();
+        assertThat(postingStatus(other.getId())).isEqualTo("READY");
+    }
+
+    /** 가져간 적이 있는 역량처럼 claimToken 도 채운다. */
+    private void setMatchingColumns(long requirementId, String status, int attemptCount, Instant leaseUntil,
+                                    Instant nextAttemptAt, String lastError) {
+        jdbcTemplate.update("""
+                UPDATE job_requirements
+                SET status = ?, attempt_count = ?, claim_token = gen_random_uuid(), lease_until = ?,
+                    next_attempt_at = ?, last_error = ?
+                WHERE id = ?
+                """, status, attemptCount, leaseUntil == null ? null : Timestamp.from(leaseUntil),
+                nextAttemptAt == null ? null : Timestamp.from(nextAttemptAt), lastError, requirementId);
+    }
+
+    private UUID claimToken(long requirementId) {
+        return jdbcTemplate.queryForObject("SELECT claim_token FROM job_requirements WHERE id = ?", UUID.class,
+                requirementId);
+    }
+
+    private List<Object> matchingColumns(long requirementId) {
+        Map<String, Object> row = jdbcTemplate.queryForMap("""
+                SELECT status, attempt_count, lease_until, next_attempt_at, last_error
+                FROM job_requirements WHERE id = ?
+                """, requirementId);
+        return Arrays.asList(row.get("status"), row.get("attempt_count"), row.get("lease_until"),
+                row.get("next_attempt_at"), row.get("last_error"));
+    }
+
+    /**
+     * 테이블 이름은 테스트 안에서 정한 상수만 넘긴다.
+     */
+    private Instant updatedAt(String table, long id) {
+        return jdbcTemplate.queryForObject(
+                "SELECT updated_at FROM " + table + " WHERE id = ?", Timestamp.class, id).toInstant();
+    }
+
+    private String postingStatus(long jobPostingId) {
+        return jdbcTemplate.queryForObject("SELECT status FROM job_postings WHERE id = ?", String.class, jobPostingId);
+    }
+
+    private int recommendationCount(long requirementId) {
+        return jdbcTemplate.queryForObject(
+                "SELECT count(*) FROM requirement_recommendations WHERE job_requirement_id = ?", Integer.class,
+                requirementId);
     }
 
     @Test
@@ -424,13 +598,15 @@ class JobPostingRepositoryIntegrationTest {
     void 역량_완료_때_저장한_판정_근거를_그대로_읽는다() {
         JobPosting saved = jobPostingRepository.save(posting("https://careers.example.com/jobs/1", NOW));
         JobRequirement requirement = saved.getRequirements().getFirst();
-        jdbcTemplate.update("UPDATE job_requirements SET status = 'PROCESSING', attempt_count = 1 WHERE id = ?",
-                requirement.getId());
+        UUID claimToken = UUID.randomUUID();
+        jdbcTemplate.update(
+                "UPDATE job_requirements SET status = 'PROCESSING', attempt_count = 1, claim_token = ? WHERE id = ?",
+                claimToken, requirement.getId());
         List<CandidateChunk> evidence = List.of(
                 new CandidateChunk(ChunkKind.EXPERIENCE, "따옴표 \" 와\n줄바꿈이 있는 조각", 0.0001),
                 new CandidateChunk(ChunkKind.INTRO, "소개 조각", 0.5));
         ClaimedJobRequirement claimed = new ClaimedJobRequirement(requirement.getId(), saved.getId(), 1,
-                JobRole.BACKEND, requirement.getName(), requirement.getCategory(), requirement.getSummary());
+                claimToken, JobRole.BACKEND, requirement.getName(), requirement.getCategory(), requirement.getSummary());
 
         jobRequirementMatchingRepository.complete(claimed, List.of(new RequirementRecommendation(
                 SOURCE, "resource-1", RecommendationVerdict.MATCH, "판정 이유", "설명", 0.7, evidence)), NOW);
@@ -505,11 +681,21 @@ class JobPostingRepositoryIntegrationTest {
                 "백엔드 개발자",
                 null,
                 LocalDate.of(2026, 11, 30),
+                null,
                 adminId,
                 List.of(
                         JobRequirement.create(1, "Java", RequirementCategory.REQUIRED, "Java로 서버를 개발해 본 경험"),
                         JobRequirement.create(2, "대용량 트래픽 처리", RequirementCategory.PREFERRED, "트래픽이 많은 서비스 운영 경험")),
                 now);
+    }
+
+    private long insertLogo() {
+        return jdbcTemplate.queryForObject("""
+                INSERT INTO media_metadata (
+                    uploaded_by, purpose, s3_key, mime_type, size_bytes, status, expires_at, uploaded_at
+                ) VALUES (?, 'JOB_POSTING_COMPANY_LOGO', ?, 'image/webp', 1024, 'READY', now(), now())
+                RETURNING id
+                """, Long.class, adminId, "media/job-posting-company-logo/" + UUID.randomUUID());
     }
 
     private long insertAdmin() {

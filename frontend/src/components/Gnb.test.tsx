@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import {
   createMemoryHistory,
   createRootRoute,
@@ -8,9 +8,19 @@ import {
 } from '@tanstack/react-router';
 
 import { Gnb, GNB_ITEMS, type GnbProps } from '@/components/Gnb';
-import { tabItemStyles } from '@/components/Tab';
 
-const ROUTE_PATHS = ['/', '/community', '/projects', '/projects/$projectId', '/magazines', '/news'];
+const ROUTE_PATHS = [
+  '/',
+  '/explore',
+  '/community',
+  '/community/$feedId',
+  '/projects',
+  '/projects/$projectId',
+  '/job-postings/$jobPostingId',
+  '/materials/$materialId',
+  '/magazines',
+  '/news',
+];
 
 const renderGnb = async (path: string, props: GnbProps = {}) => {
   const rootRoute = createRootRoute({ component: () => <Gnb {...props} /> });
@@ -25,7 +35,7 @@ const renderGnb = async (path: string, props: GnbProps = {}) => {
   });
 
   render(<RouterProvider router={router} />);
-  await screen.findByRole('navigation');
+  await screen.findByRole('navigation', { name: '서비스 메뉴' });
 };
 
 const itemNamed = (label: string) => screen.getByRole('link', { name: label });
@@ -35,7 +45,7 @@ const itemNamed = (label: string) => screen.getByRole('link', { name: label });
  * 네비게이션 항목 중 어느 것이 활성인지이므로 `<nav>` 안으로 범위를 좁힌다.
  */
 const activeLabels = () =>
-  within(screen.getByRole('navigation'))
+  within(screen.getByRole('navigation', { name: '서비스 메뉴' }))
     .getAllByRole('link')
     .filter((link) => link.getAttribute('aria-current') === 'page')
     .map((link) => link.textContent);
@@ -58,15 +68,35 @@ describe('Gnb', () => {
       expect(activeLabels()).toEqual(['커뮤니티']);
     });
 
-    it('홈은 정확히 일치할 때만 활성이다', async () => {
+    it('홈에서는 활성 항목이 없다', async () => {
       await renderGnb('/');
-      expect(activeLabels()).toEqual(['홈']);
+      expect(activeLabels()).toEqual([]);
+    });
+
+    it('탐색 화면에서는 탐색이 활성이다', async () => {
+      await renderGnb('/explore');
+      expect(activeLabels()).toEqual(['탐색']);
     });
 
     it('하위 경로에서도 상위 항목이 활성이다', async () => {
-      await renderGnb('/projects/1');
+      await renderGnb('/community/1');
 
-      expect(activeLabels()).toEqual(['프로젝트']);
+      expect(activeLabels()).toEqual(['커뮤니티']);
+    });
+
+    it('프로젝트 목록에서는 탐색이 활성이다', async () => {
+      await renderGnb('/projects');
+      expect(activeLabels()).toEqual(['탐색']);
+    });
+
+    it('프로젝트 상세에서도 탐색이 활성이다', async () => {
+      await renderGnb('/projects/1');
+      expect(activeLabels()).toEqual(['탐색']);
+    });
+
+    it('채용공고 상세에서도 탐색이 활성이다', async () => {
+      await renderGnb('/job-postings/1');
+      expect(activeLabels()).toEqual(['탐색']);
     });
   });
 
@@ -74,19 +104,21 @@ describe('Gnb', () => {
     it('네비게이션을 한 벌만 렌더한다', async () => {
       await renderGnb('/');
 
-      const nav = screen.getByRole('navigation');
-
-      expect(within(nav).getAllByRole('link')).toHaveLength(GNB_ITEMS.length);
+      expect(screen.getAllByRole('navigation', { name: '서비스 메뉴' })).toHaveLength(1);
     });
 
-    it('md 오버라이드가 Tab의 weak variant와 같은 값을 쓴다', async () => {
-      await renderGnb('/');
+    it('모바일 ☰을 누르면 메뉴 서랍에 네 항목을 보여 주고 현재 항목을 표시한다', async () => {
+      await renderGnb('/community');
 
-      const { className } = itemNamed('커뮤니티');
+      fireEvent.click(screen.getByRole('button', { name: '메뉴 열기' }));
 
-      tabItemStyles.weak.split(' ').forEach((tabClassName) => {
-        expect(className).toContain(`md:${tabClassName}`);
-      });
+      const drawer = await screen.findByRole('dialog', { name: '메뉴' });
+      const links = within(drawer).getAllByRole('link');
+      expect(links.map((link) => link.textContent)).toEqual(GNB_ITEMS.map((item) => item.label));
+      expect(within(drawer).getByRole('link', { name: '커뮤니티' })).toHaveAttribute(
+        'aria-current',
+        'page',
+      );
     });
 
     it('trailing에 넘긴 내용을 렌더한다', async () => {

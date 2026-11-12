@@ -17,6 +17,7 @@ import org.hibernate.validator.constraints.CodePointLength;
 /**
  * 운영자가 추출 결과를 확인하고 고친 공고 정보와 역량 목록. 원문은 해시를 만드는 데만 쓰고 저장하지 않는다.
  * 길이 제한은 job_postings, job_requirements 테이블의 칸 길이와 같다.
+ * logoImageId 는 JOB_POSTING_COMPANY_LOGO 용도로 올린 처리 완료 이미지 ID 다. 수정은 전체 교체라서 비워 보내면 로고를 지운다.
  */
 public record AdminJobPostingSaveRequest(
         @NotBlank(message = "sourceUrl은 필수입니다.")
@@ -49,6 +50,8 @@ public record AdminJobPostingSaveRequest(
         String employmentType,
 
         LocalDate deadline,
+
+        Long logoImageId,
 
         @NotEmpty(message = "requirements는 1개 이상이어야 합니다.")
         @Size(max = 50, message = "requirements는 50개를 초과할 수 없습니다.")

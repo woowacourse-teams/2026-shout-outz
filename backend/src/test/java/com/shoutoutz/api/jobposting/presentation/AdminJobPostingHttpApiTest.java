@@ -34,15 +34,18 @@ import com.shoutoutz.api.jobposting.application.dto.CandidateChunk.ChunkKind;
 import com.shoutoutz.api.jobposting.domain.JobRole;
 import com.shoutoutz.api.jobposting.domain.MatchingFailure;
 import com.shoutoutz.api.jobposting.domain.MatchingStatus;
+import com.shoutoutz.api.jobposting.domain.ReanalysisScope;
 import com.shoutoutz.api.jobposting.domain.RecommendationVerdict;
 import com.shoutoutz.api.jobposting.domain.RequirementCategory;
 import com.shoutoutz.api.jobposting.presentation.dto.request.AdminJobPostingExtractRequest;
 import com.shoutoutz.api.jobposting.presentation.dto.request.AdminJobPostingFindAllRequest;
+import com.shoutoutz.api.jobposting.presentation.dto.request.AdminJobPostingReanalysisRequest;
 import com.shoutoutz.api.jobposting.presentation.dto.request.AdminJobPostingSaveRequest;
 import com.shoutoutz.api.jobposting.presentation.dto.request.AdminJobPostingVisibilityUpdateRequest;
 import com.shoutoutz.api.jobposting.presentation.dto.response.AdminJobPostingDetailResponse;
 import com.shoutoutz.api.jobposting.presentation.dto.response.AdminJobPostingExtractResponse;
 import com.shoutoutz.api.jobposting.presentation.dto.response.AdminJobPostingFindAllResponse;
+import com.shoutoutz.api.jobposting.presentation.dto.response.AdminJobPostingReanalysisResponse;
 import com.shoutoutz.api.jobposting.presentation.dto.response.AdminJobPostingSaveResponse;
 import com.shoutoutz.api.jobposting.presentation.dto.response.AdminJobPostingUpdateResponse;
 import com.shoutoutz.api.jobposting.presentation.dto.response.AdminJobPostingVisibilityUpdateResponse;
@@ -183,8 +186,8 @@ class AdminJobPostingHttpApiTest {
         given(jobPostingAdminService.findAll(eq(UserRole.ADMIN), any(AdminJobPostingFindAllRequest.class)))
                 .willReturn(new AdminJobPostingFindAllResponse(
                         List.of(new AdminJobPostingFindAllResponse.Item(
-                                JOB_POSTING_ID, "우아한형제들", "백엔드 개발자", JobRole.BACKEND, MatchingStatus.PENDING,
-                                NOW.plusSeconds(3600), NOW)),
+                                JOB_POSTING_ID, "우아한형제들", "백엔드 개발자", JobRole.BACKEND, MatchingStatus.FAILED,
+                                2, NOW.plusSeconds(3600), NOW)),
                         new SliceMetaResponse("next-cursor", true, 3L)
                 ));
 
@@ -194,6 +197,7 @@ class AdminJobPostingHttpApiTest {
                         .queryParam("size", "20"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data[0].jobPostingId").value(JOB_POSTING_ID))
+                .andExpect(jsonPath("$.data[0].failedRequirementCount").value(2))
                 .andExpect(jsonPath("$.meta.nextCursor").value("next-cursor"))
                 .andDo(document(
                         "admin-job-posting-find-all",
@@ -219,6 +223,8 @@ class AdminJobPostingHttpApiTest {
                                         new EnumFields(JobRole.class).withPath("data[].jobRole").description("직무"),
                                         new EnumFields(MatchingStatus.class).withPath("data[].status")
                                                 .description("자료 분석 상태"),
+                                        fieldWithPath("data[].failedRequirementCount").type(NUMBER)
+                                                .description("최종 실패한 역량 수. 다시 시도할 예정인 역량은 세지 않는다"),
                                         fieldWithPath("data[].hiddenAt").type(STRING)
                                                 .description("숨긴 시각. 숨기지 않았으면 null").optional(),
                                         fieldWithPath("data[].createdAt").type(STRING).description("등록 시각"),
@@ -244,6 +250,8 @@ class AdminJobPostingHttpApiTest {
                         "백엔드 개발자",
                         "정규직",
                         LocalDate.of(2026, 12, 31),
+                        50L,
+                        "https://cdn.example.com/media/job-posting-company-logo/50-thumbnail.webp",
                         MatchingStatus.READY,
                         null,
                         ADMIN_ID,
@@ -401,6 +409,91 @@ class AdminJobPostingHttpApiTest {
     }
 
     @Test
+    void reanalyzesJobPosting() throws Exception {
+        given(jobPostingAdminService.reanalyze(
+                eq(JOB_POSTING_ID), eq(UserRole.ADMIN),
+                eq(new AdminJobPostingReanalysisRequest(ReanalysisScope.FAILED))))
+                .willReturn(new AdminJobPostingReanalysisResponse(JOB_POSTING_ID, MatchingStatus.PENDING, 2));
+
+        mockMvc.perform(post("/api/v1/admin/job-postings/{jobPostingId}/reanalysis", JOB_POSTING_ID)
+                        .with(authenticated(UserRole.ADMIN))
+                        .header(HttpHeaders.COOKIE, "JSESSIONID=admin-session")
+                        .header("X-CSRF-Token", "csrf-token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"scope": "FAILED"}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("PENDING"))
+                .andExpect(jsonPath("$.data.reanalyzedRequirementCount").value(2))
+                .andDo(document(
+                        "admin-job-posting-reanalyze",
+                        resource(ResourceSnippetParameters.builder()
+                                .tag(TAG)
+                                .summary("채용공고 다시 분석")
+                                .description("""
+                                        공고의 역량을 다시 분석 대기로 되돌린다. 역량은 그대로 두고 Worker 가 검색부터 다시 분석한다.
+                                        되돌린 역량은 시도 횟수를 0으로 하고 마지막 실패 이유를 비우며, 공고는 PENDING 이 된다.
+                                        FAILED: 실패한 역량만 되돌린다. 공고가 FAILED 일 때만 할 수 있고, 다른 역량이 분석 중이어도 된다. 아니면 409(JOB_POSTING_NOT_FAILED).
+                                        ALL: 모든 역량을 되돌리고 추천 자료를 지운다. 우테코 자료가 새로 적재됐을 때 쓴다. 대기·분석 중인 역량이 있으면 409(JOB_POSTING_ANALYSIS_IN_PROGRESS).
+                                        scope 가 없거나 잘못된 값이면 400, 공고가 없으면 404(JOB_POSTING_NOT_FOUND)로 응답한다.
+                                        관리자가 아니면 403(JOB_POSTING_ADMIN_FORBIDDEN)으로 응답한다.""")
+                                .requestHeaders(
+                                        headerWithName(HttpHeaders.COOKIE)
+                                                .description("인증된 관리자의 JSESSIONID"),
+                                        headerWithName("X-CSRF-Token")
+                                                .description("세션 조회로 발급받은 CSRF 토큰")
+                                )
+                                .pathParameters(parameterWithName("jobPostingId").type(SimpleType.INTEGER)
+                                        .description("채용공고 ID"))
+                                .requestSchema(Schema.schema("AdminJobPostingReanalysisRequest"))
+                                .requestFields(
+                                        new EnumFields(ReanalysisScope.class).withPath("scope")
+                                                .description("다시 분석할 범위. FAILED는 실패한 역량만, ALL은 모든 역량")
+                                )
+                                .responseSchema(Schema.schema("AdminJobPostingReanalysisSuccessResponse"))
+                                .responseFields(
+                                        fieldWithPath("status").type(STRING).description("응답 상태"),
+                                        fieldWithPath("data").type(OBJECT).description("다시 분석을 받은 채용공고"),
+                                        fieldWithPath("data.jobPostingId").type(NUMBER).description("채용공고 ID"),
+                                        fieldWithPath("data.status").type(STRING)
+                                                .description("자료 분석 상태. 항상 PENDING"),
+                                        fieldWithPath("data.reanalyzedRequirementCount").type(NUMBER)
+                                                .description("다시 분석 대기로 되돌린 역량 수")
+                                )
+                                .build())
+                ));
+    }
+
+    @Test
+    void rejectsReanalysisWithoutScope() throws Exception {
+        mockMvc.perform(post("/api/v1/admin/job-postings/{jobPostingId}/reanalysis", JOB_POSTING_ID)
+                        .with(authenticated(UserRole.ADMIN))
+                        .header(HttpHeaders.COOKIE, "JSESSIONID=admin-session")
+                        .header("X-CSRF-Token", "csrf-token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(jobPostingAdminService);
+    }
+
+    @Test
+    void rejectsReanalysisWithUnknownScope() throws Exception {
+        mockMvc.perform(post("/api/v1/admin/job-postings/{jobPostingId}/reanalysis", JOB_POSTING_ID)
+                        .with(authenticated(UserRole.ADMIN))
+                        .header(HttpHeaders.COOKIE, "JSESSIONID=admin-session")
+                        .header("X-CSRF-Token", "csrf-token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"scope": "PARTIAL"}
+                                """))
+                .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(jobPostingAdminService);
+    }
+
+    @Test
     void deletesJobPosting() throws Exception {
         mockMvc.perform(delete("/api/v1/admin/job-postings/{jobPostingId}", JOB_POSTING_ID)
                         .with(authenticated(UserRole.ADMIN))
@@ -451,6 +544,7 @@ class AdminJobPostingHttpApiTest {
                   "title": "백엔드 개발자",
                   "employmentType": "정규직",
                   "deadline": "2026-12-31",
+                  "logoImageId": 50,
                   "requirements": [
                     {"name": "Java, Spring", "category": "REQUIRED", "summary": "Spring으로 API 서버를 개발한 경험이 필요해요."}
                   ]
@@ -492,6 +586,12 @@ class AdminJobPostingHttpApiTest {
                 fieldWithPath("title").type(STRING).description("공고 제목(200자 이하)"),
                 fieldWithPath("employmentType").type(STRING).description("고용 형태(30자 이하)").optional(),
                 fieldWithPath("deadline").type(STRING).description("마감일(yyyy-MM-dd)").optional(),
+                fieldWithPath("logoImageId").type(NUMBER)
+                        .description("회사 로고 이미지 ID. JOB_POSTING_COMPANY_LOGO 용도로 올려 처리가 끝난 이미지만 받는다. "
+                                + "다른 용도이거나 없는 이미지면 400(JOB_POSTING_INVALID_LOGO), "
+                                + "처리 중이면 400(JOB_POSTING_LOGO_NOT_READY). "
+                                + "수정은 전체 교체라서 빼거나 null 이면 로고를 지운다.")
+                        .optional(),
                 fieldWithPath("requirements").type(ARRAY).description("역량 목록(1~50개)"),
                 fieldWithPath("requirements[].name").type(STRING).description("역량 이름(100자 이하)"),
                 new EnumFields(RequirementCategory.class).withPath("requirements[].category").description("역량 구분"),
@@ -511,6 +611,11 @@ class AdminJobPostingHttpApiTest {
                 fieldWithPath("data.title").type(STRING).description("공고 제목"),
                 fieldWithPath("data.employmentType").type(STRING).description("고용 형태").optional(),
                 fieldWithPath("data.deadline").type(STRING).description("마감일(yyyy-MM-dd)").optional(),
+                fieldWithPath("data.logoImageId").type(NUMBER)
+                        .description("회사 로고 이미지 ID. 수정 요청에 그대로 다시 보내야 로고가 유지된다. 없으면 null").optional(),
+                fieldWithPath("data.logoUrl").type(STRING)
+                        .description("회사 로고 작은 이미지(THUMBNAIL) 주소. 로고가 없거나 이미지가 준비되지 않았으면 null")
+                        .optional(),
                 new EnumFields(MatchingStatus.class).withPath("data.status").description("자료 분석 상태"),
                 fieldWithPath("data.hiddenAt").type(STRING).description("숨긴 시각. 숨기지 않았으면 null").optional(),
                 fieldWithPath("data.registeredBy").type(NUMBER).description("등록한 관리자 ID"),

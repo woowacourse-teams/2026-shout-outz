@@ -1,0 +1,16 @@
+[project]
+name = "shout-outz-data-pipeline"
+version = "0.1.0"
+description = "샤라웃 매일 데이터 파이프라인(① 원본 수집부터)"
+requires-python = ">=3.12"
+dependencies = [
+    "boto3>=1.35",       # S3(원본 저장소). 조건부 쓰기(IfNoneMatch)는 1.35 부터
+    "requests>=2.32",    # REST, raw, 블로그, YouTube Data API
+    "psycopg[binary]>=3.2",  # 서비스 DB 읽기(블로그 대상)
+]
+
+[dependency-groups]
+dev = ["pytest>=8"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

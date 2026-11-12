@@ -3,6 +3,7 @@ package com.shoutoutz.api.homebanner.application;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -40,6 +41,9 @@ class HomeBannerAdminServiceTest {
     @Mock
     private HomeBannerTargetValidator targetValidator;
 
+    @Mock
+    private HomeBannerService homeBannerService;
+
     private HomeBannerAdminService service;
 
     @BeforeEach
@@ -47,7 +51,8 @@ class HomeBannerAdminServiceTest {
         service = new HomeBannerAdminService(
                 homeBannerRepository,
                 imageService,
-                targetValidator
+                targetValidator,
+                homeBannerService
         );
     }
 
@@ -69,6 +74,7 @@ class HomeBannerAdminServiceTest {
         ArgumentCaptor<HomeBanner> captor = ArgumentCaptor.forClass(HomeBanner.class);
         verify(homeBannerRepository).save(captor.capture());
         assertThat(captor.getValue().getTargetId()).isEqualTo(20L);
+        verify(homeBannerService).evictCache();
     }
 
     @Test
@@ -99,6 +105,7 @@ class HomeBannerAdminServiceTest {
         ArgumentCaptor<HomeBanner> captor = ArgumentCaptor.forClass(HomeBanner.class);
         verify(homeBannerRepository).update(captor.capture());
         assertThat(captor.getValue().getTargetId()).isEqualTo(20L);
+        verify(homeBannerService).evictCache();
     }
 
     @Test
@@ -109,6 +116,7 @@ class HomeBannerAdminServiceTest {
 
         assertThat(deletedBannerId).isEqualTo(100L);
         verify(homeBannerRepository).deleteById(100L);
+        verify(homeBannerService).evictCache();
     }
 
     @Test
@@ -127,6 +135,7 @@ class HomeBannerAdminServiceTest {
                 .isInstanceOf(NotFoundException.class);
 
         verifyNoInteractions(imageService);
+        verify(homeBannerService, never()).evictCache();
     }
 
     @Test
@@ -135,6 +144,7 @@ class HomeBannerAdminServiceTest {
 
         assertThatThrownBy(() -> service.delete(100L, UserRole.ADMIN))
                 .isInstanceOf(NotFoundException.class);
+        verify(homeBannerService, never()).evictCache();
     }
 
     private HomeBannerUpsertRequest request() {

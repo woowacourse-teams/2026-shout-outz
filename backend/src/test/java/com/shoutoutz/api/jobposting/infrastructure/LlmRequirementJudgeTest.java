@@ -26,6 +26,7 @@ import com.shoutoutz.api.jobposting.domain.RecommendationVerdict;
 import com.shoutoutz.api.jobposting.domain.RequirementCategory;
 import java.time.Duration;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
@@ -40,7 +41,7 @@ import tools.jackson.databind.ObjectMapper;
 class LlmRequirementJudgeTest {
 
     private static final ClaimedJobRequirement REQUIREMENT = new ClaimedJobRequirement(
-            1L, 2L, 1, JobRole.BACKEND, "비공개 역량", RequirementCategory.REQUIRED, "비공개 요약");
+            1L, 2L, 1, UUID.randomUUID(), JobRole.BACKEND, "비공개 역량", RequirementCategory.REQUIRED, "비공개 요약");
     private static final List<ResourceCandidate> CANDIDATES = List.of(
             new ResourceCandidate("github-pr", "owner/repo#1", "비공개 제목", 0.9, List.of(
                     new CandidateChunk(CandidateChunk.ChunkKind.EXPERIENCE, "비공개 경험", 0.9),

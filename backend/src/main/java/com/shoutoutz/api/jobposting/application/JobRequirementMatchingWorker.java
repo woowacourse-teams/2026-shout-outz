@@ -52,8 +52,8 @@ public class JobRequirementMatchingWorker {
         try {
             List<RequirementRecommendation> recommendations = recommend(requirement);
             if (!repository.complete(requirement, recommendations, clock.instant())) {
-                log.info("늦게 끝난 역량 매칭 결과를 버립니다. requirementId={}, attemptCount={}",
-                        requirement.requirementId(), requirement.attemptCount());
+                log.info("늦게 끝난 역량 매칭 결과를 버립니다. requirementId={}, attemptCount={}, claimToken={}",
+                        requirement.requirementId(), requirement.attemptCount(), requirement.claimToken());
             }
         } catch (JobRequirementMatchingException exception) {
             if (interrupted(exception)) {
@@ -169,8 +169,8 @@ public class JobRequirementMatchingWorker {
     }
 
     private void logIgnoredFailure(ClaimedJobRequirement requirement, MatchingFailure failure, RuntimeException exception) {
-        log.info("늦게 끝난 역량 매칭 실패를 버립니다. requirementId={}, attemptCount={}, failure={}",
-                requirement.requirementId(), requirement.attemptCount(), failure, exception);
+        log.info("늦게 끝난 역량 매칭 실패를 버립니다. requirementId={}, attemptCount={}, claimToken={}, failure={}",
+                requirement.requirementId(), requirement.attemptCount(), requirement.claimToken(), failure, exception);
     }
 
     private record ResourceKey(String source, String externalKey) {

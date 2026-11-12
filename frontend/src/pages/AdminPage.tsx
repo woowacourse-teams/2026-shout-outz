@@ -15,6 +15,7 @@ import { MagazineAdminPanel } from '@/components/admin/MagazineAdminPanel';
 import { NewsCreatePanel } from '@/components/admin/NewsCreatePanel';
 import { ProjectApprovalPanel } from '@/components/admin/ProjectApprovalPanel';
 import { ProjectEditPanel } from '@/components/admin/ProjectEditPanel';
+import { ResourceReportPanel } from '@/components/admin/ResourceReportPanel';
 import { ADMIN_TAB_LABELS, ADMIN_TABS, DEFAULT_ADMIN_TAB } from '@/constants/admin';
 import { type AdminTab } from '@/types/admin';
 import { GithubLoginButton } from '@/components/auth/GithubLoginButton';
@@ -103,6 +104,8 @@ function AdminTabPanel({ tab }: { tab: AdminTab }) {
       return <MagazineAdminPanel />;
     case 'bug-reports':
       return <BugReportPanel />;
+    case 'resource-reports':
+      return <ResourceReportPanel />;
   }
 }
 

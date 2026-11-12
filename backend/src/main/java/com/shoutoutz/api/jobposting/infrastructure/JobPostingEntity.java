@@ -55,6 +55,9 @@ public class JobPostingEntity {
     @Column
     private LocalDate deadline;
 
+    @Column(name = "logo_media_id")
+    private Long logoMediaId;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private MatchingStatus status;

@@ -2,15 +2,24 @@ import { Footer } from '@/components/Footer';
 import { AppGnb } from '@/components/AppGnb';
 import { AsyncBoundary } from '@/components/AsyncBoundary';
 import { Button } from '@/components/Button';
-import { ProjectDetailContent } from '@/components/projects/ProjectDetailContent';
+import {
+  ProjectDetailContent,
+  type ProjectDetailTab,
+} from '@/components/projects/ProjectDetailContent';
 import { ProjectNotApprovedError } from '@/errors/project';
 import { isHTTPError } from 'ky';
 
-export function ProjectDetailPage({ slug }: { slug: string }) {
+interface ProjectDetailPageProps {
+  slug: string;
+  tab: ProjectDetailTab;
+  onTabChange: (tab: ProjectDetailTab) => void;
+}
+
+export function ProjectDetailPage({ slug, tab, onTabChange }: ProjectDetailPageProps) {
   return (
     <div className="bg-background flex min-h-dvh flex-col text-gray-900">
       <AppGnb />
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 md:py-10">
+      <main className="mx-auto w-full max-w-240 flex-1 px-4 pt-10 pb-24 md:px-6 md:pt-14">
         <AsyncBoundary
           key={slug}
           fallback={
@@ -39,7 +48,7 @@ export function ProjectDetailPage({ slug }: { slug: string }) {
             );
           }}
         >
-          <ProjectDetailContent slug={slug} />
+          <ProjectDetailContent slug={slug} tab={tab} onTabChange={onTabChange} />
         </AsyncBoundary>
       </main>
       <Footer />

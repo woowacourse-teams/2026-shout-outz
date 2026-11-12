@@ -5,7 +5,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 
+import com.shoutoutz.api.common.cache.TestLocalCacheFactory;
 import com.shoutoutz.api.common.exception.custom.BadRequestException;
 import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
 import com.shoutoutz.api.auth.domain.OAuthAccount;
@@ -77,7 +79,8 @@ class UserServiceTest {
                 userSearchCursorCodec,
                 mediaMetadataRepository,
                 mediaUrlResolver,
-                new UserAvatarUrlResolver(mediaUrlResolver, oauthAccountRepository)
+                new UserAvatarUrlResolver(mediaUrlResolver, oauthAccountRepository),
+                TestLocalCacheFactory.enabled("user-profile-summary")
         );
     }
 
@@ -167,6 +170,64 @@ class UserServiceTest {
 
         assertThatThrownBy(() -> userService.getMyProfileSummary(1L))
                 .isInstanceOf(EntityNotFoundException.class);
+    }
+
+    @Test
+    @DisplayName("내 프로필 요약을 다시 조회하면 저장소를 다시 읽지 않고 보관한 값을 돌려준다")
+    void returnsCachedProfileSummary() {
+        givenSummarySource(1L, "@zzaekkii", "재키");
+
+        UserProfileSummaryResponse first = userService.getMyProfileSummary(1L);
+        UserProfileSummaryResponse second = userService.getMyProfileSummary(1L);
+
+        assertThat(second).isEqualTo(first);
+        then(userRepository).should(times(1)).findById(1L);
+        then(userProfileRepository).should(times(1)).findByUserId(1L);
+    }
+
+    @Test
+    @DisplayName("요약 정보를 비우면 그 사용자만 다시 읽고, 다른 사용자의 보관한 값은 그대로 둔다")
+    void evictsOnlyThatUserSummary() {
+        givenSummarySource(1L, "@zzaekkii", "재키");
+        givenSummarySource(2L, "@charlie", "샤를");
+        userService.getMyProfileSummary(1L);
+        userService.getMyProfileSummary(2L);
+
+        userService.evictSummaryCache(1L);
+        userService.getMyProfileSummary(1L);
+        userService.getMyProfileSummary(2L);
+
+        then(userRepository).should(times(2)).findById(1L);
+        then(userRepository).should(times(1)).findById(2L);
+    }
+
+    @Test
+    @DisplayName("요약 조회에 실패한 결과는 보관하지 않아 다음 조회가 다시 읽는다")
+    void doesNotCacheFailedSummary() {
+        given(userRepository.findById(1L)).willReturn(Optional.empty());
+
+        assertThatThrownBy(() -> userService.getMyProfileSummary(1L))
+                .isInstanceOf(EntityNotFoundException.class);
+        assertThatThrownBy(() -> userService.getMyProfileSummary(1L))
+                .isInstanceOf(EntityNotFoundException.class);
+
+        then(userRepository).should(times(2)).findById(1L);
+    }
+
+    private void givenSummarySource(long userId, String handle, String displayName) {
+        User user = User.builder()
+                .id(userId)
+                .handle(handle)
+                .status(UserStatus.ACTIVE)
+                .role(UserRole.USER)
+                .build();
+        UserProfile profile = UserProfile.builder()
+                .userId(userId)
+                .displayName(displayName)
+                .userType(UserType.GENERAL)
+                .build();
+        given(userRepository.findById(userId)).willReturn(Optional.of(user));
+        given(userProfileRepository.findByUserId(userId)).willReturn(Optional.of(profile));
     }
 
     @Test

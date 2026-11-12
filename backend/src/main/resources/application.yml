@@ -94,6 +94,35 @@ resource:
     connect-timeout: ${RESOURCE_EMBEDDING_CONNECT_TIMEOUT:5s}
     read-timeout: ${RESOURCE_EMBEDDING_READ_TIMEOUT:30s}
 
+# 조회 결과를 앱 서버 메모리에 보관하는 로컬 캐시.
+# enabled를 끄면 보관하지 않고 매번 DB에서 읽는다. (부하 테스트에서 캐시 전후를 비교할 때 쓴다)
+# 캐시마다 refresh-after(이 시간이 지나면 예전 값을 돌려주면서 뒤에서 새로 읽음),
+# expire-after(이 시간이 지나면 예전 값도 버림), maximum-size(보관할 최대 개수)를 caches 아래에 둔다.
+local-cache:
+  enabled: ${LOCAL_CACHE_ENABLED:true}
+  caches:
+    # 모든 사용자에게 같은 응답. 관리자가 배너를 고치면 바로 비운다.
+    home-banners:
+      refresh-after: ${LOCAL_CACHE_HOME_BANNERS_REFRESH_AFTER:1m}
+      expire-after: ${LOCAL_CACHE_HOME_BANNERS_EXPIRE_AFTER:5m}
+      maximum-size: 1
+    # 모든 사용자에게 같은 응답. 숫자가 1분 늦게 바뀌는 것은 허용한다.
+    home-statistics:
+      refresh-after: ${LOCAL_CACHE_HOME_STATISTICS_REFRESH_AFTER:1m}
+      expire-after: ${LOCAL_CACHE_HOME_STATISTICS_EXPIRE_AFTER:5m}
+      maximum-size: 1
+    # 비로그인 피드 목록 첫 페이지. 정렬·카테고리·종류·크기 조합마다 하나씩 보관한다.
+    # 새 글이 늦게 보이지 않도록 갱신 시간을 짧게 둔다.
+    guest-feed-first-page:
+      refresh-after: ${LOCAL_CACHE_GUEST_FEED_FIRST_PAGE_REFRESH_AFTER:5s}
+      expire-after: ${LOCAL_CACHE_GUEST_FEED_FIRST_PAGE_EXPIRE_AFTER:30s}
+      maximum-size: 100
+    # 화면 상단의 내 핸들·이름·사진. 사용자별로 보관하고, 프로필 수정이나 인증 승인으로 바뀌면 그 사용자 것만 비운다.
+    user-profile-summary:
+      refresh-after: ${LOCAL_CACHE_USER_PROFILE_SUMMARY_REFRESH_AFTER:1m}
+      expire-after: ${LOCAL_CACHE_USER_PROFILE_SUMMARY_EXPIRE_AFTER:5m}
+      maximum-size: 1000
+
 github:
   oauth:
     client-id: ${GITHUB_OAUTH_CLIENT_ID}

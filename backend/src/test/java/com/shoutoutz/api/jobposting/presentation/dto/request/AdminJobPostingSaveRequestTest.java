@@ -30,7 +30,7 @@ class AdminJobPostingSaveRequestTest {
     void sanitizesStrings() {
         AdminJobPostingSaveRequest request = new AdminJobPostingSaveRequest(
                 "  https://example.com/jobs/1  ", "  원문  ", "  회사  ", JobRole.BACKEND,
-                "   ", " 백엔드 개발자 ", "", null,
+                "   ", " 백엔드 개발자 ", "", null, null,
                 List.of(new AdminJobPostingSaveRequest.Requirement("  Spring ", RequirementCategory.REQUIRED, " 설명 "))
         );
 
@@ -48,7 +48,7 @@ class AdminJobPostingSaveRequestTest {
     @DisplayName("http 나 https 가 아닌 주소는 거절한다.")
     void rejectsInvalidUrl() {
         AdminJobPostingSaveRequest request = new AdminJobPostingSaveRequest(
-                "ftp://example.com", "원문", "회사", JobRole.BACKEND, null, "제목", null, null,
+                "ftp://example.com", "원문", "회사", JobRole.BACKEND, null, "제목", null, null, null,
                 List.of(requirement("Spring", "설명"))
         );
 
@@ -75,7 +75,7 @@ class AdminJobPostingSaveRequestTest {
     @DisplayName("필수 값이 없으면 거절한다.")
     void rejectsMissingRequiredFields() {
         AdminJobPostingSaveRequest request = new AdminJobPostingSaveRequest(
-                null, " ", null, null, null, null, null, null, List.of(requirement("Spring", "설명"))
+                null, " ", null, null, null, null, null, null, null, List.of(requirement("Spring", "설명"))
         );
 
         assertThat(violatedPaths(request))
@@ -87,7 +87,7 @@ class AdminJobPostingSaveRequestTest {
     void rejectsTooLongFields() {
         AdminJobPostingSaveRequest request = new AdminJobPostingSaveRequest(
                 "https://example.com/" + "a".repeat(1_005), "원문", "가".repeat(101), JobRole.BACKEND,
-                "가".repeat(51), "가".repeat(201), "가".repeat(31), LocalDate.of(2026, 12, 31),
+                "가".repeat(51), "가".repeat(201), "가".repeat(31), LocalDate.of(2026, 12, 31), null,
                 List.of(requirement("Spring", "설명"))
         );
 
@@ -140,6 +140,7 @@ class AdminJobPostingSaveRequestTest {
     void rejectsUnicodeWhitespaceOnlyValues(String whitespace) {
         AdminJobPostingSaveRequest request = new AdminJobPostingSaveRequest(
                 "https://example.com/jobs/1", whitespace, whitespace, JobRole.BACKEND, null, whitespace, null, null,
+                null,
                 List.of(new AdminJobPostingSaveRequest.Requirement(whitespace, RequirementCategory.REQUIRED, whitespace))
         );
 
@@ -163,7 +164,7 @@ class AdminJobPostingSaveRequestTest {
 
     private AdminJobPostingSaveRequest withContent(String content) {
         return new AdminJobPostingSaveRequest(
-                "https://example.com/jobs/1", content, "회사", JobRole.BACKEND, null, "제목", null, null,
+                "https://example.com/jobs/1", content, "회사", JobRole.BACKEND, null, "제목", null, null, null,
                 List.of(requirement("Spring", "설명"))
         );
     }
@@ -171,7 +172,7 @@ class AdminJobPostingSaveRequestTest {
     private AdminJobPostingSaveRequest request(List<AdminJobPostingSaveRequest.Requirement> requirements) {
         return new AdminJobPostingSaveRequest(
                 "https://example.com/jobs/1", "원문", "회사", JobRole.BACKEND, "신입", "백엔드 개발자", "정규직",
-                LocalDate.of(2026, 12, 31), requirements
+                LocalDate.of(2026, 12, 31), null, requirements
         );
     }
 

@@ -6,9 +6,11 @@ package com.shoutoutz.api.media.domain;
 public enum MediaPurpose {
     USER_AVATAR,
     PROJECT_THUMBNAIL,
+    PROJECT_LOGO,
     PROJECT_DESCRIPTION,
     FEED_CONTENT,
     HOME_BANNER,
     MAGAZINE_THUMBNAIL,
-    MAGAZINE_CONTENT
+    MAGAZINE_CONTENT,
+    JOB_POSTING_COMPANY_LOGO
 }

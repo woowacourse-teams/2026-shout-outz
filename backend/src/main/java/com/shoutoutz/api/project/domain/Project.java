@@ -21,6 +21,7 @@ public class Project {
     private final GithubRepositoryUrl githubRepositoryUrl;
     private final DeploymentUrl deploymentUrl;
     private final Long thumbnailMediaId;
+    private final Long logoMediaId;
     private final Instant deletedAt;
 
     @Builder
@@ -38,6 +39,7 @@ public class Project {
             GithubRepositoryUrl githubRepositoryUrl,
             DeploymentUrl deploymentUrl,
             Long thumbnailMediaId,
+            Long logoMediaId,
             Instant deletedAt
     ) {
         ProjectValidator.validateProject(cohort, tagline, descriptionMd, deploymentUrl, serviceStatus);
@@ -54,6 +56,7 @@ public class Project {
         this.githubRepositoryUrl = githubRepositoryUrl;
         this.deploymentUrl = deploymentUrl;
         this.thumbnailMediaId = thumbnailMediaId;
+        this.logoMediaId = logoMediaId;
         this.deletedAt = deletedAt;
     }
 
@@ -67,7 +70,8 @@ public class Project {
             GithubRepositoryUrl githubRepositoryUrl,
             DeploymentUrl deploymentUrl,
             ServiceStatus serviceStatus,
-            Long thumbnailMediaId
+            Long thumbnailMediaId,
+            Long logoMediaId
     ) {
         ProjectValidator.validateRegistration(registeredBy);
         return Project.builder()
@@ -83,6 +87,7 @@ public class Project {
                 .githubRepositoryUrl(githubRepositoryUrl)
                 .deploymentUrl(deploymentUrl)
                 .thumbnailMediaId(thumbnailMediaId)
+                .logoMediaId(logoMediaId)
                 .build();
     }
 
@@ -108,7 +113,8 @@ public class Project {
             GithubRepositoryUrl githubRepositoryUrl,
             DeploymentUrl deploymentUrl,
             ServiceStatus serviceStatus,
-            Long thumbnailMediaId
+            Long thumbnailMediaId,
+            Long logoMediaId
     ) {
         return Project.builder()
                 .id(id)
@@ -124,6 +130,7 @@ public class Project {
                 .githubRepositoryUrl(githubRepositoryUrl)
                 .deploymentUrl(deploymentUrl)
                 .thumbnailMediaId(thumbnailMediaId)
+                .logoMediaId(logoMediaId)
                 .build();
     }
 }

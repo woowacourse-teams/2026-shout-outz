@@ -1,0 +1,224 @@
+import { http, HttpResponse } from 'msw';
+
+import type {
+  JobPostingDetail,
+  JobPostingListItem,
+  JobRequirementRecommendation,
+  JobRole,
+} from '@/apis/job-posting';
+import { collectMaterials } from '@/api/mock/explore';
+
+// 서버의 사용자 채용공고 API 명세(목록, 상세, 역량별 자료)에 맞춘 목 응답이다.
+// 공고와 역량은 프로토타입 예시이고, 역량별 자료는 소개 페이지에 저장해 둔 실제 자료를 주제로 묶어 돌려준다.
+
+interface MockRequirement {
+  name: string;
+  /** 자료를 가져올 탐색 주제. 비어 있으면 추천 자료가 없는 역량이다. */
+  topics: string[];
+}
+
+interface MockJobPosting {
+  jobPostingId: number;
+  companyName: string;
+  jobRole: JobRole;
+  title: string;
+  /** 오늘부터 며칠 뒤 마감인지. null이면 상시 채용이다. 화면에서 늘 D-n이 보이도록 오늘 기준으로 만든다. */
+  deadlineInDays: number | null;
+  sourceUrl: string;
+  requirements: MockRequirement[];
+}
+
+const JOB_POSTINGS: MockJobPosting[] = [
+  {
+    jobPostingId: 1,
+    companyName: '토스뱅크',
+    jobRole: 'BACKEND',
+    title: 'Server Developer (Product)',
+    deadlineInDays: null,
+    sourceUrl: 'https://toss.im/career/jobs',
+    requirements: [
+      { name: 'Kotlin, Spring', topics: ['N+1 문제'] },
+      { name: '동시성 제어', topics: ['동시성 제어/락'] },
+      { name: 'DB 설계, 쿼리 튜닝', topics: ['인덱스/쿼리 최적화'] },
+      { name: '무중단 배포', topics: ['무중단 배포'] },
+      { name: '실시간 통신', topics: ['실시간 통신(WebSocket/SSE)'] },
+      { name: '모니터링, 장애 대응', topics: [] },
+      { name: '협업, 코드 리뷰', topics: [] },
+    ],
+  },
+  {
+    jobPostingId: 2,
+    companyName: '토스증권',
+    jobRole: 'FRONTEND',
+    title: 'Frontend Developer',
+    deadlineInDays: null,
+    sourceUrl: 'https://toss.im/career/jobs',
+    requirements: [
+      { name: 'React, Next.js, TypeScript', topics: ['React 렌더링/훅'] },
+      { name: '실시간 데이터 처리', topics: ['실시간 통신(WebSocket/SSE)'] },
+      { name: '렌더링 성능 최적화', topics: ['React 렌더링/훅'] },
+      { name: '상태관리', topics: [] },
+      { name: '디자인 시스템, 컴포넌트 제작', topics: [] },
+      { name: '빌드, 패키지, 번들링 최적화', topics: [] },
+      { name: '협업, CI, 코드 리뷰, 테스트 자동화', topics: ['무중단 배포'] },
+    ],
+  },
+  {
+    jobPostingId: 3,
+    companyName: '우아한형제들',
+    jobRole: 'BACKEND',
+    title: '배달 서비스 백엔드 신입 개발자',
+    deadlineInDays: 3,
+    sourceUrl: 'https://career.woowahan.com',
+    requirements: [
+      { name: 'Java, Spring', topics: ['N+1 문제'] },
+      { name: '대용량 트래픽 처리', topics: ['동시성 제어/락'] },
+      { name: '쿼리 성능 개선', topics: ['인덱스/쿼리 최적화'] },
+      { name: '배포 자동화', topics: ['무중단 배포'] },
+    ],
+  },
+  {
+    jobPostingId: 4,
+    companyName: '당근',
+    jobRole: 'FRONTEND',
+    title: 'Web Frontend Engineer',
+    deadlineInDays: 0,
+    sourceUrl: 'https://about.daangn.com/jobs',
+    requirements: [
+      { name: 'React, TypeScript', topics: ['React 렌더링/훅'] },
+      { name: '실시간 채팅', topics: ['실시간 통신(WebSocket/SSE)'] },
+      { name: '웹 접근성', topics: [] },
+    ],
+  },
+  {
+    jobPostingId: 5,
+    companyName: '카카오',
+    jobRole: 'ANDROID',
+    title: 'Android Developer',
+    deadlineInDays: 14,
+    sourceUrl: 'https://careers.kakao.com',
+    requirements: [
+      { name: 'Kotlin, Jetpack Compose', topics: [] },
+      { name: '비동기 처리', topics: ['동시성 제어/락'] },
+      { name: '실시간 메시지', topics: ['실시간 통신(WebSocket/SSE)'] },
+    ],
+  },
+];
+
+/** 오늘부터 days일 뒤를 YYYY-MM-DD로 만든다. */
+const dateAfter = (days: number) => {
+  const date = new Date();
+  date.setDate(date.getDate() + days);
+  const pad = (value: number) => String(value).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+};
+
+const RECOMMENDATION_LIMIT = 6;
+
+const requirementIdOf = (jobPostingId: number, index: number) => jobPostingId * 100 + index + 1;
+
+const recommendationsOf = (requirement: MockRequirement): JobRequirementRecommendation[] =>
+  collectMaterials(requirement.topics)
+    .slice(0, RECOMMENDATION_LIMIT)
+    .map((material, index) => ({
+      resourceId: material.resourceId,
+      verdict: index < 3 ? 'MATCH' : 'PARTIAL',
+      source: material.source,
+      title: material.title,
+      url: material.url,
+      description: material.summary ?? '',
+      publishedAt: material.publishedAt ?? null,
+      contentType: null,
+      teamName: material.team?.name ?? null,
+      authorDisplay: null,
+    }));
+
+const toListItem = (posting: MockJobPosting): JobPostingListItem => ({
+  jobPostingId: posting.jobPostingId,
+  companyName: posting.companyName,
+  jobRole: posting.jobRole,
+  employmentType: '정규직',
+  careerRequirement: '신입',
+  title: posting.title,
+  deadline: posting.deadlineInDays === null ? null : dateAfter(posting.deadlineInDays),
+  requirementCount: posting.requirements.length,
+  requirementNames: posting.requirements.map((requirement) => requirement.name),
+});
+
+const toDetail = (posting: MockJobPosting): JobPostingDetail => ({
+  ...toListItem(posting),
+  sourceUrl: posting.sourceUrl,
+  requirements: posting.requirements.map((requirement, index) => ({
+    requirementId: requirementIdOf(posting.jobPostingId, index),
+    displayOrder: index + 1,
+    name: requirement.name,
+    category: 'REQUIRED',
+    summary: requirement.name,
+    recommendationCount: recommendationsOf(requirement).length,
+  })),
+});
+
+const matchesKeyword = (posting: MockJobPosting, keyword: string) => {
+  const key = keyword.toLowerCase();
+  return [
+    posting.companyName,
+    posting.title,
+    posting.jobRole,
+    ...posting.requirements.map((r) => r.name),
+  ].some((text) => text.toLowerCase().includes(key));
+};
+
+export const getJobPostings = (keyword: string) => {
+  const postings = keyword
+    ? JOB_POSTINGS.filter((posting) => matchesKeyword(posting, keyword))
+    : JOB_POSTINGS;
+  const roles: JobRole[] = ['BACKEND', 'FRONTEND', 'ANDROID', 'IOS', 'DEVOPS', 'DATA', 'AI', 'ETC'];
+  const jobRoleCounts = roles.map((jobRole) => ({
+    jobRole,
+    count: postings.filter((posting) => posting.jobRole === jobRole).length,
+  }));
+
+  return {
+    data: postings.map(toListItem),
+    meta: {
+      nextCursor: null,
+      hasNext: false,
+      totalCount: postings.length,
+      jobRoleCounts,
+      allCount: postings.length,
+    },
+  };
+};
+
+const notFound = (message: string) =>
+  HttpResponse.json({ status: 'error', code: 'JOB_POSTING_NOT_FOUND', message }, { status: 404 });
+
+const findPosting = (jobPostingId: unknown) =>
+  JOB_POSTINGS.find((posting) => posting.jobPostingId === Number(jobPostingId));
+
+export const jobPostingHandlers = [
+  http.get('/api/v1/job-postings', ({ request }) => {
+    const keyword = new URL(request.url).searchParams.get('keyword')?.trim() ?? '';
+    return HttpResponse.json({ status: 'success', ...getJobPostings(keyword) });
+  }),
+  http.get('/api/v1/job-postings/:jobPostingId', ({ params }) => {
+    const posting = findPosting(params.jobPostingId);
+    if (!posting) return notFound('채용공고를 찾을 수 없습니다.');
+    return HttpResponse.json({ status: 'success', data: toDetail(posting) });
+  }),
+  http.get(
+    '/api/v1/job-postings/:jobPostingId/requirements/:requirementId/recommendations',
+    ({ params }) => {
+      const posting = findPosting(params.jobPostingId);
+      const index = posting?.requirements.findIndex(
+        (_, i) => requirementIdOf(posting.jobPostingId, i) === Number(params.requirementId),
+      );
+      if (!posting || index === undefined || index < 0)
+        return notFound('채용공고 역량을 찾을 수 없습니다.');
+      return HttpResponse.json({
+        status: 'success',
+        data: recommendationsOf(posting.requirements[index]!),
+      });
+    },
+  ),
+];

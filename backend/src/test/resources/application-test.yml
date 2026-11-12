@@ -12,6 +12,12 @@ job-posting:
   matching:
     enabled: false
 
+search-keyword:
+  archive:
+    enabled: false
+  preload:
+    enabled: false
+
 question-recommendation:
   count: 5
   max-generation-attempts: 5
@@ -61,3 +67,7 @@ aws:
 
 visitor:
   hash-secret: test-visitor-hash-secret-32-chars-min
+
+# 테스트끼리 보관한 값을 주고받지 않도록 로컬 캐시를 끈다. 캐시 동작은 캐시를 직접 만드는 테스트에서 확인한다.
+local-cache:
+  enabled: false

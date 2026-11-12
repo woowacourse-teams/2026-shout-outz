@@ -8,18 +8,19 @@ export function RelatedQuestions({ items }: { items: QuestionRecommendation[] })
   const [selected] = useState(() => pickRecommendations(items));
   if (selected.length === 0) return null;
   return (
-    <section aria-label="연관 추천 질문" className="mt-10 border-t border-gray-100 pt-7">
-      <h2 className="text-base font-bold text-gray-900">이런 질문도 궁금한가요?</h2>
+    <section aria-label="연관 추천 질문" className="mt-10">
+      <h2 className="text-xl font-bold text-gray-900">이런 질문도 궁금한가요?</h2>
       <p className="mt-1 text-sm text-gray-500">
         AI가 제안한 질문을 살펴보고, 함께 이야기해 보세요.
       </p>
-      <div className="mt-4 grid gap-3 md:grid-cols-2">
+      <div className="mt-4 grid gap-4 md:grid-cols-2">
         {selected.map((item, index) => (
           <RecommendationCard
             key={item.recommendationId}
             recommendation={item}
             surface="feed_detail"
             position={index}
+            variant="detail"
           />
         ))}
       </div>

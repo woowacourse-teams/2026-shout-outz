@@ -83,14 +83,17 @@
     "core-js": "^3.50.0",
     "express": "^5.2.1",
     "ky": "^2.1.0",
+    "overlay-kit": "^1.9.0",
     "posthog-js": "^1.434.7",
+    "radix-ui": "^1.8.1",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "react-markdown": "^10.1.0",
     "rehype-raw": "^7.0.0",
     "rehype-sanitize": "^6.0.0",
     "remark-gfm": "^4.0.1",
-    "tailwind-merge": "^3.6.0"
+    "tailwind-merge": "^3.6.0",
+    "vaul": "^1.1.2"
   },
   "browserslist": [
     "> 0.5%",

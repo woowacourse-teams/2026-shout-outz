@@ -1,31 +1,47 @@
 package com.shoutoutz.api.jobposting.application;
 
 import static com.shoutoutz.api.jobposting.domain.JobPostingErrorCode.JOB_POSTING_ADMIN_FORBIDDEN;
+import static com.shoutoutz.api.jobposting.domain.JobPostingErrorCode.JOB_POSTING_ANALYSIS_IN_PROGRESS;
 import static com.shoutoutz.api.jobposting.domain.JobPostingErrorCode.JOB_POSTING_DUPLICATE_URL;
+import static com.shoutoutz.api.jobposting.domain.JobPostingErrorCode.JOB_POSTING_INVALID_LOGO;
+import static com.shoutoutz.api.jobposting.domain.JobPostingErrorCode.JOB_POSTING_LOGO_NOT_READY;
+import static com.shoutoutz.api.jobposting.domain.JobPostingErrorCode.JOB_POSTING_NOT_FAILED;
 import static com.shoutoutz.api.jobposting.domain.JobPostingErrorCode.JOB_POSTING_NOT_FOUND;
 
+import com.shoutoutz.api.common.exception.custom.BadRequestException;
+import com.shoutoutz.api.common.exception.custom.ConflictException;
 import com.shoutoutz.api.common.exception.custom.DuplicateEntityException;
 import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
 import com.shoutoutz.api.common.exception.custom.ForbiddenException;
 import com.shoutoutz.api.common.response.SliceMetaResponse;
 import com.shoutoutz.api.jobposting.application.dto.ExtractedJobPosting;
-import com.shoutoutz.api.jobposting.application.dto.JobPostingCursor;
-import com.shoutoutz.api.jobposting.application.dto.JobPostingPage;
+import com.shoutoutz.api.jobposting.application.dto.JobPostingAdminCursor;
+import com.shoutoutz.api.jobposting.application.dto.JobPostingAdminPage;
 import com.shoutoutz.api.jobposting.domain.JobPosting;
 import com.shoutoutz.api.jobposting.domain.JobPostingRepository;
 import com.shoutoutz.api.jobposting.domain.JobPostingUrl;
 import com.shoutoutz.api.jobposting.domain.JobRequirement;
+import com.shoutoutz.api.jobposting.domain.ReanalysisScope;
 import com.shoutoutz.api.jobposting.presentation.dto.request.AdminJobPostingExtractRequest;
 import com.shoutoutz.api.jobposting.presentation.dto.request.AdminJobPostingFindAllRequest;
+import com.shoutoutz.api.jobposting.presentation.dto.request.AdminJobPostingReanalysisRequest;
 import com.shoutoutz.api.jobposting.presentation.dto.request.AdminJobPostingSaveRequest;
 import com.shoutoutz.api.jobposting.presentation.dto.request.AdminJobPostingVisibilityUpdateRequest;
 import com.shoutoutz.api.jobposting.presentation.dto.response.AdminJobPostingDetailResponse;
 import com.shoutoutz.api.jobposting.presentation.dto.response.AdminJobPostingExtractResponse;
 import com.shoutoutz.api.jobposting.presentation.dto.response.AdminJobPostingFindAllResponse;
+import com.shoutoutz.api.jobposting.presentation.dto.response.AdminJobPostingReanalysisResponse;
 import com.shoutoutz.api.jobposting.presentation.dto.response.AdminJobPostingSaveResponse;
 import com.shoutoutz.api.jobposting.presentation.dto.response.AdminJobPostingUpdateResponse;
 import com.shoutoutz.api.jobposting.presentation.dto.response.AdminJobPostingVisibilityUpdateResponse;
+import com.shoutoutz.api.media.application.MediaUrlResolver;
+import com.shoutoutz.api.media.domain.MediaMetadata;
+import com.shoutoutz.api.media.domain.MediaMetadataRepository;
+import com.shoutoutz.api.media.domain.MediaPurpose;
+import com.shoutoutz.api.media.domain.MediaStatus;
+import com.shoutoutz.api.media.infrastructure.s3.MediaVariant;
 import com.shoutoutz.api.user.domain.account.UserRole;
+import java.net.URI;
 import java.time.Clock;
 import java.util.List;
 import java.util.stream.IntStream;
@@ -40,7 +56,9 @@ public class JobPostingAdminService {
     private final JobPostingRepository jobPostingRepository;
     private final JobPostingAdminQueryRepository queryRepository;
     private final JobPostingExtractor extractor;
-    private final JobPostingCursorCodec cursorCodec;
+    private final JobPostingAdminCursorCodec cursorCodec;
+    private final MediaMetadataRepository mediaMetadataRepository;
+    private final MediaUrlResolver mediaUrlResolver;
     private final Clock clock;
 
     /**
@@ -65,6 +83,7 @@ public class JobPostingAdminService {
             AdminJobPostingSaveRequest request
     ) {
         validateAdmin(role);
+        validateLogo(request.logoImageId());
         JobPosting jobPosting = JobPosting.register(
                 request.sourceUrl(),
                 request.content(),
@@ -74,6 +93,7 @@ public class JobPostingAdminService {
                 request.title(),
                 request.employmentType(),
                 request.deadline(),
+                request.logoImageId(),
                 adminUserId,
                 toRequirements(request.requirements()),
                 clock.instant()
@@ -87,12 +107,12 @@ public class JobPostingAdminService {
     @Transactional(readOnly = true)
     public AdminJobPostingFindAllResponse findAll(UserRole role, AdminJobPostingFindAllRequest request) {
         validateAdmin(role);
-        JobPostingPage page = queryRepository.findAll(
+        JobPostingAdminPage page = queryRepository.findAll(
                 cursorCodec.decode(request.cursor()),
                 request.resolvedSize()
         );
         String nextCursor = page.hasNext()
-                ? cursorCodec.encode(new JobPostingCursor(page.items().getLast().id()))
+                ? cursorCodec.encode(new JobPostingAdminCursor(page.items().getLast().id()))
                 : null;
         return AdminJobPostingFindAllResponse.from(
                 page.items(),
@@ -107,6 +127,7 @@ public class JobPostingAdminService {
                 .orElseThrow(() -> new EntityNotFoundException(JOB_POSTING_NOT_FOUND));
         return AdminJobPostingDetailResponse.from(
                 jobPosting,
+                logoUrlOf(jobPosting),
                 queryRepository.findLastErrors(jobPostingId),
                 queryRepository.findRecommendations(jobPostingId)
         );
@@ -123,6 +144,7 @@ public class JobPostingAdminService {
             AdminJobPostingSaveRequest request
     ) {
         validateAdmin(role);
+        validateLogo(request.logoImageId());
         JobPosting saved = jobPostingRepository.findByIdForUpdate(jobPostingId)
                 .orElseThrow(() -> new EntityNotFoundException(JOB_POSTING_NOT_FOUND));
         JobPosting updated = saved.update(
@@ -134,6 +156,7 @@ public class JobPostingAdminService {
                 request.title(),
                 request.employmentType(),
                 request.deadline(),
+                request.logoImageId(),
                 toRequirements(request.requirements()),
                 clock.instant()
         );
@@ -152,6 +175,24 @@ public class JobPostingAdminService {
         return jobPostingRepository.updateHiddenAt(jobPostingId, request.hidden(), clock.instant())
                 .map(AdminJobPostingVisibilityUpdateResponse::from)
                 .orElseThrow(() -> new EntityNotFoundException(JOB_POSTING_NOT_FOUND));
+    }
+
+    /**
+     * 잠그고 허용 조건 확인, 되돌리기를 한 트랜잭션에서 한다. 잠금은 커밋할 때 풀린다.
+     * 되돌리기는 SQL 로 DB 만 바꾸고, 앞서 읽은 공고 객체는 바꾸기 전 상태로 남는다. 그래서 응답 상태는 그 객체에서 꺼내지 않고 PENDING 으로 넣는다.
+     */
+    @Transactional
+    public AdminJobPostingReanalysisResponse reanalyze(
+            long jobPostingId,
+            UserRole role,
+            AdminJobPostingReanalysisRequest request
+    ) {
+        validateAdmin(role);
+        JobPosting saved = jobPostingRepository.findByIdForUpdate(jobPostingId)
+                .orElseThrow(() -> new EntityNotFoundException(JOB_POSTING_NOT_FOUND));
+        validateReanalyzable(saved, request.scope());
+        int reanalyzedCount = jobPostingRepository.resetForReanalysis(jobPostingId, request.scope(), clock.instant());
+        return AdminJobPostingReanalysisResponse.pending(jobPostingId, reanalyzedCount);
     }
 
     @Transactional
@@ -177,6 +218,37 @@ public class JobPostingAdminService {
                     );
                 })
                 .toList();
+    }
+
+    /**
+     * 로고는 선택 입력이다. 입력했다면 회사 로고 용도의 처리 완료 이미지여야 한다.
+     * 회사 로고는 관리자만 올릴 수 있어서 누가 올렸는지는 보지 않는다. 다른 관리자가 붙인 로고를 수정 화면이 그대로 다시 보내도 된다.
+     * 없는 이미지와 다른 용도의 이미지는 같은 오류로 응답한다.
+     */
+    private void validateLogo(Long logoMediaId) {
+        if (logoMediaId == null) {
+            return;
+        }
+        MediaMetadata logo = mediaMetadataRepository.findById(logoMediaId)
+                .filter(media -> media.getPurpose() == MediaPurpose.JOB_POSTING_COMPANY_LOGO)
+                .orElseThrow(() -> new BadRequestException(JOB_POSTING_INVALID_LOGO));
+        if (logo.getStatus() != MediaStatus.READY) {
+            throw new BadRequestException(JOB_POSTING_LOGO_NOT_READY);
+        }
+    }
+
+    private String logoUrlOf(JobPosting jobPosting) {
+        URI logoUrl = mediaUrlResolver.resolve(jobPosting.getLogoMediaId(), MediaVariant.THUMBNAIL);
+        return logoUrl == null ? null : logoUrl.toString();
+    }
+
+    private void validateReanalyzable(JobPosting jobPosting, ReanalysisScope scope) {
+        if (scope == ReanalysisScope.FAILED && !jobPosting.isFailed()) {
+            throw new ConflictException(JOB_POSTING_NOT_FAILED);
+        }
+        if (scope == ReanalysisScope.ALL && jobPosting.hasRequirementInProgress()) {
+            throw new ConflictException(JOB_POSTING_ANALYSIS_IN_PROGRESS);
+        }
     }
 
     private void validateAdmin(UserRole role) {

@@ -23,6 +23,7 @@ import { Select } from '@/components/Select';
 import { AsyncBoundary } from '@/components/AsyncBoundary';
 import { ReviewStatusTab } from '@/components/admin/ReviewStatusTab';
 import { TechTagField } from '@/components/projects/TechTagField';
+import { uploadProjectLogo } from '@/api/media';
 import { ThumbnailField } from '@/components/projects/ThumbnailField';
 import { REVIEW_STATUS_LABELS } from '@/constants/admin';
 import type {
@@ -50,6 +51,7 @@ const FIELD_LABELS: Record<keyof AdminProjectUpdateBody, string> = {
   cohort: '기수',
   slug: 'slug',
   thumbnailImageId: '썸네일',
+  logoImageId: '로고',
   githubRepositoryUrl: 'GitHub URL',
   deploymentUrl: '배포 URL',
   descriptionMd: '상세 설명',
@@ -412,6 +414,18 @@ function ProjectEditForm({ project }: { project: AdminProjectDetail }) {
             썸네일 지우기
           </Button>
         )}
+      </FormSection>
+
+      <FormSection title="팀 로고">
+        {/* 관리자 상세 응답에 지금 로고(logoImageId, logoUrl)가 없어 새로 올리기만 둔다. */}
+        <ThumbnailField
+          label="새 팀 로고 올리기 (정사각형 권장)"
+          description="기술 자료 카드에서 팀 이름 앞에 작게 보여요. 올리지 않으면 지금 로고를 그대로 둡니다."
+          value={values.logoImageId}
+          onChange={(mediaId) => setField('logoImageId', mediaId)}
+          error={errors.logoImageId}
+          upload={uploadProjectLogo}
+        />
       </FormSection>
 
       <FormSection title="소개">

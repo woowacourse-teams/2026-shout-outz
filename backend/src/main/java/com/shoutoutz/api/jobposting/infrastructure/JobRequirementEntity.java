@@ -18,7 +18,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 /**
- * attempt_count, lease_until, last_error 는 역량마다 맞는 자료를 찾는 매칭 작업이 쓰는 칸이라 도메인에는 두지 않는다.
+ * attempt_count, claim_token, lease_until, next_attempt_at, last_error 는 역량마다 맞는 자료를 찾는 매칭 작업이 쓰는 칸이라 도메인에는 두지 않는다.
  */
 @Entity
 @Table(name = "job_requirements")

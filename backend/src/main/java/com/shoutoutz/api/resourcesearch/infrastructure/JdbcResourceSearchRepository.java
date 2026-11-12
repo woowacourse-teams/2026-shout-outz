@@ -15,6 +15,20 @@ import org.springframework.stereotype.Repository;
 @RequiredArgsConstructor
 public class JdbcResourceSearchRepository implements ResourceSearchRepository {
 
+    /**
+     * 관리자가 받아들인 필요 없어요 제보가 있는 자료(별칭 d)를 뺀다. 프로젝트 기술 이야기의 TeamResourceSql 과 같은 조건이다.
+     */
+    public static final String NOT_REMOVED_BY_REPORT = """
+              AND NOT EXISTS (
+                  SELECT 1
+                  FROM resource_reports report
+                  WHERE report.kind = 'REMOVE'
+                    AND report.status = 'ACCEPTED'
+                    AND report.resource_source = d.source
+                    AND report.resource_external_key = d.external_key
+              )
+            """;
+
     private static final int VECTOR_DIMENSIONS = 1024;
 
     private final NamedParameterJdbcTemplate jdbcTemplate;
@@ -37,7 +51,7 @@ public class JdbcResourceSearchRepository implements ResourceSearchRepository {
                 WHERE c.deleted_at IS NULL
                   AND d.deleted_at IS NULL
                   AND c.embedding_model = :modelId
-                """;
+                """ + NOT_REMOVED_BY_REPORT;
         MapSqlParameterSource parameters = new MapSqlParameterSource()
                 .addValue("queryVector", Arrays.toString(queryVector))
                 .addValue("modelId", modelId)

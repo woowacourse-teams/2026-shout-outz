@@ -163,6 +163,12 @@ public class FeedLinkPreviewRepositoryImpl implements FeedLinkPreviewRepository 
                               AND i.deleted_at IS NULL
                               AND i.status = 'PUBLISHED'
                         )
+                        OR EXISTS (
+                            SELECT 1 FROM resource_link_preview_refs r
+                            JOIN resource_documents d ON d.id = r.document_id
+                            WHERE r.cache_id = candidate.id
+                              AND d.deleted_at IS NULL
+                        )
                     )
                     ORDER BY candidate.next_attempt_at NULLS LAST, candidate.id
                     LIMIT 1
@@ -183,7 +189,7 @@ public class FeedLinkPreviewRepositoryImpl implements FeedLinkPreviewRepository 
         jdbcTemplate.update("""
                 UPDATE link_preview_cache
                 SET status = 'READY', title = :title, description = :description,
-                    image_url = :imageUrl, site_name = :siteName, fetched_at = :now,
+                    image_url = :imageUrl, site_name = :siteName, favicon_url = :faviconUrl, fetched_at = :now,
                     next_attempt_at = NULL, lease_until = NULL, attempts = 0
                 WHERE id = :id AND status = 'PROCESSING' AND attempts = :attempts
                 """, new MapSqlParameterSource()
@@ -193,6 +199,7 @@ public class FeedLinkPreviewRepositoryImpl implements FeedLinkPreviewRepository 
                         .addValue("description", metadata.description())
                         .addValue("imageUrl", metadata.imageUrl())
                         .addValue("siteName", metadata.siteName())
+                        .addValue("faviconUrl", metadata.faviconUrl())
                         .addValue("now", Timestamp.from(now)));
     }
 
@@ -265,6 +272,9 @@ public class FeedLinkPreviewRepositoryImpl implements FeedLinkPreviewRepository 
                 )
                 AND NOT EXISTS (
                     SELECT 1 FROM magazine_comment_link_preview_refs r WHERE r.cache_id = c.id
+                )
+                AND NOT EXISTS (
+                    SELECT 1 FROM resource_link_preview_refs r WHERE r.cache_id = c.id
                 )
                 AND (
                     (c.status = 'READY' AND c.fetched_at < :cutoff)

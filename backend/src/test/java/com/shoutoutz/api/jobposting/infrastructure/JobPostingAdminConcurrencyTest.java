@@ -1,14 +1,23 @@
 package com.shoutoutz.api.jobposting.infrastructure;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchThrowable;
 
+import com.shoutoutz.api.common.exception.custom.ConflictException;
+import com.shoutoutz.api.jobposting.application.JobPostingAdminService;
 import com.shoutoutz.api.jobposting.domain.JobPosting;
+import com.shoutoutz.api.jobposting.domain.JobPostingErrorCode;
 import com.shoutoutz.api.jobposting.domain.JobPostingRepository;
 import com.shoutoutz.api.jobposting.domain.JobRequirement;
 import com.shoutoutz.api.jobposting.domain.JobRole;
+import com.shoutoutz.api.jobposting.domain.ReanalysisScope;
 import com.shoutoutz.api.jobposting.domain.RequirementCategory;
+import com.shoutoutz.api.jobposting.presentation.dto.request.AdminJobPostingReanalysisRequest;
+import com.shoutoutz.api.jobposting.presentation.dto.response.AdminJobPostingReanalysisResponse;
+import com.shoutoutz.api.user.domain.account.UserRole;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
@@ -27,7 +36,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
 /**
- * 분석 Worker 가 결과를 저장하는 중에 공고를 지우거나 고쳐도 서로 기다리다 멈추지 않는지 확인한다.
+ * 분석 Worker 가 결과를 저장하는 중에 공고를 지우거나 고치거나 다시 분석해도 서로 기다리다 멈추지 않는지 확인한다.
  * 실제로 커밋돼야 잠금이 부딪치므로 테스트 트랜잭션을 쓰지 않고 직접 지운다.
  */
 @ActiveProfiles("test")
@@ -40,6 +49,9 @@ class JobPostingAdminConcurrencyTest {
 
     @Autowired
     private JobPostingRepository jobPostingRepository;
+
+    @Autowired
+    private JobPostingAdminService jobPostingAdminService;
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
@@ -91,7 +103,7 @@ class JobPostingAdminConcurrencyTest {
         runWhileWorkerSaving(() -> new TransactionTemplate(transactionManager).execute(status -> {
             JobPosting saved = jobPostingRepository.findByIdForUpdate(postingId).orElseThrow();
             JobPosting updated = saved.update(sourceUrl, "바뀐 공고 원문", "우테코", JobRole.BACKEND, null,
-                    "백엔드 개발자", null, null,
+                    "백엔드 개발자", null, null, null,
                     List.of(JobRequirement.create(1, "Kotlin", RequirementCategory.REQUIRED, "Kotlin 개발 경험")), NOW);
             jobPostingRepository.update(updated, true);
             return null;
@@ -106,6 +118,74 @@ class JobPostingAdminConcurrencyTest {
                 });
         assertThat(jdbcTemplate.queryForObject("SELECT status FROM job_postings WHERE id = ?", String.class, postingId))
                 .isEqualTo("PENDING");
+    }
+
+    /**
+     * 잠근 뒤에 역량 상태를 읽어야 Worker 가 막 저장한 결과를 본다.
+     * 잠그기 전에 읽으면 저장 전 값(PROCESSING)을 보고 분석 중이라며 거절한다.
+     */
+    @Test
+    void Worker_가_마지막_역량을_저장하는_중에_전체를_다시_분석하면_저장이_끝난_뒤의_상태를_보고_되돌린다() throws Exception {
+        AdminJobPostingReanalysisResponse response = runWhileWorkerSaving(() -> reanalyze(ReanalysisScope.ALL));
+
+        assertThat(response.reanalyzedRequirementCount()).isEqualTo(1);
+        assertThat(requirementState(requirementId))
+                .containsEntry("status", "PENDING")
+                .containsEntry("attempt_count", 0);
+    }
+
+    /**
+     * 관리자 작업은 Worker 가 역량 저장을 마칠 때까지 기다렸다가 진행하고, 서로 기다리다 멈추지 않는다.
+     * 아직 분석 중인 역량이 있어 거절하며, Worker 가 저장한 결과와 분석 중인 역량은 그대로 둔다.
+     */
+    @Test
+    void Worker_가_결과를_저장하는_중에_전체를_다시_분석하면_기다렸다가_아직_분석_중인_역량을_보고_거절한다() throws Exception {
+        long inProgressId = insertRequirement(2, "PROCESSING", 1, null);
+
+        Throwable thrown = runWhileWorkerSaving(() -> catchThrowable(() -> reanalyze(ReanalysisScope.ALL)));
+
+        assertThat(thrown).isInstanceOf(ConflictException.class)
+                .extracting("errorCode")
+                .isEqualTo(JobPostingErrorCode.JOB_POSTING_ANALYSIS_IN_PROGRESS);
+        assertThat(requirementState(requirementId)).containsEntry("status", "READY");
+        assertThat(requirementState(inProgressId))
+                .containsEntry("status", "PROCESSING")
+                .containsEntry("attempt_count", 1);
+    }
+
+    @Test
+    void Worker_가_다른_역량을_저장하는_중에_실패한_역량을_다시_분석하면_기다렸다가_실패한_역량만_되돌린다() throws Exception {
+        jdbcTemplate.update("UPDATE job_postings SET status = 'FAILED' WHERE id = ?", postingId);
+        long failedId = insertRequirement(2, "FAILED", 3, "ATTEMPTS_EXHAUSTED");
+
+        AdminJobPostingReanalysisResponse response = runWhileWorkerSaving(() -> reanalyze(ReanalysisScope.FAILED));
+
+        assertThat(response.reanalyzedRequirementCount()).isEqualTo(1);
+        assertThat(requirementState(requirementId)).containsEntry("status", "READY");
+        assertThat(requirementState(failedId))
+                .containsEntry("status", "PENDING")
+                .containsEntry("attempt_count", 0)
+                .containsEntry("last_error", null);
+        assertThat(jdbcTemplate.queryForObject("SELECT status FROM job_postings WHERE id = ?", String.class, postingId))
+                .isEqualTo("PENDING");
+    }
+
+    private AdminJobPostingReanalysisResponse reanalyze(ReanalysisScope scope) {
+        return jobPostingAdminService.reanalyze(postingId, UserRole.ADMIN, new AdminJobPostingReanalysisRequest(scope));
+    }
+
+    private long insertRequirement(int displayOrder, String status, int attemptCount, String lastError) {
+        return jdbcTemplate.queryForObject("""
+                INSERT INTO job_requirements (job_posting_id, display_order, name, category, summary, status,
+                                              attempt_count, last_error, created_at, updated_at)
+                VALUES (?, ?, 'Kafka', 'PREFERRED', '요약', ?, ?, ?, now(), now())
+                RETURNING id
+                """, Long.class, postingId, displayOrder, status, attemptCount, lastError);
+    }
+
+    private Map<String, Object> requirementState(long id) {
+        return jdbcTemplate.queryForMap(
+                "SELECT status, attempt_count, last_error FROM job_requirements WHERE id = ?", id);
     }
 
     /**

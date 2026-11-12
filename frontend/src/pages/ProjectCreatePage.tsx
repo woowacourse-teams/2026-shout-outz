@@ -16,6 +16,7 @@ import { Input } from '@/components/Input';
 import { MemberField } from '@/components/projects/MemberField';
 import { Select } from '@/components/Select';
 import { TechTagField } from '@/components/projects/TechTagField';
+import { uploadProjectLogo } from '@/api/media';
 import { ThumbnailField } from '@/components/projects/ThumbnailField';
 import {
   type ProjectDetail,
@@ -33,7 +34,7 @@ import {
 import { sessionQuery } from '@/apis/session';
 import { myProfileQuery } from '@/apis/user';
 import { verificationRequestQuery } from '@/apis/verification';
-import { GithubLoginButton } from '@/components/auth/GithubLoginButton';
+import { LoginRequiredGuide } from '@/components/auth/LoginRequiredGuide';
 import { analytics } from '@/utils/analytics';
 
 const EMPTY_FORM: ProjectFormValues = {
@@ -42,6 +43,7 @@ const EMPTY_FORM: ProjectFormValues = {
   tagline: '',
   cohort: null,
   thumbnailImageId: null,
+  logoImageId: null,
   githubRepositoryUrl: '',
   deploymentUrl: '',
   // 입력칸 하나를 먼저 보여 준다.
@@ -64,6 +66,7 @@ function toFormValues(project: ProjectDetail, authorHandle: string): ProjectForm
     tagline: project.tagline,
     cohort: project.cohort,
     thumbnailImageId: project.thumbnailImageId ?? null,
+    logoImageId: project.logoImageId ?? null,
     githubRepositoryUrl: project.githubRepositoryUrl,
     deploymentUrl: project.deploymentUrl ?? '',
     teamBlogUrls: toTeamBlogUrlInputs(project.teamBlogUrls),
@@ -103,17 +106,7 @@ function toFormValues(project: ProjectDetail, authorHandle: string): ProjectForm
 export function ProjectCreatePage() {
   const { data: session } = useSuspenseQuery(sessionQuery);
 
-  if (session.status === 'UNAUTHENTICATED') {
-    return (
-      <ProjectCreateGuard
-        title="로그인이 필요해요."
-        description="프로젝트를 등록하려면 먼저 GitHub로 로그인해 주세요."
-        action={
-          <GithubLoginButton className={getButtonStyles({})}>GitHub 로그인</GithubLoginButton>
-        }
-      />
-    );
-  }
+  if (session.status === 'UNAUTHENTICATED') return <ProjectCreateLoginGuide />;
   if (session.status === 'SIGNUP_REQUIRED') {
     return (
       <ProjectCreateGuard
@@ -127,9 +120,7 @@ export function ProjectCreatePage() {
       />
     );
   }
-  if (session.userId == null) {
-    return <ProjectCreateGuard title="로그인이 필요해요." description="다시 로그인해 주세요." />;
-  }
+  if (session.userId == null) return <ProjectCreateLoginGuide />;
 
   return <VerifiedProjectCreatePage userId={session.userId} />;
 }
@@ -333,6 +324,15 @@ export function ProjectForm({
                 error={errors.thumbnailImageId}
               />
 
+              <ThumbnailField
+                label="팀 로고 (정사각형 권장)"
+                description="기술 자료 카드에서 팀 이름 앞에 작게 보여요."
+                value={values.logoImageId}
+                onChange={(mediaId) => setField('logoImageId', mediaId)}
+                error={errors.logoImageId}
+                upload={uploadProjectLogo}
+              />
+
               <Field label="GitHub 레포지토리 URL *" error={errors.githubRepositoryUrl}>
                 {(id) => (
                   <Input
@@ -463,6 +463,19 @@ export function ProjectForm({
         )}
       </main>
 
+      <Footer />
+    </div>
+  );
+}
+
+function ProjectCreateLoginGuide() {
+  return (
+    <div className="bg-background flex min-h-dvh flex-col text-gray-900">
+      <title>프로젝트 등록 | shout-outz</title>
+      <AppGnb />
+      <main className="flex-1">
+        <LoginRequiredGuide pageName="프로젝트 등록" fallbackTo="/projects" />
+      </main>
       <Footer />
     </div>
   );

@@ -8,11 +8,14 @@ import com.shoutoutz.api.jobposting.application.dto.CandidateChunk;
 import com.shoutoutz.api.jobposting.application.dto.CandidateChunk.ChunkKind;
 import com.shoutoutz.api.jobposting.application.dto.ClaimedJobRequirement;
 import com.shoutoutz.api.jobposting.application.dto.RequirementRecommendation;
+import com.shoutoutz.api.jobposting.domain.JobPostingRepository;
 import com.shoutoutz.api.jobposting.domain.JobRole;
 import com.shoutoutz.api.jobposting.domain.MatchingFailure;
+import com.shoutoutz.api.jobposting.domain.ReanalysisScope;
 import com.shoutoutz.api.jobposting.domain.RecommendationVerdict;
 import com.shoutoutz.api.jobposting.domain.RequirementCategory;
 import com.shoutoutz.api.resourcesearch.domain.ResourceTrack;
+import com.shoutoutz.api.resourcesearch.support.ResourceDocumentFixture;
 import com.shoutoutz.api.resourcesearch.support.ResourceSearchFixture;
 import java.sql.Timestamp;
 import java.time.Duration;
@@ -40,6 +43,9 @@ class JobRequirementMatchingRepositoryIntegrationTest {
     private JobRequirementMatchingRepository repository;
 
     @Autowired
+    private JobPostingRepository jobPostingRepository;
+
+    @Autowired
     private JdbcTemplate jdbcTemplate;
 
     private long adminId;
@@ -59,9 +65,10 @@ class JobRequirementMatchingRepositoryIntegrationTest {
 
         ClaimedJobRequirement claimed = repository.claimNext(NOW, LEASE_UNTIL).orElseThrow();
 
-        assertThat(claimed).isEqualTo(new ClaimedJobRequirement(requirementId, postingId, 1, JobRole.BACKEND,
-                "Spring", RequirementCategory.REQUIRED, "Spring 기반 서비스를 개발한 경험을 요구해요."));
+        assertThat(claimed).isEqualTo(new ClaimedJobRequirement(requirementId, postingId, 1, claimed.claimToken(),
+                JobRole.BACKEND, "Spring", RequirementCategory.REQUIRED, "Spring 기반 서비스를 개발한 경험을 요구해요."));
         Map<String, Object> requirement = requirement(requirementId);
+        assertThat(claimed.claimToken()).isNotNull().isEqualTo(requirement.get("claim_token"));
         assertThat(requirement.get("status")).isEqualTo("PROCESSING");
         assertThat(requirement.get("lease_until")).isEqualTo(Timestamp.from(LEASE_UNTIL));
         assertThat(postingStatus(postingId)).isEqualTo("PROCESSING");
@@ -340,6 +347,54 @@ class JobRequirementMatchingRepositoryIntegrationTest {
     }
 
     @Test
+    void 같은_역량을_다시_가져가면_매번_다른_claimToken을_받는다() {
+        long postingId = insertPosting("PENDING");
+        insertRequirement(postingId, 1, "PENDING");
+
+        ClaimedJobRequirement first = repository.claimNext(NOW, LEASE_UNTIL).orElseThrow();
+        ClaimedJobRequirement second = repository.claimNext(LEASE_UNTIL.plusSeconds(1),
+                LEASE_UNTIL.plusSeconds(181)).orElseThrow();
+
+        assertThat(second.requirementId()).isEqualTo(first.requirementId());
+        assertThat(second.claimToken()).isNotEqualTo(first.claimToken());
+    }
+
+    /**
+     * 작업 기한이 지나 다른 Worker 가 시도 횟수를 다 써 실패로 끝낸 뒤에도, 처음 가져간 Worker 는 아직 돌고 있을 수 있다.
+     * 운영자가 다시 분석해 시도 횟수가 0으로 돌아가면, 새로 가져간 작업의 시도 횟수가 처음 가져간 작업과 같아진다.
+     */
+    @Test
+    void 다시_분석해_시도_횟수가_같아져도_다시_분석_전에_가져간_작업의_결과는_저장하지_않는다() {
+        long postingId = insertPosting("PENDING");
+        long requirementId = insertRequirement(postingId, 1, "PENDING");
+        ClaimedJobRequirement late = repository.claimNext(NOW, LEASE_UNTIL).orElseThrow();
+        ClaimedJobRequirement exhausted = repository.claimNext(LEASE_UNTIL.plusSeconds(1),
+                LEASE_UNTIL.plusSeconds(181)).orElseThrow();
+        repository.markFailed(exhausted, MatchingFailure.ATTEMPTS_EXHAUSTED, LEASE_UNTIL.plusSeconds(1));
+        jobPostingRepository.resetForReanalysis(postingId, ReanalysisScope.FAILED, LEASE_UNTIL.plusSeconds(2));
+        ClaimedJobRequirement current = repository.claimNext(LEASE_UNTIL.plusSeconds(3),
+                LEASE_UNTIL.plusSeconds(183)).orElseThrow();
+
+        boolean completed = repository.complete(late, List.of(recommendation("pr-1", RecommendationVerdict.MATCH)),
+                NOW);
+        boolean retried = repository.scheduleRetry(late, MatchingFailure.JUDGE_FAILED, NOW, NOW);
+        boolean failed = repository.markFailed(late, MatchingFailure.UNEXPECTED, NOW);
+
+        assertThat(current.attemptCount()).isEqualTo(late.attemptCount());
+        assertThat(completed).isFalse();
+        assertThat(retried).isFalse();
+        assertThat(failed).isFalse();
+        Map<String, Object> requirement = requirement(requirementId);
+        assertThat(requirement.get("status")).isEqualTo("PROCESSING");
+        assertThat(requirement.get("claim_token")).isEqualTo(current.claimToken());
+        assertThat(requirement.get("last_error")).isNull();
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT count(*) FROM requirement_recommendations WHERE job_requirement_id = ?",
+                Integer.class, requirementId)).isZero();
+        assertThat(postingStatus(postingId)).isEqualTo("PROCESSING");
+    }
+
+    @Test
     void 이_임베딩_모델로_만든_자료_조각이_있을_때만_검색할_자료가_있다고_본다() {
         String model = uniqueModel();
         ResourceSearchFixture fixture = new ResourceSearchFixture(jdbcTemplate);
@@ -361,6 +416,17 @@ class JobRequirementMatchingRepositoryIntegrationTest {
         fixture.chunk(deletedDocument, 0, "intro", "소개", vector(1, 0), model);
         jdbcTemplate.update("UPDATE resource_chunks SET deleted_at = now() WHERE id = ?", deletedChunk);
         jdbcTemplate.update("UPDATE resource_documents SET deleted_at = now() WHERE id = ?", deletedDocument);
+
+        assertThat(repository.hasSearchableChunks(model)).isFalse();
+    }
+
+    @Test
+    void 제보로_삭제가_승인된_자료만_있으면_검색할_자료가_없다고_본다() {
+        String model = uniqueModel();
+        ResourceSearchFixture fixture = new ResourceSearchFixture(jdbcTemplate);
+        long removed = fixture.document(ResourceTrack.BE);
+        fixture.chunk(removed, 0, "intro", "소개", vector(1, 0), model);
+        new ResourceDocumentFixture(jdbcTemplate).removalReport(removed, "ACCEPTED");
 
         assertThat(repository.hasSearchableChunks(model)).isFalse();
     }
@@ -401,7 +467,7 @@ class JobRequirementMatchingRepositoryIntegrationTest {
 
     private Map<String, Object> requirement(long requirementId) {
         return jdbcTemplate.queryForMap("""
-                SELECT status, attempt_count, lease_until, next_attempt_at, last_error
+                SELECT status, attempt_count, claim_token, lease_until, next_attempt_at, last_error
                 FROM job_requirements WHERE id = ?
                 """, requirementId);
     }

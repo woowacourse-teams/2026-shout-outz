@@ -15,6 +15,7 @@ import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -23,13 +24,14 @@ class JobPostingTest {
     private static final String URL = "https://Careers.Example.com/jobs/123/";
     private static final String CONTENT = "자격 요건\n- Java 개발 경험";
     private static final Instant NOW = Instant.parse("2026-10-27T01:00:00Z");
+    private static final LocalDate TODAY = LocalDate.of(2026, 11, 5);
 
     @Test
     @DisplayName("새 공고는 주소를 정규화하고, 원문은 해시만 남기며, PENDING 상태로 만든다.")
     void registersPendingPosting() {
         JobPosting posting = JobPosting.register(
                 URL, CONTENT, "  예시 회사 ", JobRole.BACKEND, " 3년 이상 ", " 백엔드 개발자 ", " 정규직 ",
-                LocalDate.of(2026, 11, 30), 1L, requirements(2), NOW);
+                LocalDate.of(2026, 11, 30), null, 1L, requirements(2), NOW);
 
         assertThat(posting.getId()).isNull();
         assertThat(posting.getSourceUrl().value()).isEqualTo("https://careers.example.com/jobs/123");
@@ -50,7 +52,7 @@ class JobPostingTest {
     void allowsMissingOptionalFields() {
         JobPosting posting = JobPosting.register(
                 URL, CONTENT, "예시 회사", JobRole.BACKEND, "  ", "백엔드 개발자", null,
-                null, 1L, requirements(1), NOW);
+                null, null, 1L, requirements(1), NOW);
 
         assertThat(posting.getCareerRequirement()).isNull();
         assertThat(posting.getEmploymentType()).isNull();
@@ -98,7 +100,7 @@ class JobPostingTest {
     void rejectsBlankCompanyName(String companyName) {
         assertErrorCode(
                 () -> JobPosting.register(URL, CONTENT, companyName, JobRole.BACKEND, null, "백엔드 개발자", null,
-                        null, 1L, requirements(1), NOW),
+                        null, null, 1L, requirements(1), NOW),
                 JobPostingErrorCode.JOB_POSTING_COMPANY_NAME_NULL_OR_BLANK);
     }
 
@@ -107,7 +109,7 @@ class JobPostingTest {
     void rejectsTooLongCompanyName() {
         assertErrorCode(
                 () -> JobPosting.register(URL, CONTENT, "가".repeat(101), JobRole.BACKEND, null, "백엔드 개발자", null,
-                        null, 1L, requirements(1), NOW),
+                        null, null, 1L, requirements(1), NOW),
                 JobPostingErrorCode.JOB_POSTING_INVALID_COMPANY_NAME_LENGTH);
     }
 
@@ -116,7 +118,7 @@ class JobPostingTest {
     void rejectsNullJobRole() {
         assertErrorCode(
                 () -> JobPosting.register(URL, CONTENT, "예시 회사", null, null, "백엔드 개발자", null,
-                        null, 1L, requirements(1), NOW),
+                        null, null, 1L, requirements(1), NOW),
                 JobPostingErrorCode.JOB_POSTING_JOB_ROLE_NULL);
     }
 
@@ -125,7 +127,7 @@ class JobPostingTest {
     void rejectsTooLongCareerRequirement() {
         assertErrorCode(
                 () -> JobPosting.register(URL, CONTENT, "예시 회사", JobRole.BACKEND, "가".repeat(51), "백엔드 개발자", null,
-                        null, 1L, requirements(1), NOW),
+                        null, null, 1L, requirements(1), NOW),
                 JobPostingErrorCode.JOB_POSTING_INVALID_CAREER_REQUIREMENT);
     }
 
@@ -136,7 +138,7 @@ class JobPostingTest {
     void rejectsBlankTitle(String title) {
         assertErrorCode(
                 () -> JobPosting.register(URL, CONTENT, "예시 회사", JobRole.BACKEND, null, title, null,
-                        null, 1L, requirements(1), NOW),
+                        null, null, 1L, requirements(1), NOW),
                 JobPostingErrorCode.JOB_POSTING_TITLE_NULL_OR_BLANK);
     }
 
@@ -145,7 +147,7 @@ class JobPostingTest {
     void rejectsTooLongTitle() {
         assertErrorCode(
                 () -> JobPosting.register(URL, CONTENT, "예시 회사", JobRole.BACKEND, null, "가".repeat(201), null,
-                        null, 1L, requirements(1), NOW),
+                        null, null, 1L, requirements(1), NOW),
                 JobPostingErrorCode.JOB_POSTING_INVALID_TITLE_LENGTH);
     }
 
@@ -154,7 +156,7 @@ class JobPostingTest {
     void rejectsTooLongEmploymentType() {
         assertErrorCode(
                 () -> JobPosting.register(URL, CONTENT, "예시 회사", JobRole.BACKEND, null, "백엔드 개발자", "가".repeat(31),
-                        null, 1L, requirements(1), NOW),
+                        null, null, 1L, requirements(1), NOW),
                 JobPostingErrorCode.JOB_POSTING_INVALID_EMPLOYMENT_TYPE);
     }
 
@@ -163,7 +165,7 @@ class JobPostingTest {
     void rejectsInvalidRegisteredBy() {
         assertErrorCode(
                 () -> JobPosting.register(URL, CONTENT, "예시 회사", JobRole.BACKEND, null, "백엔드 개발자", null,
-                        null, 0L, requirements(1), NOW),
+                        null, null, 0L, requirements(1), NOW),
                 JobPostingErrorCode.JOB_POSTING_INVALID_REGISTERED_BY_SIZE);
     }
 
@@ -172,7 +174,7 @@ class JobPostingTest {
     void rejectsNullNow() {
         assertErrorCode(
                 () -> JobPosting.register(URL, CONTENT, "예시 회사", JobRole.BACKEND, null, "백엔드 개발자", null,
-                        null, 1L, requirements(1), null),
+                        null, null, 1L, requirements(1), null),
                 JobPostingErrorCode.JOB_POSTING_CREATED_AT_NULL);
     }
 
@@ -184,7 +186,7 @@ class JobPostingTest {
 
         JobPosting posting = JobPosting.reconstitute(
                 10L, "https://careers.example.com/jobs/123", hash, "예시 회사", JobRole.BACKEND, null,
-                "백엔드 개발자", null, null, MatchingStatus.READY, hiddenAt, 1L, requirements(1), NOW, NOW);
+                "백엔드 개발자", null, null, null, MatchingStatus.READY, hiddenAt, 1L, requirements(1), NOW, NOW);
 
         assertThat(posting.getId()).isEqualTo(10L);
         assertThat(posting.getContentHash().value()).isEqualTo(hash);
@@ -200,7 +202,7 @@ class JobPostingTest {
         assertErrorCode(
                 () -> JobPosting.reconstitute(
                         10L, "https://careers.example.com/jobs/123", hash, "예시 회사", JobRole.BACKEND, null,
-                        "백엔드 개발자", null, null, null, null, 1L, requirements(1), NOW, NOW),
+                        "백엔드 개발자", null, null, null, null, null, 1L, requirements(1), NOW, NOW),
                 JobPostingErrorCode.JOB_POSTING_STATUS_NULL);
     }
 
@@ -212,7 +214,7 @@ class JobPostingTest {
 
         JobPosting updated = saved.update(
                 URL, CONTENT, "바뀐 회사", JobRole.FRONTEND, "신입", "프론트엔드 개발자", "계약직",
-                LocalDate.of(2026, 12, 31), requirements(3), later);
+                LocalDate.of(2026, 12, 31), null, requirements(3), later);
 
         assertThat(updated.getId()).isEqualTo(saved.getId());
         assertThat(updated.getCompanyName()).isEqualTo("바뀐 회사");
@@ -231,13 +233,39 @@ class JobPostingTest {
     }
 
     @Test
+    @DisplayName("등록할 때 받은 회사 로고 ID를 갖는다.")
+    void registersWithLogo() {
+        JobPosting posting = JobPosting.register(
+                URL, CONTENT, "예시 회사", JobRole.BACKEND, null, "백엔드 개발자", null,
+                null, 7L, 1L, requirements(1), NOW);
+
+        assertThat(posting.getLogoMediaId()).isEqualTo(7L);
+    }
+
+    @Test
+    @DisplayName("고치면 원문과 상관없이 회사 로고를 받은 값으로 바꾸고, 비워서 보내면 지운다.")
+    void replacesLogoOnUpdate() {
+        JobPosting saved = register(requirements(1));
+
+        JobPosting withLogo = saved.update(
+                URL, CONTENT, "예시 회사", JobRole.BACKEND, null, "백엔드 개발자", null,
+                null, 7L, List.of(), NOW);
+        JobPosting withoutLogo = withLogo.update(
+                URL, CONTENT, "예시 회사", JobRole.BACKEND, null, "백엔드 개발자", null,
+                null, null, List.of(), NOW);
+
+        assertThat(withLogo.getLogoMediaId()).isEqualTo(7L);
+        assertThat(withoutLogo.getLogoMediaId()).isNull();
+    }
+
+    @Test
     @DisplayName("원문이 같으면 받은 역량은 보지 않으므로, 빈 역량 목록이 와도 기존 역량을 그대로 둔다.")
     void ignoresRequestedRequirementsWhenContentIsSame() {
         JobPosting saved = savedPosting(MatchingStatus.READY);
 
         JobPosting updated = saved.update(
                 URL, CONTENT, "예시 회사", JobRole.BACKEND, null, "백엔드 개발자", null,
-                null, List.of(), NOW);
+                null, null, List.of(), NOW);
 
         assertThat(updated.getRequirements()).isEqualTo(saved.getRequirements());
     }
@@ -249,7 +277,7 @@ class JobPostingTest {
 
         JobPosting updated = saved.update(
                 URL, "  자격 요건   - Java 개발 경험\n", "예시 회사", JobRole.BACKEND, null, "백엔드 개발자", null,
-                null, requirements(3), NOW);
+                null, null, requirements(3), NOW);
 
         assertThat(updated.hasSameContentAs(saved)).isTrue();
         assertThat(updated.getRequirements()).isEqualTo(saved.getRequirements());
@@ -266,7 +294,7 @@ class JobPostingTest {
 
         JobPosting updated = saved.update(
                 URL, changedContent, "예시 회사", JobRole.BACKEND, null, "백엔드 개발자", null,
-                null, newRequirements, later);
+                null, null, newRequirements, later);
 
         assertThat(updated.getContentHash()).isEqualTo(JobPostingContentHash.from(changedContent));
         assertThat(updated.getUpdatedAt()).isEqualTo(later);
@@ -285,7 +313,7 @@ class JobPostingTest {
 
         JobPosting updated = saved.update(
                 "https://careers.example.com/jobs/123#apply", CONTENT, "예시 회사", JobRole.BACKEND, null,
-                "백엔드 개발자", null, null, requirements(1), NOW);
+                "백엔드 개발자", null, null, null, requirements(1), NOW);
 
         assertThat(updated.getSourceUrl()).isEqualTo(saved.getSourceUrl());
     }
@@ -297,7 +325,7 @@ class JobPostingTest {
 
         assertThatThrownBy(() -> saved.update(
                 "https://careers.example.com/jobs/456", CONTENT, "예시 회사", JobRole.BACKEND, null,
-                "백엔드 개발자", null, null, requirements(1), NOW))
+                "백엔드 개발자", null, null, null, requirements(1), NOW))
                 .isInstanceOfSatisfying(BadRequestException.class,
                         error -> assertThat(error.getErrorCode()).isEqualTo(JobPostingErrorCode.JOB_POSTING_URL_MISMATCH));
     }
@@ -310,21 +338,131 @@ class JobPostingTest {
         assertErrorCode(
                 () -> saved.update(
                         URL, CONTENT + " 변경", "예시 회사", JobRole.BACKEND, null, "백엔드 개발자", null,
-                        null, List.of(), NOW),
+                        null, null, List.of(), NOW),
                 JobPostingErrorCode.JOB_POSTING_INVALID_REQUIREMENT_COUNT);
     }
 
-    private JobPosting savedPosting(MatchingStatus status) {
+    @ParameterizedTest
+    @EnumSource(MatchingStatus.class)
+    @DisplayName("공고 상태가 FAILED 일 때만 실패한 공고로 본다.")
+    void judgesFailedPosting(MatchingStatus status) {
+        JobPosting posting = savedPosting(status);
+
+        assertThat(posting.isFailed()).isEqualTo(status == MatchingStatus.FAILED);
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = MatchingStatus.class, names = {"PENDING", "PROCESSING"})
+    @DisplayName("대기나 분석 중인 역량이 하나라도 있으면 분석 중인 역량이 있다고 본다.")
+    void detectsRequirementInProgress(MatchingStatus inProgress) {
+        JobPosting posting = postingWithRequirementStatuses(MatchingStatus.READY, MatchingStatus.FAILED, inProgress);
+
+        assertThat(posting.hasRequirementInProgress()).isTrue();
+    }
+
+    @Test
+    @DisplayName("역량이 모두 완료나 실패로 끝났으면 분석 중인 역량이 없다고 본다.")
+    void detectsNoRequirementInProgress() {
+        JobPosting posting = postingWithRequirementStatuses(MatchingStatus.READY, MatchingStatus.FAILED);
+
+        assertThat(posting.hasRequirementInProgress()).isFalse();
+    }
+
+    private JobPosting postingWithRequirementStatuses(MatchingStatus... statuses) {
+        List<JobRequirement> requirements = IntStream.range(0, statuses.length)
+                .mapToObj(index -> JobRequirement.reconstitute(
+                        100L + index, index + 1, "역량 " + index, RequirementCategory.REQUIRED, "역량 요약", statuses[index]))
+                .toList();
         return JobPosting.reconstitute(
                 10L, "https://careers.example.com/jobs/123", JobPostingContentHash.from(CONTENT).value(), "예시 회사",
-                JobRole.BACKEND, null, "백엔드 개발자", null, null, status, NOW.plusSeconds(30), 1L,
+                JobRole.BACKEND, null, "백엔드 개발자", null, null, null, MatchingStatus.FAILED, null, 1L,
+                requirements, NOW, NOW);
+    }
+
+    @Test
+    @DisplayName("분석이 끝났고 숨기지 않았고 마감일이 없는 공고는 사용자에게 보인다.")
+    void visibleWhenReadyAndNotHiddenAndNoDeadline() {
+        JobPosting posting = postingWith(MatchingStatus.READY, null, null);
+
+        assertThat(posting.isVisibleOn(TODAY)).isTrue();
+    }
+
+    @Test
+    @DisplayName("마감일 당일까지는 사용자에게 보인다.")
+    void visibleOnDeadline() {
+        JobPosting posting = postingWith(MatchingStatus.READY, null, TODAY);
+
+        assertThat(posting.isVisibleOn(TODAY)).isTrue();
+    }
+
+    @Test
+    @DisplayName("마감일이 아직 오지 않은 공고는 사용자에게 보인다.")
+    void visibleBeforeDeadline() {
+        JobPosting posting = postingWith(MatchingStatus.READY, null, TODAY.plusDays(1));
+
+        assertThat(posting.isVisibleOn(TODAY)).isTrue();
+    }
+
+    @Test
+    @DisplayName("마감일이 지난 공고는 사용자에게 보이지 않는다.")
+    void notVisibleAfterDeadline() {
+        JobPosting posting = postingWith(MatchingStatus.READY, null, TODAY.minusDays(1));
+
+        assertThat(posting.isVisibleOn(TODAY)).isFalse();
+    }
+
+    @Test
+    @DisplayName("숨긴 공고는 사용자에게 보이지 않는다.")
+    void notVisibleWhenHidden() {
+        JobPosting posting = postingWith(MatchingStatus.READY, NOW, null);
+
+        assertThat(posting.isVisibleOn(TODAY)).isFalse();
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = MatchingStatus.class, names = "READY", mode = EnumSource.Mode.EXCLUDE)
+    @DisplayName("분석이 끝나지 않은 공고는 사용자에게 보이지 않는다.")
+    void notVisibleWhenNotReady(MatchingStatus status) {
+        JobPosting posting = postingWith(status, null, null);
+
+        assertThat(posting.isVisibleOn(TODAY)).isFalse();
+    }
+
+    @Test
+    @DisplayName("공고에 담긴 역량 ID면 이 공고의 역량이고, 아니면 아니다.")
+    void hasRequirement() {
+        JobPosting posting = JobPosting.reconstitute(
+                10L, "https://careers.example.com/jobs/123", JobPostingContentHash.from(CONTENT).value(), "예시 회사",
+                JobRole.BACKEND, null, "백엔드 개발자", null, null, null, MatchingStatus.READY, null, 1L,
+                List.of(JobRequirement.reconstitute(
+                        11L, 1, "역량 1", RequirementCategory.REQUIRED, "역량 요약 1", MatchingStatus.READY)),
+                NOW, NOW);
+
+        assertThat(posting.hasRequirement(11L)).isTrue();
+        assertThat(posting.hasRequirement(99L)).isFalse();
+    }
+
+    @Test
+    @DisplayName("아직 저장하지 않아 ID가 없는 역량은 어떤 역량 ID와도 같지 않다.")
+    void unsavedRequirementMatchesNoId() {
+        assertThat(register(requirements(1)).hasRequirement(1L)).isFalse();
+    }
+
+    private JobPosting postingWith(MatchingStatus status, Instant hiddenAt, LocalDate deadline) {
+        return JobPosting.reconstitute(
+                10L, "https://careers.example.com/jobs/123", JobPostingContentHash.from(CONTENT).value(), "예시 회사",
+                JobRole.BACKEND, null, "백엔드 개발자", null, deadline, null, status, hiddenAt, 1L,
                 requirements(2), NOW, NOW);
+    }
+
+    private JobPosting savedPosting(MatchingStatus status) {
+        return postingWith(status, NOW.plusSeconds(30), null);
     }
 
     private JobPosting register(List<JobRequirement> requirements) {
         return JobPosting.register(
                 URL, CONTENT, "예시 회사", JobRole.BACKEND, null, "백엔드 개발자", null,
-                null, 1L, requirements, NOW);
+                null, null, 1L, requirements, NOW);
     }
 
     private List<JobRequirement> requirements(int count) {

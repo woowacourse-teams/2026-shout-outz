@@ -10,26 +10,60 @@ import java.util.Objects;
  * @param keyword    프로젝트 이름, 한 줄 소개, 참여 크루 이름 검색어 (대소문자 무시 부분 일치)
  * @param cohorts    선택한 기수 중 하나에 해당하는 프로젝트 (OR)
  * @param techTagIds 선택한 기술 스택을 모두 사용한 프로젝트 (AND)
+ * @param topicId    그 기술 주제의 팀 자료가 있는 프로젝트. null 이면 거르지 않는다. 필터 선택지 수 계산(filter())에는 넣지 않는다
+ * @param projectIds 검색어 해석으로 미리 고른 프로젝트. null 이면 거르지 않고, 빈 목록이면 아무것도 조회하지 않는다.
+ *                   필터 선택지 수 계산(filter())에는 넣지 않는다
  */
 public record ProjectSearchCondition(
         String keyword,
         List<Integer> cohorts,
         List<Long> techTagIds,
+        String topicId,
         ProjectSort sort,
         int size,
-        ProjectCursor cursor
+        ProjectCursor cursor,
+        List<Long> projectIds
 ) {
 
     public ProjectSearchCondition {
         Objects.requireNonNull(sort, "정렬 기준은 null일 수 없습니다.");
         cohorts = cohorts == null ? List.of() : List.copyOf(cohorts);
         techTagIds = techTagIds == null ? List.of() : List.copyOf(techTagIds);
+        if (projectIds != null) {
+            projectIds = List.copyOf(projectIds);
+        }
         if (size <= 0) {
             throw new IllegalArgumentException("조회 개수는 0보다 커야 합니다.");
         }
         if (cursor != null && cursor.sort() != sort) {
             throw new IllegalArgumentException("커서의 정렬 기준과 조회 정렬 기준이 다릅니다.");
         }
+    }
+
+    public ProjectSearchCondition(
+            String keyword,
+            List<Integer> cohorts,
+            List<Long> techTagIds,
+            String topicId,
+            ProjectSort sort,
+            int size,
+            ProjectCursor cursor
+    ) {
+        this(keyword, cohorts, techTagIds, topicId, sort, size, cursor, null);
+    }
+
+    /**
+     * 검색어를 지우고 미리 고른 프로젝트로만 조회하는 조건
+     */
+    public ProjectSearchCondition onlyProjects(List<Long> projectIds) {
+        return new ProjectSearchCondition(null, cohorts, techTagIds, topicId, sort, size, cursor, projectIds);
+    }
+
+    /**
+     * 검색어를 지우고 그 기술 주제로 조회하는 조건
+     */
+    public ProjectSearchCondition inTopic(String topicId) {
+        return new ProjectSearchCondition(null, cohorts, techTagIds, topicId, sort, size, cursor, projectIds);
     }
 
     /**

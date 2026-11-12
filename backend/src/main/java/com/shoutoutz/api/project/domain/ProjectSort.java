@@ -13,5 +13,10 @@ public enum ProjectSort {
     /**
      * 좋아요 수 내림차순. 좋아요 수가 같으면 등록 시각 내림차순이다.
      */
-    POPULAR
+    POPULAR,
+
+    /**
+     * 검색어 해석으로 고른 프로젝트의 관련도순. 고른 순서가 없으면 최신순과 같다.
+     */
+    RELEVANCE
 }

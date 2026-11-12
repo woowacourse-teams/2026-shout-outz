@@ -5,15 +5,18 @@ import static com.shoutoutz.api.project.domain.ProjectErrorCode.PROJECT_DUPLICAT
 import static com.shoutoutz.api.project.domain.ProjectErrorCode.PROJECT_DUPLICATE_SLUG;
 import static com.shoutoutz.api.project.domain.ProjectErrorCode.PROJECT_DUPLICATE_TECH_TAG;
 import static com.shoutoutz.api.project.domain.ProjectErrorCode.PROJECT_INVALID_DESCRIPTION_MEDIA;
+import static com.shoutoutz.api.project.domain.ProjectErrorCode.PROJECT_INVALID_LOGO;
 import static com.shoutoutz.api.project.domain.ProjectErrorCode.PROJECT_INVALID_MEMBER;
 import static com.shoutoutz.api.project.domain.ProjectErrorCode.PROJECT_INVALID_TECH_TAG;
 import static com.shoutoutz.api.project.domain.ProjectErrorCode.PROJECT_INVALID_THUMBNAIL;
+import static com.shoutoutz.api.project.domain.ProjectErrorCode.PROJECT_LOGO_NOT_READY;
 import static com.shoutoutz.api.project.domain.ProjectErrorCode.PROJECT_NOT_FOUND;
 import static com.shoutoutz.api.project.domain.ProjectErrorCode.PROJECT_RESTORE_DEADLINE_EXPIRED;
 import static com.shoutoutz.api.project.domain.ProjectErrorCode.PROJECT_THUMBNAIL_NOT_READY;
 import static com.shoutoutz.api.user.domain.account.UserErrorCode.USER_NOT_FOUND;
 
 import com.shoutoutz.api.cohort.domain.Cohort;
+import com.shoutoutz.api.common.embedding.EmbeddingException;
 import com.shoutoutz.api.common.exception.custom.ConflictException;
 import com.shoutoutz.api.common.exception.custom.DuplicateEntityException;
 import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
@@ -41,19 +44,25 @@ import com.shoutoutz.api.project.domain.ProjectDetail;
 import com.shoutoutz.api.project.domain.ProjectFilterCondition;
 import com.shoutoutz.api.project.domain.ProjectFilterOptions;
 import com.shoutoutz.api.project.domain.ProjectMemberProfile;
+import com.shoutoutz.api.project.domain.KeywordCandidates;
+import com.shoutoutz.api.project.domain.NormalizedKeyword;
 import com.shoutoutz.api.project.domain.ProjectMembers;
 import com.shoutoutz.api.project.domain.ProjectPage;
 import com.shoutoutz.api.project.domain.ProjectRepository;
 import com.shoutoutz.api.project.domain.ProjectSearchCondition;
 import com.shoutoutz.api.project.domain.ProjectSort;
 import com.shoutoutz.api.project.domain.ProjectSummary;
+import com.shoutoutz.api.project.domain.PublicProjectName;
 import com.shoutoutz.api.project.domain.RestorableProject;
 import com.shoutoutz.api.project.domain.RestoredProject;
 import com.shoutoutz.api.project.domain.Slug;
 import com.shoutoutz.api.project.domain.TeamBlogUrls;
 import com.shoutoutz.api.project.domain.TeamName;
 import com.shoutoutz.api.project.domain.Title;
+import com.shoutoutz.api.project.domain.TopicAliases;
 import com.shoutoutz.api.project.domain.exception.InvalidDescriptionMediaException;
+import com.shoutoutz.api.project.domain.exception.InvalidLogoException;
+import com.shoutoutz.api.project.domain.exception.InvalidProjectCursorException;
 import com.shoutoutz.api.project.domain.exception.InvalidProjectMemberException;
 import com.shoutoutz.api.project.domain.exception.InvalidTechTagException;
 import com.shoutoutz.api.project.domain.exception.InvalidThumbnailException;
@@ -68,6 +77,10 @@ import com.shoutoutz.api.project.presentation.dto.response.ProjectDetailResponse
 import com.shoutoutz.api.project.presentation.dto.response.ProjectFilterOptionsResponse;
 import com.shoutoutz.api.project.presentation.dto.response.ProjectFindAllResponse;
 import com.shoutoutz.api.project.presentation.dto.response.ProjectUpdateResponse;
+import com.shoutoutz.api.projectresource.application.ProjectResourceQueryRepository;
+import com.shoutoutz.api.projectresource.domain.ResourceTopic;
+import com.shoutoutz.api.resourcesearch.application.ResourceSearchService;
+import com.shoutoutz.api.resourcesearch.application.dto.SearchHit;
 import com.shoutoutz.api.techtag.domain.TechTagRepository;
 import com.shoutoutz.api.user.domain.account.User;
 import com.shoutoutz.api.user.domain.account.UserRepository;
@@ -79,20 +92,37 @@ import com.shoutoutz.api.user.domain.profile.UserType;
 import java.net.URI;
 import java.time.Clock;
 import java.time.Instant;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
+import java.util.regex.Pattern;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ProjectService {
+
+    /**
+     * 직접 검색에서 읽는 자료 수와 남기는 프로젝트 수. 벡터 검색은 맞는 자료가 없어도 가까운 자료를 돌려주므로,
+     * 관련이 약한 프로젝트가 끝없이 붙지 않게 상한을 둔다. 실데이터에서 자료 100건이면 결과가 늘 30개를 채우고 뒤쪽 연관이 약해
+     * 20건으로 줄였다. 데모 검색 로그를 보고 다시 정하는 초안 값이다.
+     */
+    private static final int DIRECT_SEARCH_RESOURCES = 20;
+    private static final int DIRECT_SEARCH_PROJECTS = ProjectCursor.MAX_RANKED_IDS;
+    private static final int LOGGED_PROJECTS = 10;
+    private static final Pattern WHITESPACES = Pattern.compile("\\s+");
 
     private final ProjectRepository projectRepository;
     private final ProjectSlugResolver projectSlugResolver;
@@ -106,6 +136,9 @@ public class ProjectService {
     private final MediaUrlResolver mediaUrlResolver;
     private final UserAvatarUrlResolver userAvatarUrlResolver;
     private final BlogSourceRepository blogSourceRepository;
+    private final TopicAliases topicAliases;
+    private final ProjectResourceQueryRepository projectResourceQueryRepository;
+    private final ResourceSearchService resourceSearchService;
     private final Clock clock;
 
     @Transactional
@@ -121,12 +154,14 @@ public class ProjectService {
                 new GithubRepositoryUrl(request.githubRepositoryUrl()),
                 request.deploymentUrl() == null ? null : new DeploymentUrl(request.deploymentUrl()),
                 request.serviceStatus(),
-                request.thumbnailImageId()
+                request.thumbnailImageId(),
+                request.logoImageId()
         );
         validateGithubRepositoryNotDuplicated(project.getGithubRepositoryUrl());
         validateSlugNotDuplicated(project.getSlug());
         validateTechTags(request.techTagIds());
         validateThumbnail(request.thumbnailImageId(), registeredBy);
+        validateLogo(request.logoImageId(), registeredBy);
         validateDescriptionMediaUrls(request.descriptionMd());
         validateDescriptionMedia(request.descriptionMd(), registeredBy);
         List<Long> memberIds = request.memberHandles().stream()
@@ -158,6 +193,9 @@ public class ProjectService {
         Long thumbnailMediaId = request.isThumbnailImageIdProvided()
                 ? request.thumbnailImageId()
                 : project.getThumbnailMediaId();
+        Long logoMediaId = request.isLogoImageIdProvided()
+                ? request.logoImageId()
+                : project.getLogoMediaId();
         String descriptionMd = normalizeDescriptionReferences(project, request.descriptionMd());
         validateDescriptionMediaUrls(descriptionMd);
         Project updated = project.update(
@@ -169,12 +207,16 @@ public class ProjectService {
                 new GithubRepositoryUrl(request.githubRepositoryUrl()),
                 request.deploymentUrl() == null ? null : new DeploymentUrl(request.deploymentUrl()),
                 request.serviceStatus(),
-                thumbnailMediaId
+                thumbnailMediaId,
+                logoMediaId
         );
         validateGithubRepositoryNotDuplicated(updated.getGithubRepositoryUrl(), projectId);
         validateTechTags(request.techTagIds(), projectRepository.findTechTagIds(projectId));
         if (request.isThumbnailImageIdProvided()) {
             validateThumbnail(request.thumbnailImageId(), loginUserId);
+        }
+        if (!Objects.equals(logoMediaId, project.getLogoMediaId())) {
+            validateLogo(logoMediaId, loginUserId);
         }
         validateDescriptionMedia(descriptionMd, loginUserId);
         List<Long> memberIds = resolveMemberIds(request.memberHandles(), projectRepository.findMemberIds(projectId));
@@ -210,27 +252,235 @@ public class ProjectService {
 
     @Transactional(readOnly = true)
     public ProjectFindAllResponse findAll(ProjectFindAllRequest request, Long viewerId) {
+        long startedAt = System.nanoTime();
         ProjectSort sort = request.resolvedSort();
-        ProjectSearchCondition condition = new ProjectSearchCondition(
+        ResolvedKeyword resolved = resolveKeyword(new ProjectSearchCondition(
                 request.keyword(),
                 request.resolvedCohorts(),
                 request.resolvedTechTagIds(),
+                request.topicId(),
                 sort,
                 request.resolvedSize(),
                 request.resolvedCursor()
-        );
+        ));
+        ProjectSearchCondition condition = resolved.condition();
+        validateRankedCursor(condition);
         ProjectPage page = viewerId == null
                 ? projectRepository.findAll(condition)
                 : projectRepository.findAll(condition, viewerId);
-        ProjectCursor nextCursor = page.nextCursor(sort);
+        ProjectCursor nextCursor = nextCursor(condition, page, request.keyword());
         Map<Long, URI> mediaUrls = resolveProjectMediaUrls(page.items());
         Map<Long, String> userAvatarUrls = resolveProjectSummaryUserAvatarUrls(page.items());
+        String searchId = null;
+        if (request.keyword() != null) {
+            searchId = UUID.randomUUID().toString();
+            logSearch(searchId, request, resolved, page, System.nanoTime() - startedAt);
+        }
         return ProjectFindAllResponse.of(
                 page,
                 nextCursor == null ? null : ProjectCursorCodec.encode(nextCursor),
                 mediaUrls,
-                userAvatarUrls
+                userAvatarUrls,
+                resolved.matchedTopic(),
+                searchId,
+                resolved.matchedResources()
         );
+    }
+
+    /**
+     * 순위 목록으로 조회하면 다음 페이지도 같은 목록을 이어 읽도록 순위 목록과 마지막 카드의 위치를 커서에 담는다.
+     */
+    private ProjectCursor nextCursor(ProjectSearchCondition condition, ProjectPage page, String keyword) {
+        if (!page.hasNext() || page.items().isEmpty()) {
+            return null;
+        }
+        if (isRanked(condition)) {
+            long lastId = page.items().getLast().id();
+            return ProjectCursor.ranked(
+                    condition.projectIds(),
+                    condition.projectIds().indexOf(lastId) + 1,
+                    NormalizedKeyword.of(keyword).fingerprint()
+            );
+        }
+        return page.nextCursor(condition.sort());
+    }
+
+    /**
+     * 순위 목록으로 조회하는데 순위 목록이 없는 커서가 오면 이어 읽을 위치를 알 수 없다.
+     * 검색어를 바꾸면서 다른 결과의 커서를 함께 보낸 경우라 처음부터 다시 요청해야 한다.
+     */
+    private static void validateRankedCursor(ProjectSearchCondition condition) {
+        ProjectCursor cursor = condition.cursor();
+        if (isRanked(condition) && cursor != null && !cursor.isRanked()) {
+            throw new InvalidProjectCursorException();
+        }
+    }
+
+    /**
+     * 검색어를 바꾸면서 이전 검색의 커서를 함께 보내면 다른 검색의 결과를 이어 읽게 되므로 거부한다.
+     */
+    private static void validateSameKeyword(ProjectCursor cursor, String keyword) {
+        if (keyword == null || !NormalizedKeyword.of(keyword).fingerprint().equals(cursor.keywordKey())) {
+            throw new InvalidProjectCursorException();
+        }
+    }
+
+    private static boolean isRanked(ProjectSearchCondition condition) {
+        return condition.sort() == ProjectSort.RELEVANCE
+                && condition.projectIds() != null
+                && !condition.projectIds().isEmpty();
+    }
+
+    /**
+     * 검색 품질을 나중에 실제 사용 기록으로 평가하기 위해, 검색어로 조회할 때마다 한 줄을 남긴다.
+     * 화면의 결과 클릭 기록과는 searchId로 잇는다. 줄바꿈과 따옴표를 정리해 검색어가 로그 형식을 깨지 못하게 한다.
+     */
+    private void logSearch(
+            String searchId,
+            ProjectFindAllRequest request,
+            ResolvedKeyword resolved,
+            ProjectPage page,
+            long elapsedNanos
+    ) {
+        String keyword = WHITESPACES.matcher(request.keyword().strip()).replaceAll(" ")
+                .toLowerCase(Locale.ROOT)
+                .replace("\"", "'");
+        List<Long> topProjectIds = page.items().stream()
+                .map(ProjectSummary::id)
+                .limit(LOGGED_PROJECTS)
+                .toList();
+        log.info("project_search searchId={} keyword=\"{}\" match={} topicId={} sort={} firstPage={} "
+                        + "cohorts={} techTagIds={} totalCount={} topProjectIds={} "
+                        + "resourceSearchMs={} resourceSearchFailed={} totalMs={}",
+                searchId,
+                keyword,
+                resolved.match(),
+                resolved.condition().topicId(),
+                request.resolvedSort(),
+                request.cursor() == null,
+                request.resolvedCohorts(),
+                request.resolvedTechTagIds(),
+                page.totalCount(),
+                topProjectIds,
+                resolved.resourceSearchMillis(),
+                resolved.resourceSearchFailed(),
+                elapsedNanos / 1_000_000);
+    }
+
+    /**
+     * 프로젝트 탭 검색어를 해석한다. 기술 주제를 함께 고르면 주제 안에서 부분 일치로 찾으므로 해석하지 않는다.
+     * 검색어가 공개 프로젝트 이름과 같으면 그 프로젝트로 가려는 입력으로 보고, 검색어 대신 그 프로젝트들만 조회한다.
+     * 이름이 아니고 기술 주제 별칭과 맞는 주제가 하나면, 사이드바에서 그 주제를 고른 것과 같게 조회하고 해석한 주제를 알린다.
+     * 둘 다 아니면 글자 일치와 자료 검색으로 직접 찾는다.
+     * 순위 목록 커서로 다음 페이지를 요청하면 다시 해석하지 않고 커서의 순위 목록을 이어 읽는다.
+     */
+    private ResolvedKeyword resolveKeyword(ProjectSearchCondition condition) {
+        ProjectCursor cursor = condition.cursor();
+        if (cursor != null && cursor.isRanked()) {
+            validateSameKeyword(cursor, condition.keyword());
+            return ResolvedKeyword.of(condition.onlyProjects(cursor.rankedIds()), KeywordMatch.CONTINUED);
+        }
+        if (condition.keyword() == null) {
+            return ResolvedKeyword.of(condition, KeywordMatch.NONE);
+        }
+        if (condition.topicId() != null) {
+            return ResolvedKeyword.of(condition, KeywordMatch.IN_TOPIC);
+        }
+        NormalizedKeyword keyword = NormalizedKeyword.of(condition.keyword());
+        if (keyword.isEmpty()) {
+            return ResolvedKeyword.of(condition, KeywordMatch.PLAIN);
+        }
+        List<Long> nameMatchedIds = projectRepository.findPublicProjectNames().stream()
+                .filter(project -> project.isNamed(keyword))
+                .map(PublicProjectName::id)
+                .toList();
+        if (!nameMatchedIds.isEmpty()) {
+            return ResolvedKeyword.of(condition.onlyProjects(nameMatchedIds), KeywordMatch.PROJECT_NAME);
+        }
+        Optional<ResourceTopic> matchedTopic = topicAliases.match(keyword)
+                .flatMap(projectResourceQueryRepository::findTopic);
+        if (matchedTopic.isPresent()) {
+            return new ResolvedKeyword(
+                    condition.inTopic(matchedTopic.get().topicId()),
+                    KeywordMatch.TOPIC,
+                    matchedTopic.get(),
+                    Map.of(),
+                    null,
+                    false
+            );
+        }
+        long resourceSearchStartedAt = System.nanoTime();
+        ResourceSearchResult resourceSearch = searchResourceProjectIds(condition.keyword());
+        List<Long> resourceProjectIds = List.copyOf(resourceSearch.firstHitByProject().keySet());
+        KeywordCandidates candidates = new KeywordCandidates(
+                projectRepository.findKeywordCandidates(condition.filter(), resourceProjectIds),
+                resourceProjectIds
+        );
+        return new ResolvedKeyword(
+                condition.onlyProjects(candidates.rankedIds(DIRECT_SEARCH_PROJECTS)),
+                KeywordMatch.SEARCH,
+                null,
+                resourceSearch.firstHitByProject(),
+                (System.nanoTime() - resourceSearchStartedAt) / 1_000_000,
+                resourceSearch.failed()
+        );
+    }
+
+    /**
+     * 프로젝트마다 자료 검색에 처음 나온 자료를, 프로젝트가 처음 나온 순서대로 모은다. 팀이 없는 자료(테코톡 등)는 건너뛴다.
+     * 처음 나온 자료가 그 프로젝트의 근거 자료가 된다.
+     * 외부 임베딩 호출이 실패하면 자료 검색 없이 글자 일치 결과만 보여 주고, 실패는 로그로 남긴다.
+     */
+    private ResourceSearchResult searchResourceProjectIds(String keyword) {
+        try {
+            Map<Long, SearchHit> firstHitByProject = new LinkedHashMap<>();
+            resourceSearchService.search(keyword, null, DIRECT_SEARCH_RESOURCES).stream()
+                    .filter(hit -> hit.projectId() != null)
+                    .forEach(hit -> firstHitByProject.putIfAbsent(hit.projectId(), hit));
+            return new ResourceSearchResult(Collections.unmodifiableMap(firstHitByProject), false);
+        } catch (EmbeddingException exception) {
+            log.warn("Project direct search without resource search: errorCode={}, httpStatus={}",
+                    exception.errorCode(), exception.httpStatus());
+            return new ResourceSearchResult(Map.of(), true);
+        }
+    }
+
+    /**
+     * 검색어를 어떤 경로로 해석했는지. 검색 로그에서 경로별 클릭률과 재검색률을 나눠 보는 기준이다.
+     */
+    private enum KeywordMatch {
+        NONE,
+        CONTINUED,
+        IN_TOPIC,
+        PLAIN,
+        PROJECT_NAME,
+        TOPIC,
+        SEARCH
+    }
+
+    /**
+     * @param matchedTopic         검색어를 기술 주제로 해석했을 때의 주제. 아니면 null
+     * @param matchedResources     직접 검색에서 프로젝트 id별 근거 자료. 직접 검색이 아니면 비어 있다
+     * @param resourceSearchMillis 직접 검색의 자료 검색과 후보 조회 시간. 직접 검색이 아니면 null
+     */
+    private record ResolvedKeyword(
+            ProjectSearchCondition condition,
+            KeywordMatch match,
+            ResourceTopic matchedTopic,
+            Map<Long, SearchHit> matchedResources,
+            Long resourceSearchMillis,
+            boolean resourceSearchFailed
+    ) {
+
+        static ResolvedKeyword of(ProjectSearchCondition condition, KeywordMatch match) {
+            return new ResolvedKeyword(condition, match, null, Map.of(), null, false);
+        }
+    }
+
+    /**
+     * @param firstHitByProject 프로젝트가 자료 검색에 처음 나온 순서를 지키는 불변 맵
+     */
+    private record ResourceSearchResult(Map<Long, SearchHit> firstHitByProject, boolean failed) {
     }
 
     /**
@@ -278,7 +528,8 @@ public class ProjectService {
 
     /**
      * 필터 모달에 보여줄 기수 및 기술 스택 목록과, 각 항목을 골랐을 때 나오는 프로젝트 수를 조회한다.
-     * 목록 조회와 숫자가 맞도록, 검색어와 필터는 목록 조회와 같은 방식으로 정리해 넘긴다.
+     * 검색어는 프로젝트 이름, 한 줄 소개, 크루 이름의 부분 일치로만 센다. 목록 조회의 검색어 해석(이름과 저장소 이름 일치,
+     * 기술 주제, 자료 검색)은 반영하지 않으므로, 검색어가 있으면 목록 전체 개수와 다를 수 있다.
      */
     @Transactional(readOnly = true)
     public ProjectFilterOptionsResponse findFilterOptions(ProjectFilterOptionsRequest request) {
@@ -392,6 +643,9 @@ public class ProjectService {
         );
         if (detail.thumbnailMediaId() != null) {
             mediaIds.add(detail.thumbnailMediaId());
+        }
+        if (detail.logoMediaId() != null) {
+            mediaIds.add(detail.logoMediaId());
         }
         detail.members().stream()
                 .map(com.shoutoutz.api.project.domain.ProjectMemberProfile::avatarImageId)
@@ -543,6 +797,21 @@ public class ProjectService {
                 .orElseThrow(() -> new InvalidThumbnailException(PROJECT_INVALID_THUMBNAIL));
         if (thumbnail.getStatus() != MediaStatus.READY) {
             throw new InvalidThumbnailException(PROJECT_THUMBNAIL_NOT_READY);
+        }
+    }
+
+    /**
+     * 로고는 선택 입력이다. 입력했다면 본인이 올린 프로젝트 로고 용도의 처리 완료 이미지여야 한다.
+     * 수정할 때는 로고가 바뀐 경우에만 검사한다. 관리자가 넣어 둔 로고를 수정 화면이 그대로 다시 보내도 막히지 않게 하기 위해서다.
+     */
+    private void validateLogo(Long logoMediaId, Long uploadedBy) {
+        if (logoMediaId == null) {
+            return;
+        }
+        MediaMetadata logo = findUploadedMedia(logoMediaId, uploadedBy, MediaPurpose.PROJECT_LOGO)
+                .orElseThrow(() -> new InvalidLogoException(PROJECT_INVALID_LOGO));
+        if (logo.getStatus() != MediaStatus.READY) {
+            throw new InvalidLogoException(PROJECT_LOGO_NOT_READY);
         }
     }
 

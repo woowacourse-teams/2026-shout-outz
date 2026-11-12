@@ -6,11 +6,13 @@ import com.shoutoutz.api.common.response.SuccessResponse;
 import com.shoutoutz.api.jobposting.application.JobPostingAdminService;
 import com.shoutoutz.api.jobposting.presentation.dto.request.AdminJobPostingExtractRequest;
 import com.shoutoutz.api.jobposting.presentation.dto.request.AdminJobPostingFindAllRequest;
+import com.shoutoutz.api.jobposting.presentation.dto.request.AdminJobPostingReanalysisRequest;
 import com.shoutoutz.api.jobposting.presentation.dto.request.AdminJobPostingSaveRequest;
 import com.shoutoutz.api.jobposting.presentation.dto.request.AdminJobPostingVisibilityUpdateRequest;
 import com.shoutoutz.api.jobposting.presentation.dto.response.AdminJobPostingDetailResponse;
 import com.shoutoutz.api.jobposting.presentation.dto.response.AdminJobPostingExtractResponse;
 import com.shoutoutz.api.jobposting.presentation.dto.response.AdminJobPostingFindAllResponse;
+import com.shoutoutz.api.jobposting.presentation.dto.response.AdminJobPostingReanalysisResponse;
 import com.shoutoutz.api.jobposting.presentation.dto.response.AdminJobPostingSaveResponse;
 import com.shoutoutz.api.jobposting.presentation.dto.response.AdminJobPostingUpdateResponse;
 import com.shoutoutz.api.jobposting.presentation.dto.response.AdminJobPostingVisibilityUpdateResponse;
@@ -102,6 +104,17 @@ public class AdminJobPostingHttpApi {
     ) {
         return ResponseEntity.ok(SuccessResponse.success(
                 jobPostingAdminService.updateVisibility(jobPostingId, loginUser.role(), request)
+        ));
+    }
+
+    @PostMapping("/{jobPostingId}/reanalysis")
+    public ResponseEntity<SuccessResponse<AdminJobPostingReanalysisResponse>> reanalyzeJobPosting(
+            @PathVariable long jobPostingId,
+            @LoginUser AuthenticatedUser loginUser,
+            @Valid @RequestBody AdminJobPostingReanalysisRequest request
+    ) {
+        return ResponseEntity.ok(SuccessResponse.success(
+                jobPostingAdminService.reanalyze(jobPostingId, loginUser.role(), request)
         ));
     }
 

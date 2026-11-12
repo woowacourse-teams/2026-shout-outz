@@ -37,14 +37,11 @@ const failWith500 = (path: string) =>
 const silenceConsoleError = () => jest.spyOn(console, 'error').mockImplementation(() => {});
 
 describe('HomePage', () => {
-  it('서비스 레이아웃 안에서 홈 탭을 현재 페이지로 표시한다', async () => {
+  it('서비스 레이아웃 안에서 GNB의 탐색이 탐색 화면으로 이어진다', async () => {
     renderRoute('/');
 
     const header = await screen.findByRole('banner');
-    expect(within(header).getByRole('link', { name: '홈' })).toHaveAttribute(
-      'aria-current',
-      'page',
-    );
+    expect(within(header).getByRole('link', { name: '탐색' })).toHaveAttribute('href', '/explore');
     expect(screen.getByRole('contentinfo')).toBeInTheDocument();
   });
 

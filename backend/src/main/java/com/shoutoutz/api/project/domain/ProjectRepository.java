@@ -79,6 +79,14 @@ public interface ProjectRepository {
 
     ProjectPage findAll(ProjectSearchCondition condition, Long viewerId);
 
+    List<PublicProjectName> findPublicProjectNames();
+
+    /**
+     * 직접 검색 후보를 조회한다. 공개되고 기수, 기술 스택 필터를 통과한 프로젝트 중
+     * 이름, 소개, 크루 이름, 저장소와 배포 주소에 검색어가 들었거나 자료 검색에 걸린 프로젝트다.
+     */
+    List<KeywordCandidate> findKeywordCandidates(ProjectFilterCondition condition, List<Long> resourceProjectIds);
+
     /**
      * 승인되고 삭제되지 않은 프로젝트 중 조건에 맞는 프로젝트 수를 필터 선택지별로 조회한다.
      */

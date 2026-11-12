@@ -5,6 +5,7 @@ import com.shoutoutz.api.common.util.DataResolveUtil;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Objects;
 import lombok.Getter;
 
 /**
@@ -24,6 +25,7 @@ public final class JobPosting {
     private final String title;
     private final String employmentType;
     private final LocalDate deadline;
+    private final Long logoMediaId;
     private final MatchingStatus status;
     private final Instant hiddenAt;
     private final Long registeredBy;
@@ -41,6 +43,7 @@ public final class JobPosting {
             String title,
             String employmentType,
             LocalDate deadline,
+            Long logoMediaId,
             MatchingStatus status,
             Instant hiddenAt,
             Long registeredBy,
@@ -78,6 +81,7 @@ public final class JobPosting {
         this.title = sanitizedTitle;
         this.employmentType = sanitizedEmploymentType;
         this.deadline = deadline;
+        this.logoMediaId = logoMediaId;
         this.status = status;
         this.hiddenAt = hiddenAt;
         this.registeredBy = registeredBy;
@@ -99,6 +103,7 @@ public final class JobPosting {
             String title,
             String employmentType,
             LocalDate deadline,
+            Long logoMediaId,
             long registeredBy,
             List<JobRequirement> requirements,
             Instant now
@@ -113,6 +118,7 @@ public final class JobPosting {
                 title,
                 employmentType,
                 deadline,
+                logoMediaId,
                 MatchingStatus.PENDING,
                 null,
                 registeredBy,
@@ -126,6 +132,7 @@ public final class JobPosting {
      * 기업이 바꾼 공고를 운영자가 다시 붙여넣었을 때 쓴다. 주소가 다르면 다른 공고이므로 받지 않는다.
      * 원문 해시가 같으면 공고 정보만 고치고, 역량과 분석 상태는 그대로 둔다. 요청의 역량은 쓰지 않는다.
      * 해시가 다르면 받은 역량으로 바꾸고 PENDING 으로 되돌려 다시 분석한다.
+     * 회사 로고는 원문과 상관없이 받은 값으로 바꾼다. 받은 값이 null 이면 로고를 지운다.
      * 숨김 시각, 등록자, 등록 시각은 바꾸지 않는다.
      */
     public JobPosting update(
@@ -137,6 +144,7 @@ public final class JobPosting {
             String title,
             String employmentType,
             LocalDate deadline,
+            Long logoMediaId,
             List<JobRequirement> requirements,
             Instant now
     ) {
@@ -155,6 +163,7 @@ public final class JobPosting {
                 title,
                 employmentType,
                 deadline,
+                logoMediaId,
                 sameContent ? status : MatchingStatus.PENDING,
                 hiddenAt,
                 registeredBy,
@@ -171,6 +180,43 @@ public final class JobPosting {
         return contentHash.equals(other.contentHash);
     }
 
+    /**
+     * 실패한 역량만 다시 분석할 수 있는지 판단할 때 쓴다.
+     * 같은 공고의 다른 역량이 아직 분석 중이어도 허용한다. 되돌리는 건 실패한 역량뿐이라 분석 중인 역량은 그대로 이어진다.
+     */
+    public boolean isFailed() {
+        return status == MatchingStatus.FAILED;
+    }
+
+    /**
+     * 모든 역량을 다시 분석할 수 있는지 판단할 때 쓴다.
+     * 분석 중인 역량은 되돌리지 않고 분석이 끝난 뒤 다시 요청하게 한다. 되돌리면 진행 중이던 분석 결과를 버리고 처음부터 다시 하게 된다.
+     */
+    public boolean hasRequirementInProgress() {
+        return requirements.stream()
+                .map(JobRequirement::getStatus)
+                .anyMatch(requirementStatus -> requirementStatus == MatchingStatus.PENDING
+                        || requirementStatus == MatchingStatus.PROCESSING);
+    }
+
+    /**
+     * 사용자에게 보여 줄 공고인지 판단한다.
+     * 분석이 끝났고(READY), 숨기지 않았고, 마감일이 없거나 오늘(한국 날짜)까지인 공고만 보여 준다.
+     */
+    public boolean isVisibleOn(LocalDate today) {
+        return status == MatchingStatus.READY
+                && hiddenAt == null
+                && (deadline == null || !deadline.isBefore(today));
+    }
+
+    /**
+     * 이 공고의 역량인지 판단한다.
+     */
+    public boolean hasRequirement(long requirementId) {
+        return requirements.stream()
+                .anyMatch(requirement -> Objects.equals(requirement.getId(), requirementId));
+    }
+
     public static JobPosting reconstitute(
             long id,
             String sourceUrl,
@@ -181,6 +227,7 @@ public final class JobPosting {
             String title,
             String employmentType,
             LocalDate deadline,
+            Long logoMediaId,
             MatchingStatus status,
             Instant hiddenAt,
             long registeredBy,
@@ -198,6 +245,7 @@ public final class JobPosting {
                 title,
                 employmentType,
                 deadline,
+                logoMediaId,
                 status,
                 hiddenAt,
                 registeredBy,

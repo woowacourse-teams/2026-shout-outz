@@ -134,6 +134,7 @@ class AdminProjectMigrationHttpApiTest {
                 fieldWithPath("githubRepositoryUrl").type(STRING).description("GitHub 저장소 URL").optional(),
                 fieldWithPath("deploymentUrl").type(STRING).description("배포 URL. null 허용").optional(),
                 fieldWithPath("thumbnailImageId").type(NUMBER).description("썸네일 미디어 ID. null 허용").optional(),
+                fieldWithPath("logoImageId").type(NUMBER).description("로고 미디어 ID. null 허용").optional(),
                 fieldWithPath("createdAt").type(STRING).description("생성 시각. ISO 날짜·시각 또는 YYYY-MM-DD").optional(),
                 fieldWithPath("updatedAt").type(STRING).description("수정 시각. ISO 날짜·시각 또는 YYYY-MM-DD").optional(),
                 fieldWithPath("techTagIds").type(ARRAY)

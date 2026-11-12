@@ -74,6 +74,9 @@ public record ProjectSummary(
         if (sort == ProjectSort.POPULAR) {
             return ProjectCursor.popular(likeCount, createdAt, id);
         }
+        if (sort == ProjectSort.RELEVANCE) {
+            return ProjectCursor.relevance(createdAt, id);
+        }
         return ProjectCursor.latest(createdAt, id);
     }
 

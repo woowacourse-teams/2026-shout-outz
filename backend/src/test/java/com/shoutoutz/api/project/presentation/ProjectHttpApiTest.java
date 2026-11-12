@@ -36,7 +36,6 @@ import com.shoutoutz.api.common.exception.custom.ConflictException;
 import com.shoutoutz.api.common.exception.custom.DuplicateEntityException;
 import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
 import com.shoutoutz.api.common.restdocs.RestDocsFields;
-import com.shoutoutz.api.common.response.SliceMetaResponse;
 import com.shoutoutz.api.project.application.ProjectService;
 import com.shoutoutz.api.project.domain.ApprovalStatus;
 import com.shoutoutz.api.project.domain.DeletedProject;
@@ -101,14 +100,15 @@ class ProjectHttpApiTest {
             + "본문 이미지는 descriptionMd에 ![설명](media://{mediaId}) 형식으로 넣는다. "
             + "githubRepositoryUrl은 woowacourse-teams 조직의 리포지토리만 받으며, "
             + "리포지토리 이름 뒤의 경로, 쿼리, 앵커는 버리고 https://github.com/woowacourse-teams/{repo} 형태로 저장한다. "
-            + "요청값, 기술 스택, 썸네일, 본문 이미지, 팀원이 유효하지 않거나 리포지토리 이름으로 slug를 만들 수 없으면 400, "
+            + "logoImageId는 선택 입력이며, 자료 카드 팀 이름 앞에 보여 줄 팀 로고다. "
+            + "요청값, 기술 스택, 썸네일, 로고, 본문 이미지, 팀원이 유효하지 않거나 리포지토리 이름으로 slug를 만들 수 없으면 400, "
             + "로그인하지 않았으면 401, 크루나 코치가 아니면 403, "
             + "이미 등록된 리포지토리이거나 앞 연도나 특수문자만 달라 slug가 겹치면 409를 반환한다.";
     private static final String UPDATE_SUMMARY = "프로젝트 수정";
     private static final String UPDATE_DESCRIPTION = "작성자가 프로젝트 정보를 수정한다. 대부분의 필드는 전체 교체 방식이며, "
             + "비우는 값은 null로 보낸다. 문자열 값은 앞뒤 공백을 자르고, 공백만 있으면 보내지 않은 것으로 본다 (descriptionMd 제외). "
             + "thumbnailImageId는 생략하면 기존 이미지를 유지하고, "
-            + "새 ID를 보내면 교체하며, null을 명시하면 제거한다. "
+            + "새 ID를 보내면 교체하며, null을 명시하면 제거한다. logoImageId도 같은 규칙이다. "
             + "descriptionMd는 저장 시 media://{mediaId} 형식으로 정규화하며, 상세 조회 응답의 CDN URL은 기존 프로젝트 미디어와 "
             + "매칭되는 경우에만 본문 이미지 참조로 복원한다. 매칭되지 않는 외부 이미지 URL은 허용하지 않는다. "
             + "techTagIds와 memberHandles도 전체 목록을 순서대로 보낸다. "
@@ -117,11 +117,13 @@ class ProjectHttpApiTest {
             + "그 밖의 상태는 그대로 유지된다. slug는 등록 시점 값으로 고정이라 바뀌지 않는다. "
             + "githubRepositoryUrl은 woowacourse-teams 조직의 리포지토리만 받으며, "
             + "리포지토리 이름 뒤의 경로, 쿼리, 앵커는 버리고 https://github.com/woowacourse-teams/{repo} 형태로 저장한다. "
-            + "요청값과 기술 스택, 썸네일, 본문 이미지, 팀원이 유효하지 않거나, "
+            + "요청값과 기술 스택, 썸네일, 로고, 본문 이미지, 팀원이 유효하지 않거나, "
             + "deploymentUrl 없이 serviceStatus를 OPERATING으로 보내면 400, 로그인하지 않았으면 401, "
             + "없거나 형식이 틀린 slug이거나, 삭제됐거나 다른 사람의 프로젝트면 404, 이미 등록된 리포지토리로 바꾸면 409를 반환한다.";
     private static final String FIND_ALL_SUMMARY = "프로젝트 목록 조회";
-    private static final String FIND_ALL_DESCRIPTION = "승인된 프로젝트 목록을 검색어, 기수, 기술 스택으로 걸러 정렬 기준대로 조회한다. "
+    private static final String FIND_ALL_DESCRIPTION = "승인된 프로젝트 목록을 검색어, 기수, 기술 스택, 기술 주제로 걸러 정렬 기준대로 조회한다. "
+            + "기술 주제(topicId)를 주면 그 주제의 팀 자료가 있는 프로젝트만 남기며, 기술 주제 목록 조회와 같은 규칙이다. "
+            + "없는 주제 id면 빈 목록이다. "
             + "로그인하지 않아도 조회할 수 있다. 커서 기반으로, 첫 요청은 cursor를 생략하고 "
             + "다음 요청부터 응답의 meta.nextCursor를 그대로 전달한다. 정렬을 바꾸면 cursor 없이 처음부터 다시 요청한다. "
             + "POPULAR에서 좋아요 수가 같으면 최근 등록된 프로젝트가 앞에 온다. "
@@ -192,6 +194,10 @@ class ProjectHttpApiTest {
                                         fieldWithPath("cohort").type(NUMBER).description("우아한테크코스 기수 (1~8)"),
                                         fieldWithPath("thumbnailImageId").type(NUMBER)
                                                 .description("본인이 업로드한 PROJECT_THUMBNAIL 용도의 처리 완료 이미지 ID")
+                                                .optional(),
+                                        fieldWithPath("logoImageId").type(NUMBER)
+                                                .description("본인이 업로드한 PROJECT_LOGO 용도의 처리 완료 이미지 ID. "
+                                                        + "자료 카드 팀 이름 앞에 작게 보여 주는 팀 로고(파비콘)다")
                                                 .optional(),
                                         fieldWithPath("githubRepositoryUrl").type(STRING)
                                                 .description("https://github.com/woowacourse-teams/{repo} 형식 (2,048자 이하). "
@@ -468,13 +474,15 @@ class ProjectHttpApiTest {
                                 new ProjectMemberProfileResponse(null, null, "Archived Crew", null, null, null,
                                         "https://avatars.githubusercontent.com/u/1", "https://github.com/archived-crew")
                         ))),
-                new SliceMetaResponse("UE9QVUxBUnwxODR8MjAyNi0wOC0wOVQwMjozMDowMFp8MTAw", true, 48L)
+                new ProjectFindAllResponse.Meta("UE9QVUxBUnwxODR8MjAyNi0wOC0wOVQwMjozMDowMFp8MTAw", true, 48L, null,
+                        "9f1c2a7e-5b3d-4c8a-9e21-7d4b6a0c1f35")
         ));
 
         mockMvc.perform(get("/api/v1/projects")
                         .queryParam("keyword", "루프")
                         .queryParam("cohorts", "6,7")
                         .queryParam("techTagIds", "1,2")
+                        .queryParam("topicId", "concurrency")
                         .queryParam("sort", "POPULAR")
                         .queryParam("size", "8"))
                 .andExpect(status().isOk())
@@ -497,8 +505,16 @@ class ProjectHttpApiTest {
                                 .description(FIND_ALL_DESCRIPTION)
                                 .queryParameters(
                                         parameterWithName("keyword")
-                                                .description("프로젝트 이름, 한 줄 소개, 참여 크루 이름 검색어. "
-                                                        + "대소문자를 무시한 부분 일치이며 100자 이하")
+                                                .description("검색어. 100자 이하. topicId 없이 보내면 먼저 공개 프로젝트 이름과 비교해, "
+                                                        + "대소문자, 공백, 구두점을 빼고 이름이나 저장소 이름(기수 연도 접두사를 뗀 이름 포함, "
+                                                        + "예: 2025-hearit, hearit)과 같은 프로젝트가 있으면 그 프로젝트만 조회한다. "
+                                                        + "같은 이름이 없으면 기술 주제 별칭과 비교해, 가장 잘 맞는 주제가 하나면 "
+                                                        + "그 주제(topicId)로 조회하고 meta.matchedTopic에 담는다. "
+                                                        + "둘 다 아니면 직접 검색한다. 이름, 한 줄 소개, 참여 크루 이름, 저장소와 배포 주소에 "
+                                                        + "검색어가 든 프로젝트와 기술 자료 검색에 걸린 자료의 프로젝트를 모아, 이름이나 저장소 이름에 든 프로젝트, "
+                                                        + "자료 검색 순서, 나머지 순으로 최대 30개를 고른다. "
+                                                        + "topicId와 함께 보내면 해석하지 않고 그 주제 안에서 프로젝트 이름, 한 줄 소개, "
+                                                        + "참여 크루 이름의 대소문자를 무시한 부분 일치로 찾는다")
                                                 .optional(),
                                         parameterWithName("cohorts")
                                                 .description("기수 필터. 쉼표로 구분 (ex. 6,7). 선택한 기수 중 하나에 해당하면 조회")
@@ -506,8 +522,15 @@ class ProjectHttpApiTest {
                                         parameterWithName("techTagIds")
                                                 .description("기술 스택 필터. 쉼표로 구분 (ex. 1,2,3). 선택한 기술 스택을 모두 사용한 프로젝트만 조회")
                                                 .optional(),
+                                        parameterWithName("topicId")
+                                                .description("기술 주제 id (ex. concurrency). 기술 주제 목록 조회의 topicId. "
+                                                        + "그 주제의 팀 자료가 있는 프로젝트만 조회하며, 없는 id면 빈 목록. 40자 이하")
+                                                .optional(),
                                         parameterWithName("sort")
-                                                .description("정렬 기준 (LATEST, POPULAR). 기본값 LATEST")
+                                                .description("정렬 기준 (LATEST, POPULAR, RELEVANCE). 기본값 LATEST. "
+                                                        + "RELEVANCE는 직접 검색에서 고른 순서대로 주고, 다음 페이지도 첫 페이지에서 정한 순서를 이어 간다. "
+                                                        + "그 밖에는 LATEST와 같다. "
+                                                        + "검색어가 있으면 RELEVANCE를 보내야 직접 검색의 관련도가 반영된다")
                                                 .optional(),
                                         parameterWithName("size")
                                                 .description("한 번에 가져올 프로젝트 수. 기본값 8, 1~50")
@@ -571,32 +594,101 @@ class ProjectHttpApiTest {
                                         fieldWithPath("data[].members[].githubProfileUrl").type(STRING)
                                                 .description("GitHub 프로필 URL. 가입하지 않은 이관 팀원만 값이 있다.")
                                                 .optional(),
+                                        fieldWithPath("data[].matchedResource").type(OBJECT)
+                                                .description("직접 검색에서 이 프로젝트가 걸린 근거 자료 중 자료 검색 순위가 가장 높은 자료. "
+                                                        + "카드에 왜 이 프로젝트가 나왔는지 보여 주는 데 쓴다. "
+                                                        + "직접 검색이 아니거나, 이름, 소개 같은 글자 일치로만 걸린 프로젝트면 null")
+                                                .optional(),
+                                        fieldWithPath("data[].matchedResource.resourceId").type(NUMBER)
+                                                .description("자료 id. 자료 상세 조회에 쓴다")
+                                                .optional(),
+                                        fieldWithPath("data[].matchedResource.source").type(STRING)
+                                                .description("자료 원천. 기술 자료 검색의 source와 같은 값 "
+                                                        + "(blog-post, github-pr, github-teamdoc, github-wiki, github-discussion)")
+                                                .optional(),
+                                        fieldWithPath("data[].matchedResource.title").type(STRING)
+                                                .description("자료 제목")
+                                                .optional(),
                                         fieldWithPath("meta").type(OBJECT).description("페이지네이션 정보"),
                                         fieldWithPath("meta.nextCursor").type(STRING)
                                                 .description("다음 페이지 조회에 쓸 커서. 다음 페이지가 없으면 null")
                                                 .optional(),
                                         fieldWithPath("meta.hasNext").type(BOOLEAN).description("다음 페이지 존재 여부"),
                                         fieldWithPath("meta.totalCount").type(NUMBER)
-                                                .description("커서와 size를 제외한 검색어와 필터 조건을 만족하는 전체 프로젝트 수")
+                                                .description("커서와 size를 제외한 검색어와 필터 조건을 만족하는 전체 프로젝트 수"),
+                                        fieldWithPath("meta.matchedTopic").type(OBJECT)
+                                                .description("topicId 없이 보낸 검색어가 기술 주제 별칭과 맞아 그 주제로 조회했을 때의 주제. "
+                                                        + "이름이 같은 프로젝트가 있거나, 맞는 주제가 없거나 여럿이거나, topicId와 함께 보내면 null")
+                                                .optional(),
+                                        fieldWithPath("meta.matchedTopic.topicId").type(STRING)
+                                                .description("기술 주제 id. 기술 주제 목록 조회의 topicId와 같다")
+                                                .optional(),
+                                        fieldWithPath("meta.matchedTopic.name").type(STRING)
+                                                .description("기술 주제 이름")
+                                                .optional(),
+                                        fieldWithPath("meta.matchedTopic.side").type(STRING)
+                                                .description("기술 주제 직군 (backend, frontend, mobile, common)")
+                                                .optional(),
+                                        fieldWithPath("meta.searchId").type(STRING)
+                                                .description("검색어로 조회할 때마다 새로 만드는 검색 id. 서버 검색 로그와 화면의 결과 클릭 기록을 "
+                                                        + "잇는 데 쓴다. 다음 페이지 요청에도 새 id가 나오므로, 클릭 기록에는 첫 페이지의 id를 쓴다. "
+                                                        + "검색어가 없으면 null")
+                                                .optional()
                                 )
                                 .build())
                 ));
 
-        verify(projectService).findAll(new ProjectFindAllRequest("루프", List.of(6, 7), List.of(1L, 2L), "POPULAR", 8, null));
+        verify(projectService).findAll(
+                new ProjectFindAllRequest("루프", List.of(6, 7), List.of(1L, 2L), "concurrency", "POPULAR", 8, null));
     }
 
     @Test
     @DisplayName("파라미터를 보내지 않으면 모두 입력하지 않은 값으로 조회한다.")
     void findsProjectsWithoutParameters() throws Exception {
         given(projectService.findAll(any(ProjectFindAllRequest.class))).willReturn(
-                new ProjectFindAllResponse(List.of(), new SliceMetaResponse(null, false, 0L)));
+                new ProjectFindAllResponse(List.of(), new ProjectFindAllResponse.Meta(null, false, 0L, null, null)));
 
         mockMvc.perform(get("/api/v1/projects"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data").isEmpty())
                 .andExpect(jsonPath("$.meta.totalCount").value(0));
 
-        verify(projectService).findAll(new ProjectFindAllRequest(null, null, null, null, null, null));
+        verify(projectService).findAll(new ProjectFindAllRequest(null, null, null, null, null, null, null));
+    }
+
+    @Test
+    @DisplayName("직접 검색으로 걸린 프로젝트에는 근거 자료의 id, 원천, 제목을 담는다.")
+    void returnsMatchedResource() throws Exception {
+        given(projectService.findAll(any(ProjectFindAllRequest.class))).willReturn(new ProjectFindAllResponse(
+                List.of(new ProjectFindAllResponse.Item(
+                        "rilog", "Rilog.", "개발자를 위한 블로그 플랫폼", 8, null, null, null, 4L, 0L, 0L, false, false,
+                        List.of(), List.of(),
+                        new ProjectFindAllResponse.MatchedResource(3412L, "github-pr", "도메인 이벤트로 알림 발송 분리"))),
+                new ProjectFindAllResponse.Meta(null, false, 1L, null, "9f1c2a7e-5b3d-4c8a-9e21-7d4b6a0c1f35")
+        ));
+
+        mockMvc.perform(get("/api/v1/projects").queryParam("keyword", "eda").queryParam("sort", "RELEVANCE"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].matchedResource.resourceId").value(3412L))
+                .andExpect(jsonPath("$.data[0].matchedResource.source").value("github-pr"))
+                .andExpect(jsonPath("$.data[0].matchedResource.title").value("도메인 이벤트로 알림 발송 분리"));
+    }
+
+    @Test
+    @DisplayName("검색어를 기술 주제로 해석했으면 meta.matchedTopic에 주제 id, 이름, 직군을 담는다.")
+    void returnsMatchedTopic() throws Exception {
+        given(projectService.findAll(any(ProjectFindAllRequest.class))).willReturn(new ProjectFindAllResponse(
+                List.of(),
+                new ProjectFindAllResponse.Meta(null, false, 0L,
+                        new ProjectFindAllResponse.MatchedTopic("concurrency", "동시성 제어/락", "backend"),
+                        "9f1c2a7e-5b3d-4c8a-9e21-7d4b6a0c1f35")
+        ));
+
+        mockMvc.perform(get("/api/v1/projects").queryParam("keyword", "동시성"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.meta.matchedTopic.topicId").value("concurrency"))
+                .andExpect(jsonPath("$.meta.matchedTopic.name").value("동시성 제어/락"))
+                .andExpect(jsonPath("$.meta.matchedTopic.side").value("backend"));
     }
 
     @Test
@@ -647,7 +739,9 @@ class ProjectHttpApiTest {
                                 .description(FILTER_OPTIONS_DESCRIPTION)
                                 .queryParameters(
                                         parameterWithName("keyword")
-                                                .description("목록 조회에 적용 중인 검색어. 목록 조회의 keyword와 같은 조건으로 검색하며 100자 이하")
+                                                .description("목록 조회에 적용 중인 검색어. 100자 이하. 프로젝트 이름, 한 줄 소개, 참여 크루 이름의 "
+                                                        + "부분 일치로만 센다. 목록 조회의 검색어 해석(이름과 저장소 이름 일치, 기술 주제, 자료 검색)은 "
+                                                        + "반영하지 않는다")
                                                 .optional(),
                                         parameterWithName("cohorts")
                                                 .description("모달에서 고른 기수. 쉼표로 구분 (ex. 6,7)")
@@ -674,8 +768,9 @@ class ProjectHttpApiTest {
                                                 .description("현재 조건에 이 기술 스택을 추가로 골랐을 때의 프로젝트 수. "
                                                         + "이미 고른 기술 스택은 matchedProjectCount와 같다."),
                                         fieldWithPath("data.matchedProjectCount").type(NUMBER)
-                                                .description("검색어와 고른 필터를 모두 적용한 프로젝트 수. "
-                                                        + "같은 조건의 목록 조회 meta.totalCount와 같다.")
+                                                .description("검색어(이름, 소개, 크루 이름 부분 일치)와 고른 필터를 모두 적용한 프로젝트 수. "
+                                                        + "검색어가 없으면 같은 조건의 목록 조회 meta.totalCount와 같고, "
+                                                        + "검색어가 있으면 목록 조회의 검색어 해석을 반영하지 않아 다를 수 있다.")
                                 )
                                 .build())
                 ));
@@ -718,6 +813,8 @@ class ProjectHttpApiTest {
                 .andExpect(jsonPath("$.data.slug").value("loop"))
                 .andExpect(jsonPath("$.data.id").doesNotExist())
                 .andExpect(jsonPath("$.data.thumbnailImageId").value(12L))
+                .andExpect(jsonPath("$.data.logoImageId").value(14L))
+                .andExpect(jsonPath("$.data.logoUrl").value("https://cdn.example.com/logo"))
                 .andExpect(jsonPath("$.data.descriptionMedia[0].mediaId").value(21L))
                 .andExpect(jsonPath("$.data.editable").value(false))
                 .andExpect(jsonPath("$.data.rejectReason").value(nullValue()))
@@ -749,6 +846,12 @@ class ProjectHttpApiTest {
                                                 .optional(),
                                         fieldWithPath("data.imageUrl").type(STRING)
                                                 .description("CloudFront에서 제공하는 공개 이미지 URL")
+                                                .optional(),
+                                        fieldWithPath("data.logoImageId").type(NUMBER)
+                                                .description("프로젝트 로고 미디어 ID. 없으면 null")
+                                                .optional(),
+                                        fieldWithPath("data.logoUrl").type(STRING)
+                                                .description("프로젝트 로고 공개 이미지 URL. 로고가 없거나 이미지가 준비되지 않았으면 null")
                                                 .optional(),
                                         fieldWithPath("data.descriptionMd").type(STRING)
                                                 .description("프로젝트 설명 마크다운. 본문 이미지 참조는 공개 URL로 변환되어 있다.")
@@ -1102,6 +1205,8 @@ class ProjectHttpApiTest {
                 6,
                 12L,
                 "https://cdn.example.com/thumbnail",
+                14L,
+                "https://cdn.example.com/logo",
                 "## 문제\n![회고 화면](https://cdn.example.com/description-21)",
                 List.of(new ProjectDetailResponse.DescriptionMedia(
                         21L,
@@ -1199,6 +1304,10 @@ class ProjectHttpApiTest {
                                         fieldWithPath("thumbnailImageId").type(NUMBER)
                                                 .description("본인이 업로드한 PROJECT_THUMBNAIL 용도의 처리 완료 이미지 ID. "
                                                         + "필드를 생략하면 기존 썸네일을 유지하고, null을 보내면 제거한다.")
+                                                .optional(),
+                                        fieldWithPath("logoImageId").type(NUMBER)
+                                                .description("PROJECT_LOGO 용도의 처리 완료 이미지 ID. 필드를 생략하면 기존 로고를 유지하고, "
+                                                        + "null을 보내면 제거한다. 지금 로고 ID와 다를 때만 본인이 올린 이미지인지 검사한다")
                                                 .optional(),
                                         fieldWithPath("githubRepositoryUrl").type(STRING)
                                                 .description("https://github.com/woowacourse-teams/{repo} 형식 (2,048자 이하). "
@@ -1331,6 +1440,7 @@ class ProjectHttpApiTest {
                   "tagline": "스프린트 회고와 액션 아이템을 하나로 엮은 실시간 협업 도구",
                   "cohort": 6,
                   "thumbnailImageId": 12,
+                  "logoImageId": 14,
                   "githubRepositoryUrl": "https://github.com/woowacourse-teams/2026-loop",
                   "deploymentUrl": "https://loop.team",
                   "descriptionMd": "## 문제\\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.",
@@ -1350,6 +1460,7 @@ class ProjectHttpApiTest {
                   "tagline": "스프린트 회고와 액션 아이템을 하나로 엮은 실시간 협업 도구",
                   "cohort": 6,
                   "thumbnailImageId": 12,
+                  "logoImageId": 14,
                   "githubRepositoryUrl": "https://github.com/woowacourse-teams/2026-loop",
                   "deploymentUrl": "https://loop.team",
                   "descriptionMd": "## 문제\\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.\\n\\n![회고 화면](media://21)",

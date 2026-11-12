@@ -35,6 +35,7 @@ import com.shoutoutz.api.common.exception.custom.ForbiddenException;
 import com.shoutoutz.api.common.exception.custom.NotFoundException;
 import com.shoutoutz.api.common.restdocs.RestDocsFields;
 import com.shoutoutz.api.feed.application.FeedService;
+import com.shoutoutz.api.feed.application.GuestFeedListService;
 import com.shoutoutz.api.feed.application.dto.FeedFindAllResult;
 import com.shoutoutz.api.feed.application.dto.FeedItem;
 import com.shoutoutz.api.feed.application.dto.LinkPreview;
@@ -85,6 +86,9 @@ class FeedHttpApiTest {
     @MockitoBean
     private FeedService feedService;
 
+    @MockitoBean
+    private GuestFeedListService guestFeedListService;
+
     @Test
     @DisplayName("질문 목록과 5개 단위 추천 슬롯을 Slice 메타와 함께 조회한다")
     void findAllFeed() throws Exception {
@@ -96,7 +100,7 @@ class FeedHttpApiTest {
                 questionFeedItem(14L)
         );
         QuestionRecommendationItem recommendation = recommendation(101L);
-        given(feedService.findAllFeed(any(FeedFindAllRequest.class)))
+        given(guestFeedListService.findAll(any(FeedFindAllRequest.class)))
                 .willReturn(new FeedFindAllResult(
                         feeds,
                         "next-cursor",
@@ -188,7 +192,7 @@ class FeedHttpApiTest {
                 CREATED_AT,
                 null
         );
-        given(feedService.findAllFeed(any(FeedFindAllRequest.class)))
+        given(guestFeedListService.findAll(any(FeedFindAllRequest.class)))
                 .willReturn(new FeedFindAllResult(List.of(anonymousFeed), null, false, 1L, Map.of()));
 
         mockMvc.perform(get("/api/v1/feeds").queryParam("type", "QUESTION"))
@@ -201,14 +205,27 @@ class FeedHttpApiTest {
     @Test
     @DisplayName("존재하지 않는 카테고리 ID로 조회하면 빈 목록을 반환한다")
     void findAllFeedByMissingCategoryId() throws Exception {
-        given(feedService.findAllFeed(any(FeedFindAllRequest.class)))
+        given(guestFeedListService.findAll(any(FeedFindAllRequest.class)))
                 .willReturn(new FeedFindAllResult(List.of(), null, false, 0L, Map.of()));
 
         mockMvc.perform(get("/api/v1/feeds").queryParam("categoryId", "0"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data").isEmpty());
 
-        verify(feedService).findAllFeed(any(FeedFindAllRequest.class));
+        verify(guestFeedListService).findAll(any(FeedFindAllRequest.class));
+    }
+
+    @Test
+    @DisplayName("로그인한 사용자의 목록 조회는 비로그인 캐시를 거치지 않고 사용자 기준으로 조회한다")
+    void findAllFeedForLoginUserSkipsGuestCache() throws Exception {
+        given(feedService.findAllFeed(any(FeedFindAllRequest.class), eq(USER_ID)))
+                .willReturn(new FeedFindAllResult(List.of(), null, false, 0L, Map.of()));
+
+        mockMvc.perform(get("/api/v1/feeds").with(authenticated()))
+                .andExpect(status().isOk());
+
+        verify(feedService).findAllFeed(any(FeedFindAllRequest.class), eq(USER_ID));
+        verifyNoInteractions(guestFeedListService);
     }
 
     @Test
@@ -582,7 +599,7 @@ class FeedHttpApiTest {
                         ))
                 ));
 
-        verifyNoInteractions(feedService);
+        verifyNoInteractions(feedService, guestFeedListService);
     }
 
     @Test
@@ -592,13 +609,13 @@ class FeedHttpApiTest {
                         .queryParam("keyword", "가".repeat(101)))
                 .andExpect(status().isBadRequest());
 
-        verifyNoInteractions(feedService);
+        verifyNoInteractions(feedService, guestFeedListService);
     }
 
     @Test
     @DisplayName("해석할 수 없는 목록 커서는 400을 반환한다")
     void rejectInvalidCursor() throws Exception {
-        given(feedService.findAllFeed(any(FeedFindAllRequest.class)))
+        given(guestFeedListService.findAll(any(FeedFindAllRequest.class)))
                 .willThrow(new BadRequestException(FeedErrorCode.FEED_CURSOR_INVALID));
 
         mockMvc.perform(get("/api/v1/feeds").queryParam("cursor", "invalid"))

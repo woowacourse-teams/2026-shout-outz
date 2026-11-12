@@ -71,6 +71,7 @@ class ProjectDetailTest {
                 "한 줄 소개",
                 6,
                 null,
+                null,
                 "## 문제",
                 "https://github.com/woowacourse-teams/2026-moamoa",
                 null,

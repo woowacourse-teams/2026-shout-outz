@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as AdminRouteImport } from './routes/admin'
+import { Route as ExploreRouteImport } from './routes/explore'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as CommunityIndexRouteImport } from './routes/community/index'
 import { Route as CommunityFeedIdRouteImport } from './routes/community/$feedId'
@@ -20,8 +21,10 @@ import { Route as CommunityRecommendationsRouteImport } from './routes/community
 import { Route as FeedsIndexRouteImport } from './routes/feeds/index'
 import { Route as FeedsFeedIdRouteImport } from './routes/feeds/$feedId'
 import { Route as FeedsNewRouteImport } from './routes/feeds/new'
+import { Route as JobPostingsJobPostingIdRouteImport } from './routes/job-postings/$jobPostingId'
 import { Route as MagazinesIndexRouteImport } from './routes/magazines/index'
 import { Route as MagazinesMagazineIdRouteImport } from './routes/magazines/$magazineId'
+import { Route as MaterialsMaterialIdRouteImport } from './routes/materials/$materialId'
 import { Route as MypageVerificationRouteImport } from './routes/mypage/verification'
 import { Route as NewsIndexRouteImport } from './routes/news/index'
 import { Route as NewsNewsIdRouteImport } from './routes/news/$newsId'
@@ -32,6 +35,7 @@ import { Route as UsersHandleRouteImport } from './routes/users/$handle'
 import { Route as CommunityFeedIdEditRouteImport } from './routes/community/$feedId_.edit'
 import { Route as FeedsFeedIdEditRouteImport } from './routes/feeds/$feedId_.edit'
 import { Route as ProjectsSlugEditRouteImport } from './routes/projects/$slug_.edit'
+import { Route as ProjectsSlugExperiencesCardIdRouteImport } from './routes/projects/$slug_.experiences.$cardId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -46,6 +50,11 @@ const AboutRoute = AboutRouteImport.update({
 const AdminRoute = AdminRouteImport.update({
   id: '/admin',
   path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ExploreRoute = ExploreRouteImport.update({
+  id: '/explore',
+  path: '/explore',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SignupRoute = SignupRouteImport.update({
@@ -89,6 +98,11 @@ const FeedsNewRoute = FeedsNewRouteImport.update({
   path: '/feeds/new',
   getParentRoute: () => rootRouteImport,
 } as any)
+const JobPostingsJobPostingIdRoute = JobPostingsJobPostingIdRouteImport.update({
+  id: '/job-postings/$jobPostingId',
+  path: '/job-postings/$jobPostingId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MagazinesIndexRoute = MagazinesIndexRouteImport.update({
   id: '/magazines/',
   path: '/magazines/',
@@ -97,6 +111,11 @@ const MagazinesIndexRoute = MagazinesIndexRouteImport.update({
 const MagazinesMagazineIdRoute = MagazinesMagazineIdRouteImport.update({
   id: '/magazines/$magazineId',
   path: '/magazines/$magazineId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MaterialsMaterialIdRoute = MaterialsMaterialIdRouteImport.update({
+  id: '/materials/$materialId',
+  path: '/materials/$materialId',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MypageVerificationRoute = MypageVerificationRouteImport.update({
@@ -149,18 +168,27 @@ const ProjectsSlugEditRoute = ProjectsSlugEditRouteImport.update({
   path: '/projects/$slug/edit',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProjectsSlugExperiencesCardIdRoute =
+  ProjectsSlugExperiencesCardIdRouteImport.update({
+    id: '/projects/$slug_/experiences/$cardId',
+    path: '/projects/$slug/experiences/$cardId',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/admin': typeof AdminRoute
+  '/explore': typeof ExploreRoute
   '/signup': typeof SignupRoute
   '/community/$feedId': typeof CommunityFeedIdRoute
   '/community/new': typeof CommunityNewRoute
   '/community/recommendations': typeof CommunityRecommendationsRoute
   '/feeds/$feedId': typeof FeedsFeedIdRoute
   '/feeds/new': typeof FeedsNewRoute
+  '/job-postings/$jobPostingId': typeof JobPostingsJobPostingIdRoute
   '/magazines/$magazineId': typeof MagazinesMagazineIdRoute
+  '/materials/$materialId': typeof MaterialsMaterialIdRoute
   '/mypage/verification': typeof MypageVerificationRoute
   '/news/$newsId': typeof NewsNewsIdRoute
   '/projects/$slug': typeof ProjectsSlugRoute
@@ -174,18 +202,22 @@ export interface FileRoutesByFullPath {
   '/community/$feedId/edit': typeof CommunityFeedIdEditRoute
   '/feeds/$feedId/edit': typeof FeedsFeedIdEditRoute
   '/projects/$slug/edit': typeof ProjectsSlugEditRoute
+  '/projects/$slug/experiences/$cardId': typeof ProjectsSlugExperiencesCardIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/admin': typeof AdminRoute
+  '/explore': typeof ExploreRoute
   '/signup': typeof SignupRoute
   '/community/$feedId': typeof CommunityFeedIdRoute
   '/community/new': typeof CommunityNewRoute
   '/community/recommendations': typeof CommunityRecommendationsRoute
   '/feeds/$feedId': typeof FeedsFeedIdRoute
   '/feeds/new': typeof FeedsNewRoute
+  '/job-postings/$jobPostingId': typeof JobPostingsJobPostingIdRoute
   '/magazines/$magazineId': typeof MagazinesMagazineIdRoute
+  '/materials/$materialId': typeof MaterialsMaterialIdRoute
   '/mypage/verification': typeof MypageVerificationRoute
   '/news/$newsId': typeof NewsNewsIdRoute
   '/projects/$slug': typeof ProjectsSlugRoute
@@ -199,19 +231,23 @@ export interface FileRoutesByTo {
   '/community/$feedId/edit': typeof CommunityFeedIdEditRoute
   '/feeds/$feedId/edit': typeof FeedsFeedIdEditRoute
   '/projects/$slug/edit': typeof ProjectsSlugEditRoute
+  '/projects/$slug/experiences/$cardId': typeof ProjectsSlugExperiencesCardIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/admin': typeof AdminRoute
+  '/explore': typeof ExploreRoute
   '/signup': typeof SignupRoute
   '/community/$feedId': typeof CommunityFeedIdRoute
   '/community/new': typeof CommunityNewRoute
   '/community/recommendations': typeof CommunityRecommendationsRoute
   '/feeds/$feedId': typeof FeedsFeedIdRoute
   '/feeds/new': typeof FeedsNewRoute
+  '/job-postings/$jobPostingId': typeof JobPostingsJobPostingIdRoute
   '/magazines/$magazineId': typeof MagazinesMagazineIdRoute
+  '/materials/$materialId': typeof MaterialsMaterialIdRoute
   '/mypage/verification': typeof MypageVerificationRoute
   '/news/$newsId': typeof NewsNewsIdRoute
   '/projects/$slug': typeof ProjectsSlugRoute
@@ -225,6 +261,7 @@ export interface FileRoutesById {
   '/community/$feedId_/edit': typeof CommunityFeedIdEditRoute
   '/feeds/$feedId_/edit': typeof FeedsFeedIdEditRoute
   '/projects/$slug_/edit': typeof ProjectsSlugEditRoute
+  '/projects/$slug_/experiences/$cardId': typeof ProjectsSlugExperiencesCardIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -232,13 +269,16 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/admin'
+    | '/explore'
     | '/signup'
     | '/community/$feedId'
     | '/community/new'
     | '/community/recommendations'
     | '/feeds/$feedId'
     | '/feeds/new'
+    | '/job-postings/$jobPostingId'
     | '/magazines/$magazineId'
+    | '/materials/$materialId'
     | '/mypage/verification'
     | '/news/$newsId'
     | '/projects/$slug'
@@ -252,18 +292,22 @@ export interface FileRouteTypes {
     | '/community/$feedId/edit'
     | '/feeds/$feedId/edit'
     | '/projects/$slug/edit'
+    | '/projects/$slug/experiences/$cardId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/about'
     | '/admin'
+    | '/explore'
     | '/signup'
     | '/community/$feedId'
     | '/community/new'
     | '/community/recommendations'
     | '/feeds/$feedId'
     | '/feeds/new'
+    | '/job-postings/$jobPostingId'
     | '/magazines/$magazineId'
+    | '/materials/$materialId'
     | '/mypage/verification'
     | '/news/$newsId'
     | '/projects/$slug'
@@ -277,18 +321,22 @@ export interface FileRouteTypes {
     | '/community/$feedId/edit'
     | '/feeds/$feedId/edit'
     | '/projects/$slug/edit'
+    | '/projects/$slug/experiences/$cardId'
   id:
     | '__root__'
     | '/'
     | '/about'
     | '/admin'
+    | '/explore'
     | '/signup'
     | '/community/$feedId'
     | '/community/new'
     | '/community/recommendations'
     | '/feeds/$feedId'
     | '/feeds/new'
+    | '/job-postings/$jobPostingId'
     | '/magazines/$magazineId'
+    | '/materials/$materialId'
     | '/mypage/verification'
     | '/news/$newsId'
     | '/projects/$slug'
@@ -302,19 +350,23 @@ export interface FileRouteTypes {
     | '/community/$feedId_/edit'
     | '/feeds/$feedId_/edit'
     | '/projects/$slug_/edit'
+    | '/projects/$slug_/experiences/$cardId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
   AdminRoute: typeof AdminRoute
+  ExploreRoute: typeof ExploreRoute
   SignupRoute: typeof SignupRoute
   CommunityFeedIdRoute: typeof CommunityFeedIdRoute
   CommunityNewRoute: typeof CommunityNewRoute
   CommunityRecommendationsRoute: typeof CommunityRecommendationsRoute
   FeedsFeedIdRoute: typeof FeedsFeedIdRoute
   FeedsNewRoute: typeof FeedsNewRoute
+  JobPostingsJobPostingIdRoute: typeof JobPostingsJobPostingIdRoute
   MagazinesMagazineIdRoute: typeof MagazinesMagazineIdRoute
+  MaterialsMaterialIdRoute: typeof MaterialsMaterialIdRoute
   MypageVerificationRoute: typeof MypageVerificationRoute
   NewsNewsIdRoute: typeof NewsNewsIdRoute
   ProjectsSlugRoute: typeof ProjectsSlugRoute
@@ -328,6 +380,7 @@ export interface RootRouteChildren {
   CommunityFeedIdEditRoute: typeof CommunityFeedIdEditRoute
   FeedsFeedIdEditRoute: typeof FeedsFeedIdEditRoute
   ProjectsSlugEditRoute: typeof ProjectsSlugEditRoute
+  ProjectsSlugExperiencesCardIdRoute: typeof ProjectsSlugExperiencesCardIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -351,6 +404,13 @@ declare module '@tanstack/react-router' {
       path: '/admin'
       fullPath: '/admin'
       preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/explore': {
+      id: '/explore'
+      path: '/explore'
+      fullPath: '/explore'
+      preLoaderRoute: typeof ExploreRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/signup': {
@@ -409,6 +469,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof FeedsNewRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/job-postings/$jobPostingId': {
+      id: '/job-postings/$jobPostingId'
+      path: '/job-postings/$jobPostingId'
+      fullPath: '/job-postings/$jobPostingId'
+      preLoaderRoute: typeof JobPostingsJobPostingIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/magazines/': {
       id: '/magazines/'
       path: '/magazines'
@@ -421,6 +488,13 @@ declare module '@tanstack/react-router' {
       path: '/magazines/$magazineId'
       fullPath: '/magazines/$magazineId'
       preLoaderRoute: typeof MagazinesMagazineIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/materials/$materialId': {
+      id: '/materials/$materialId'
+      path: '/materials/$materialId'
+      fullPath: '/materials/$materialId'
+      preLoaderRoute: typeof MaterialsMaterialIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/mypage/verification': {
@@ -493,6 +567,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProjectsSlugEditRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/projects/$slug_/experiences/$cardId': {
+      id: '/projects/$slug_/experiences/$cardId'
+      path: '/projects/$slug/experiences/$cardId'
+      fullPath: '/projects/$slug/experiences/$cardId'
+      preLoaderRoute: typeof ProjectsSlugExperiencesCardIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -500,13 +581,16 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
   AdminRoute: AdminRoute,
+  ExploreRoute: ExploreRoute,
   SignupRoute: SignupRoute,
   CommunityFeedIdRoute: CommunityFeedIdRoute,
   CommunityNewRoute: CommunityNewRoute,
   CommunityRecommendationsRoute: CommunityRecommendationsRoute,
   FeedsFeedIdRoute: FeedsFeedIdRoute,
   FeedsNewRoute: FeedsNewRoute,
+  JobPostingsJobPostingIdRoute: JobPostingsJobPostingIdRoute,
   MagazinesMagazineIdRoute: MagazinesMagazineIdRoute,
+  MaterialsMaterialIdRoute: MaterialsMaterialIdRoute,
   MypageVerificationRoute: MypageVerificationRoute,
   NewsNewsIdRoute: NewsNewsIdRoute,
   ProjectsSlugRoute: ProjectsSlugRoute,
@@ -520,6 +604,7 @@ const rootRouteChildren: RootRouteChildren = {
   CommunityFeedIdEditRoute: CommunityFeedIdEditRoute,
   FeedsFeedIdEditRoute: FeedsFeedIdEditRoute,
   ProjectsSlugEditRoute: ProjectsSlugEditRoute,
+  ProjectsSlugExperiencesCardIdRoute: ProjectsSlugExperiencesCardIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

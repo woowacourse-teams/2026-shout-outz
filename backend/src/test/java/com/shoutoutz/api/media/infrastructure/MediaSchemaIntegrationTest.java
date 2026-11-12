@@ -68,6 +68,23 @@ class MediaSchemaIntegrationTest {
         assertThat(inserted).isEqualTo(1);
     }
 
+    @Test
+    void 채용공고_회사_로고_미디어_목적을_저장할_수_있다() {
+        int inserted = jdbcTemplate.update("""
+                INSERT INTO media_metadata (purpose, s3_key, mime_type, size_bytes, status, expires_at)
+                VALUES ('JOB_POSTING_COMPANY_LOGO', 'media/job-posting-company-logo/test-id', 'image/webp', 1024,
+                        'PENDING_UPLOAD', now() + interval '5 minutes')
+                """);
+
+        assertThat(inserted).isEqualTo(1);
+    }
+
+    @Test
+    void 채용공고는_로고_미디어가_지워지면_로고_참조를_비운다() {
+        assertThat(columnCount("job_postings", "logo_media_id")).isEqualTo(1);
+        assertThat(setNullForeignKeyCount("job_postings", "job_postings_logo_media_fk")).isEqualTo(1);
+    }
+
     private int columnCount(String tableName, String columnName) {
         return jdbcTemplate.queryForObject(
                 """

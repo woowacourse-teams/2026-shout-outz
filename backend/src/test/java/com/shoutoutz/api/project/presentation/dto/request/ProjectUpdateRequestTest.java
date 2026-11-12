@@ -43,6 +43,25 @@ class ProjectUpdateRequestTest {
     }
 
     @Test
+    void logoImageId는_생략과_null과_값을_구분한다() throws Exception {
+        ProjectUpdateRequest omitted = objectMapper.readValue(baseJson(""), ProjectUpdateRequest.class);
+        ProjectUpdateRequest cleared = objectMapper.readValue(
+                baseJson("\"logoImageId\": null,"),
+                ProjectUpdateRequest.class
+        );
+        ProjectUpdateRequest replaced = objectMapper.readValue(
+                baseJson("\"logoImageId\": 14,"),
+                ProjectUpdateRequest.class
+        );
+
+        assertThat(omitted.isLogoImageIdProvided()).isFalse();
+        assertThat(cleared.isLogoImageIdProvided()).isTrue();
+        assertThat(cleared.logoImageId()).isNull();
+        assertThat(replaced.isLogoImageIdProvided()).isTrue();
+        assertThat(replaced.logoImageId()).isEqualTo(14L);
+    }
+
+    @Test
     void teamBlogUrls를_생략하면_미전달로_구분한다() throws Exception {
         ProjectUpdateRequest request = objectMapper.readValue(baseJson(""), ProjectUpdateRequest.class);
 
