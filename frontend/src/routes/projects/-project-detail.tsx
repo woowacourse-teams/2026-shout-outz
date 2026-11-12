@@ -4,6 +4,7 @@ import { fetchProjectList } from '@/api/project-list';
 import type { ProjectDetailTab } from '@/components/projects/ProjectDetailContent';
 import { ProjectDetailPage } from '@/pages/ProjectDetailPage';
 import { toProjectSlug, toProjectSlugParam } from '@/utils/project';
+import { analytics } from '@/utils/analytics';
 
 /**
  * 프로젝트 상세 경험·자료·소개는 탭마다 주소가 따로 있어, 빌드할 때 프로젝트마다 세 페이지를 미리 만든다(SSG).
@@ -31,14 +32,19 @@ export function ProjectDetailRoute({ slug, tab }: { slug: string; tab: ProjectDe
     <ProjectDetailPage
       slug={toProjectSlug(slug)}
       tab={tab}
-      onTabChange={(next) =>
+      onTabChange={(next) => {
+        analytics.track({
+          name: 'project_detail_tab_changed',
+          slug: toProjectSlug(slug),
+          tab: next,
+        });
         void navigate({
           to: PROJECT_TAB_PATHS[next],
           params: { slug },
           replace: true,
           resetScroll: false,
-        })
-      }
+        });
+      }}
     />
   );
 }

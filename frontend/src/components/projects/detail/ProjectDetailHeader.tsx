@@ -4,14 +4,15 @@ import { useState } from 'react';
 import { ProjectLikeButton } from '@/components/projects/ProjectLikeButton';
 import type { ProjectDetail } from '@/types/project';
 import { toProjectSlugParam } from '@/utils/project';
+import { analytics } from '@/utils/analytics';
 
 /** 프로젝트 상세 위쪽. 대표 이미지, 이름, 한 줄 소개, 링크 */
 export function ProjectDetailHeader({ project }: { project: ProjectDetail }) {
   const [failedUrl, setFailedUrl] = useState<string | null>(null);
   const thumbnail = project.imageUrl?.trim();
   const links = [
-    { label: '서비스 바로가기 ↗', url: project.deploymentUrl?.trim() },
-    { label: 'GitHub 저장소 ↗', url: project.githubRepositoryUrl?.trim() },
+    { label: '서비스 바로가기 ↗', url: project.deploymentUrl?.trim(), target: 'deployment' },
+    { label: 'GitHub 저장소 ↗', url: project.githubRepositoryUrl?.trim(), target: 'github' },
   ].filter((link) => link.url);
 
   return (
@@ -39,6 +40,13 @@ export function ProjectDetailHeader({ project }: { project: ProjectDetail }) {
               <a
                 key={link.label}
                 href={link.url}
+                onClick={() =>
+                  analytics.track({
+                    name: 'project_link_clicked',
+                    slug: project.slug,
+                    target: link.target,
+                  })
+                }
                 target="_blank"
                 rel="noopener noreferrer"
                 className={LINK_CLASS_NAME}

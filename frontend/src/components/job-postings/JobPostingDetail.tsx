@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { jobPostingQuery } from '@/apis/job-posting';
 import { deadlineText } from '@/components/job-postings/jobPostingFormat';
 import { RequirementRecommendations } from '@/components/job-postings/RequirementRecommendations';
+import { analytics } from '@/utils/analytics';
 import { cn } from '@/utils/cn';
 
 /** 채용공고 상세(문서형). 공고 정보, 찾는 역량, 역량별 추천 자료 */
@@ -41,6 +42,9 @@ export function JobPostingDetail({ jobPostingId }: { jobPostingId: number }) {
               </p>
               <a
                 href={jobPosting.sourceUrl}
+                onClick={() =>
+                  analytics.track({ name: 'job_posting_source_clicked', jobPostingId })
+                }
                 target="_blank"
                 rel="noopener noreferrer"
                 className="mt-0.5 self-start text-sm text-gray-600 underline decoration-gray-200 underline-offset-3 hover:text-gray-900"
@@ -67,7 +71,15 @@ export function JobPostingDetail({ jobPostingId }: { jobPostingId: number }) {
                     key={requirement.requirementId}
                     type="button"
                     aria-pressed={pressed}
-                    onClick={() => toggle(requirement.requirementId)}
+                    onClick={() => {
+                      analytics.track({
+                        name: 'job_requirement_toggled',
+                        jobPostingId,
+                        requirementId: requirement.requirementId,
+                        selected: !pressed,
+                      });
+                      toggle(requirement.requirementId);
+                    }}
                     className={cn(
                       'focus-visible:outline-primary-600 cursor-pointer rounded-full px-3 py-1 text-sm transition-colors focus-visible:outline-2',
                       pressed

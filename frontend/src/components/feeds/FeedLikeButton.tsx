@@ -61,6 +61,11 @@ export function FeedLikeButton({
         liked: result.active,
       });
       if (target === 'magazines') {
+        analytics.track({
+          name: 'magazine_like_toggled',
+          magazineId: feedId,
+          liked: result.active,
+        });
         void client.invalidateQueries({ queryKey: ['magazine', feedId] });
         void client.invalidateQueries({ queryKey: ['magazines'] });
       } else {

@@ -19,6 +19,7 @@ import { useIsProjectMember } from '@/components/projects/detail/useIsProjectMem
 import { useModal } from '@/hooks/useModal';
 import { cn } from '@/utils/cn';
 import { toProjectSlugParam } from '@/utils/project';
+import { analytics } from '@/utils/analytics';
 
 // 서버는 직군을 BE, FE, AN 순으로 준다.
 const JOB_ROLES: { jobRole: string; label: string }[] = [
@@ -126,6 +127,9 @@ function ExperienceItem({
         <Link
           to="/projects/$slug/experiences/$cardId"
           params={{ slug: toProjectSlugParam(slug), cardId: String(experience.cardId) }}
+          onClick={() =>
+            analytics.track({ name: 'project_experience_opened', slug, cardId: experience.cardId })
+          }
           className="focus-visible:outline-primary-600 rounded-sm after:absolute after:inset-0 focus-visible:outline-2"
         >
           {experience.title}
