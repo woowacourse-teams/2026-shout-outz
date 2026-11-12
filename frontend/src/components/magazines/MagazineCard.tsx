@@ -4,6 +4,7 @@ import type { MagazineListItem } from '@/apis/magazine';
 import { Avatar } from '@/components/Avatar';
 import { Badge } from '@/components/Badge';
 import { Image } from '@/components/Image';
+import { analytics } from '@/utils/analytics';
 import { cn } from '@/utils/cn';
 import { formatDotDate } from '@/utils/date';
 
@@ -21,6 +22,9 @@ export function MagazineCard({ magazine, featured = false }: MagazineCardProps) 
       <Link
         to="/magazines/$magazineId"
         params={{ magazineId: String(magazine.id) }}
+        onClick={() =>
+          analytics.track({ name: 'magazine_card_clicked', magazineId: magazine.id, featured })
+        }
         className={cn(
           'group focus-visible:outline-primary-600 grid rounded-xl focus-visible:outline-2 focus-visible:outline-offset-4',
           featured ? 'gap-4 md:grid-cols-[340px_minmax(0,1fr)] md:gap-8' : 'gap-3',

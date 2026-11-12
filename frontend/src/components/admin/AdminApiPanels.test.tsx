@@ -52,6 +52,36 @@ describe('채용공고', () => {
     );
   });
 
+  test('추출을 기다리는 동안 안내 문구를 보여 주고 다시 누르거나 저장하지 못하게 한다', async () => {
+    const user = userEvent.setup();
+    let respond = () => {};
+    server.use(
+      http.post('/api/v1/admin/job-postings/extractions', async () => {
+        await new Promise<void>((resolve) => {
+          respond = resolve;
+        });
+        return HttpResponse.json({
+          status: 'success',
+          data: { title: '프론트엔드 개발자', jobRole: 'FRONTEND', requirements: [] },
+        });
+      }),
+    );
+    renderRoute('/admin?tab=job-postings');
+
+    await user.click(await screen.findByRole('button', { name: '새 채용공고' }));
+    await user.type(screen.getByLabelText('원문 주소 *'), 'https://example.com/jobs/2');
+    await user.type(screen.getByLabelText('공고 본문 *'), '프론트엔드 개발자를 찾습니다');
+    await user.click(screen.getByRole('button', { name: '본문에서 추출' }));
+
+    expect(await screen.findByRole('status')).toHaveTextContent(/추출 중이에요/);
+    expect(screen.getByRole('button', { name: '추출하는 중…' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: '등록' })).toBeDisabled();
+
+    respond();
+    expect(await screen.findByDisplayValue('프론트엔드 개발자')).toBeInTheDocument();
+    expect(screen.queryByText(/추출 중이에요/)).not.toBeInTheDocument();
+  });
+
   test('목록에서 숨기기·실패만 재분석·삭제를 요청한다', async () => {
     const user = userEvent.setup();
     const calls: string[] = [];

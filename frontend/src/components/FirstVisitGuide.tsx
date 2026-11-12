@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { IconArrowUpRight, IconX } from '@tabler/icons-react';
 import { Button } from '@/components/Button';
 import { Modal } from '@/components/Modal';
+import { analytics } from '@/utils/analytics';
 
 const STORAGE_KEY = 'shoutoutz:about-guide-seen';
 
@@ -25,6 +26,7 @@ export function FirstVisitGuide({
 
   useEffect(() => {
     if (mode === 'skip' || (mode === 'offer' && dismissed)) return;
+    if (mode === 'offer') analytics.track({ name: 'first_visit_guide_shown' });
     try {
       // 안내를 이미 본 브라우저에는 다시 띄우지 않고, 소개 페이지 직접 방문도 포함합니다.
       localStorage.setItem(STORAGE_KEY, 'true');
@@ -35,10 +37,14 @@ export function FirstVisitGuide({
 
   if (dismissed || mode !== 'offer') return null;
   const close = () => setDismissed(true);
+  const dismiss = () => {
+    analytics.track({ name: 'first_visit_guide_dismissed' });
+    close();
+  };
 
   return (
     <Modal
-      onClose={close}
+      onClose={dismiss}
       labelledBy="first-visit-title"
       describedBy="first-visit-description"
       className="relative md:w-110"
@@ -47,7 +53,7 @@ export function FirstVisitGuide({
         variant="ghost"
         size="sm"
         aria-label="소개 안내 닫기"
-        onClick={close}
+        onClick={dismiss}
         className="absolute top-4 right-4 size-8 rounded-full p-0 text-gray-500"
       >
         <IconX className="size-4" aria-hidden="true" />
@@ -73,13 +79,14 @@ export function FirstVisitGuide({
           className="mt-6 w-full gap-2"
           data-modal-autofocus
           onClick={() => {
+            analytics.track({ name: 'first_visit_guide_explore_clicked' });
             close();
             onExplore();
           }}
         >
           샤라웃 알아보기 <IconArrowUpRight className="size-4" aria-hidden="true" />
         </Button>
-        <Button variant="ghost" size="sm" className="mt-2 text-gray-500" onClick={close}>
+        <Button variant="ghost" size="sm" className="mt-2 text-gray-500" onClick={dismiss}>
           바로 둘러볼게요
         </Button>
       </div>

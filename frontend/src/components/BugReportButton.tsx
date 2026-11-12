@@ -4,6 +4,7 @@ import { useRouterState } from '@tanstack/react-router';
 import { Button } from '@/components/Button';
 import { BugReportModal } from '@/components/modals/BugReportModal';
 import { useModal } from '@/hooks/useModal';
+import { analytics } from '@/utils/analytics';
 
 /**
  * 화면 우측 하단에 떠 있는 버그 제보 말풍선.
@@ -16,6 +17,7 @@ export function BugReportButton() {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
 
   const openReport = () => {
+    analytics.track({ name: 'bug_report_opened' });
     void open<void>((close) => <BugReportModal pagePath={pathname} onClose={() => close()} />);
   };
 

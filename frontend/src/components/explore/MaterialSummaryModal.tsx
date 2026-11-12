@@ -19,6 +19,7 @@ import { Dialog, DialogClose, DialogContent, DialogTitle } from '@/components/ui
 import { Drawer, DrawerClose, DrawerContent, DrawerTitle } from '@/components/ui/drawer';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { cn } from '@/utils/cn';
+import { analytics } from '@/utils/analytics';
 import { getApiErrorMessage } from '@/utils/error';
 
 /**
@@ -26,6 +27,11 @@ import { getApiErrorMessage } from '@/utils/error';
  * overlay-kit은 라우터 바깥에 그려서, 자료 정리 보기 링크가 동작하도록 연 화면의 라우터를 넘겨받는다.
  */
 export function openMaterialSummary(material: Material, router: AnyRouter) {
+  analytics.track({
+    name: 'material_summary_opened',
+    resourceId: material.resourceId,
+    source: material.source,
+  });
   overlay.open(({ isOpen, close, unmount }) => (
     <RouterContextProvider router={router}>
       <MaterialSummaryModal material={material} isOpen={isOpen} onClose={close} onExit={unmount} />
@@ -215,7 +221,14 @@ function MaterialDetailLink({
     <Link
       to="/materials/$materialId"
       params={{ materialId: String(material.resourceId) }}
-      onClick={onNavigate}
+      onClick={() => {
+        analytics.track({
+          name: 'material_detail_clicked',
+          resourceId: material.resourceId,
+          source: material.source,
+        });
+        onNavigate();
+      }}
       className={getButtonStyles({ variant: 'outline', size: 'lg', className: 'mt-10 w-full' })}
     >
       상세 보기
@@ -235,6 +248,14 @@ function SourcePreviewCard({
   return (
     <a
       href={material.url}
+      onClick={() =>
+        analytics.track({
+          name: 'material_source_clicked',
+          resourceId: material.resourceId,
+          source: material.source,
+          from: 'summary',
+        })
+      }
       target="_blank"
       rel="noopener noreferrer"
       aria-label={`원문 보기: ${material.title}`}
@@ -354,6 +375,14 @@ function SourceCard({ material }: { material: Material }) {
       </span>
       <a
         href={material.url}
+        onClick={() =>
+          analytics.track({
+            name: 'material_source_clicked',
+            resourceId: material.resourceId,
+            source: material.source,
+            from: 'page',
+          })
+        }
         target="_blank"
         rel="noopener noreferrer"
         aria-label={`원문 보기: ${material.title}`}

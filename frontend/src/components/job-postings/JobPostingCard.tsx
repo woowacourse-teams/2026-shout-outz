@@ -2,15 +2,30 @@ import { Link } from '@tanstack/react-router';
 
 import type { JobPostingListItem } from '@/apis/job-posting';
 import { deadlineBadge, JOB_ROLE_LABELS } from '@/components/job-postings/jobPostingFormat';
+import { analytics } from '@/utils/analytics';
 
 const CARD = 'flex h-full flex-col rounded-2xl border border-gray-200 p-5';
 const DEADLINE_BADGE = 'ml-auto shrink-0 rounded-lg bg-gray-100 px-2.5 py-1 text-xs font-bold';
 
-export function JobPostingCard({ jobPosting }: { jobPosting: JobPostingListItem }) {
+export function JobPostingCard({
+  jobPosting,
+  position,
+}: {
+  jobPosting: JobPostingListItem;
+  /** 목록에서의 순서. 0부터 센다. */
+  position: number;
+}) {
   return (
     <Link
       to="/job-postings/$jobPostingId"
       params={{ jobPostingId: String(jobPosting.jobPostingId) }}
+      onClick={() =>
+        analytics.track({
+          name: 'job_posting_clicked',
+          jobPostingId: jobPosting.jobPostingId,
+          position,
+        })
+      }
       className={`${CARD} focus-visible:outline-primary-600 transition-colors hover:bg-gray-50 focus-visible:outline-2`}
     >
       {/* TODO(채용공고 후속 PR): 서버가 회사 로고(companyLogoUrl)를 주면 회사 이름 앞에 48px 로고를 다시 둔다. */}

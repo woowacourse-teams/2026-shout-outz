@@ -10,6 +10,7 @@ import { ExploreSearchResult } from '@/components/explore/ExploreSearchResult';
 import { Footer } from '@/components/Footer';
 import { JobPostingList } from '@/components/job-postings/JobPostingList';
 import { ProjectExplore } from '@/components/project-explore/ProjectExplore';
+import { analytics, type ExploreSearchSource } from '@/utils/analytics';
 import type { ProjectSort } from '@/types/project';
 
 interface ExplorePageProps {
@@ -40,6 +41,20 @@ export function ExplorePage({
   const projectTopic = tab === 'project' ? topic : null;
   const searchText = query || projectTopic || '';
 
+  const search = (next: string, source: ExploreSearchSource) => {
+    analytics.track({
+      name: 'explore_search_performed',
+      tab,
+      queryLength: next.trim().length,
+      source,
+    });
+    onSearch(next);
+  };
+  const changeTopic = (next: string | null) => {
+    analytics.track({ name: 'project_topic_selected', topic: next });
+    onTopicChange(next);
+  };
+
   return (
     <div className="bg-background flex min-h-dvh flex-col text-gray-900">
       {/* 설명·canonical 같은 나머지 <head>는 루트 라우트의 RouteOpenGraph가 같은 exploreHead로 넣는다. */}
@@ -48,29 +63,37 @@ export function ExplorePage({
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 pt-12 pb-18 break-keep md:pt-20 md:pb-28">
         <ExploreHero
           tab={tab}
-          onTabChange={onTabChange}
+          onTabChange={(next) => {
+            if (next !== tab)
+              analytics.track({ name: 'explore_tab_changed', tab: next, from: tab });
+            onTabChange(next);
+          }}
           query={searchText}
           // 검색창에 넣어 둔 주제 이름을 그대로 다시 검색하면 주제로 거른 상태를 유지한다.
           onSearch={(next) => {
             if (projectTopic && next === projectTopic) return;
-            onSearch(next);
+            search(next, 'search_box');
           }}
           {...(tab === 'keyword' &&
             popularKeywords.data && {
               suggestions: popularKeywords.data.map(({ keyword }) => keyword),
+              onSuggestionSelect: (suggestion: string) => search(suggestion, 'suggestion'),
             })}
           {...(tab === 'project' && {
             activeSuggestion: topic,
             // 프로젝트 탭의 추천 검색어는 "이런 주제를 찾아보세요"라 검색어 대신 기술 주제 필터로 건다. 같은 것을 다시 누르면 푼다.
             onSuggestionSelect: (suggestion: string) =>
-              onTopicChange(suggestion === topic ? null : suggestion),
+              changeTopic(suggestion === topic ? null : suggestion),
           })}
         />
         {tab === 'project' ? (
           <ProjectExplore
             filter={{ keyword: query, topic, sort }}
-            onTopicChange={onTopicChange}
-            onSortChange={onSortChange}
+            onTopicChange={changeTopic}
+            onSortChange={(next) => {
+              analytics.track({ name: 'project_sort_changed', sort: next });
+              onSortChange(next);
+            }}
           />
         ) : tab === 'job' ? (
           <div className="mt-10">
@@ -89,7 +112,7 @@ export function ExplorePage({
               </div>
             ) : (
               <AsyncBoundary>
-                <ExploreHome onSearch={onSearch} />
+                <ExploreHome onSearch={(next) => search(next, 'topic')} />
               </AsyncBoundary>
             )}
           </div>

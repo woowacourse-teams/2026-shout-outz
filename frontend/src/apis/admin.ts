@@ -572,11 +572,23 @@ export const adminJobPostingQuery = (jobPostingId: number) =>
     queryFn: () => fetchAdminJobPosting(jobPostingId),
   });
 
+/**
+ * 추출은 서버가 LLM을 불러 보통 10~20초 걸린다(서버 LLM 제한 45초).
+ * 공용 설정(timeout 10초, totalTimeout 30초)이면 화면이 먼저 끊으므로 이 요청만 60초로 늘린다.
+ * totalTimeout은 재시도를 포함한 전체 상한이라 timeout만 늘리면 30초에서 끊겨 함께 늘린다.
+ */
+export const JOB_POSTING_EXTRACT_TIMEOUT_MS = 60_000;
+
 /** 공고 본문을 붙여 넣으면 서버가 회사·직군·요구사항을 뽑아 등록 폼 초안을 준다. 저장하지는 않는다. */
 export async function extractJobPosting(input: AdminJobPostingExtractRequest) {
   const body = await httpClient<AdminJobPostingExtractSuccessResponse>(
     `${JOB_POSTING_PATH}/extractions`,
-    { method: 'post', json: input },
+    {
+      method: 'post',
+      json: input,
+      timeout: JOB_POSTING_EXTRACT_TIMEOUT_MS,
+      totalTimeout: JOB_POSTING_EXTRACT_TIMEOUT_MS,
+    },
   );
   if (!body) throw new Error('채용공고 추출 결과를 확인하지 못했습니다.');
   return body.data;

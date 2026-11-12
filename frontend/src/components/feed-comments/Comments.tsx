@@ -219,6 +219,7 @@ function CommentList({
           name: 'comment_submitted',
           isReply: input.parentId != null,
           isAnonymous: input.isAnonymous ?? false,
+          target,
         });
       }
     } catch (error) {

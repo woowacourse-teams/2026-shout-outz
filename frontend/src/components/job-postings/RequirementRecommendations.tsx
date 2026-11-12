@@ -7,6 +7,7 @@ import { DotTab } from '@/components/explore/DotTab';
 import { MaterialList, TechTalkList } from '@/components/explore/MaterialList';
 import { recommendationToMaterial } from '@/components/job-postings/recommendationMaterial';
 import { isBlogMaterial, isGithubMaterial, isTechTalk } from '@/components/explore/MaterialParts';
+import { analytics } from '@/utils/analytics';
 import { getApiErrorMessage } from '@/utils/error';
 
 type KindFilter = 'ALL' | 'BLOG' | 'DOCUMENT' | 'TECH_TALK';
@@ -22,7 +23,11 @@ export function RequirementRecommendations({
   jobPostingId,
   requirements,
 }: RequirementRecommendationsProps) {
-  const [filter, setFilter] = useState<KindFilter>('ALL');
+  const [filter, setFilterState] = useState<KindFilter>('ALL');
+  const setFilter = (kind: KindFilter) => {
+    analytics.track({ name: 'job_recommendation_filter_changed', jobPostingId, kind });
+    setFilterState(kind);
+  };
   const results = useQueries({
     queries: requirements.map((requirement) =>
       requirementRecommendationsQuery(jobPostingId, requirement.requirementId),
