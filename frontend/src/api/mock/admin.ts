@@ -159,6 +159,8 @@ const adminJobPostingListItem = {
 const adminJobPostingDetail = {
   ...adminJobPostingListItem,
   sourceUrl: 'https://career.woowahan.com/recruitment/1',
+  logoImageId: 30,
+  logoUrl: 'https://placehold.co/96x96',
   careerRequirement: '신입',
   employmentType: '정규직',
   deadline: '2026-10-31',
@@ -497,9 +499,18 @@ export const adminHandlers = [
     HttpResponse.json({ status: 'success', data: { jobPostingId: 2 } }, { status: 201 }),
   ),
 
-  http.put('/api/v1/admin/job-postings/:jobPostingId', ({ params }) =>
-    HttpResponse.json({ status: 'success', data: { jobPostingId: Number(params.jobPostingId) } }),
-  ),
+  http.put('/api/v1/admin/job-postings/:jobPostingId', async ({ params, request }) => {
+    const body = (await request.json()) as { content?: string };
+    const reanalyzed = Boolean(body.content?.trim());
+    return HttpResponse.json({
+      status: 'success',
+      data: {
+        jobPostingId: Number(params.jobPostingId),
+        status: reanalyzed ? 'PENDING' : 'READY',
+        reanalyzed,
+      },
+    });
+  }),
 
   http.patch('/api/v1/admin/job-postings/:jobPostingId/visibility', async ({ params, request }) => {
     const { hidden } = (await request.json()) as { hidden: boolean };

@@ -563,7 +563,7 @@ export async function fetchAdminJobPosting(jobPostingId: number) {
   const path = `${JOB_POSTING_PATH}/${jobPostingId}`;
   const body = await httpClient<AdminJobPostingDetailSuccessResponse>(path, { method: 'get' });
   if (!body) throw new Error(`관리자 채용공고 상세 응답이 비어 있습니다: ${path}`);
-  return body.data;
+  return body.data as AdminJobPostingDetail;
 }
 
 export const adminJobPostingQuery = (jobPostingId: number) =>
@@ -587,7 +587,7 @@ export const extractJobPostingMutation = mutationOptions({
   retry: false,
 });
 
-export async function createJobPosting(input: AdminJobPostingSaveRequest) {
+export async function createJobPosting(input: AdminJobPostingCreateBody) {
   const body = await httpClient<AdminJobPostingSaveSuccessResponse>(JOB_POSTING_PATH, {
     method: 'post',
     json: input,
@@ -602,11 +602,33 @@ export const createJobPostingMutation = mutationOptions({
 });
 
 /**
- * 채용공고 수정. 서버가 원문을 저장하지 않아, 본문을 보내지 않으면 기존 원문 기준을 그대로 둔다.
- * 명세(schema.ts)가 아직 content를 필수로 두고 있어 여기서 선택으로 연다.
+ * 채용공고 등록 요청. 생성된 schema.ts에 아직 회사 로고(logoImageId)가 없어 여기서 더한다.
+ * logoImageId는 JOB_POSTING_COMPANY_LOGO로 올린 이미지 ID다.
  */
-export type AdminJobPostingUpdateBody = Omit<AdminJobPostingSaveRequest, 'content'> & {
-  content?: string | null;
+export type AdminJobPostingCreateBody = AdminJobPostingSaveRequest & {
+  logoImageId?: number | null;
+};
+
+/**
+ * 채용공고 수정 요청. 전체 교체라 logoImageId를 다시 보내야 로고가 남는다.
+ *
+ * - 본문을 안 바꿀 때: content와 requirements를 빼고 보낸다. 공고 정보만 바뀌고 역량·분석 상태는 그대로다.
+ * - 본문을 바꿀 때: content와 requirements를 같이 보낸다. 본문이 실제로 바뀌었으면 다시 분석한다.
+ * - content만 보내고 requirements를 비우면 400(requirementsPresentWithContent)이다.
+ */
+export type AdminJobPostingUpdateBody = Omit<
+  AdminJobPostingCreateBody,
+  'content' | 'requirements'
+> &
+  (
+    | { content?: undefined; requirements?: undefined }
+    | Pick<AdminJobPostingSaveRequest, 'content' | 'requirements'>
+  );
+
+/** 생성된 schema.ts에 아직 없는 회사 로고 필드를 더한 관리자 채용공고 상세. */
+export type AdminJobPostingDetail = AdminJobPostingDetailSuccessResponse['data'] & {
+  logoImageId?: number | null;
+  logoUrl?: string | null;
 };
 
 export async function updateJobPosting({

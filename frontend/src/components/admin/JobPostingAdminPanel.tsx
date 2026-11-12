@@ -10,6 +10,8 @@ import { Link } from '@tanstack/react-router';
 import {
   adminJobPostingQuery,
   adminJobPostingsQuery,
+  type AdminJobPostingCreateBody,
+  type AdminJobPostingDetail,
   createJobPostingMutation,
   deleteJobPostingMutation,
   extractJobPostingMutation,
@@ -17,8 +19,8 @@ import {
   updateJobPostingMutation,
   updateJobPostingVisibilityMutation,
 } from '@/apis/admin';
+import { uploadJobPostingLogo } from '@/api/media';
 import type {
-  AdminJobPostingDetailSuccessResponse,
   AdminJobPostingFindAllSuccessResponse,
   AdminJobPostingSaveRequest,
 } from '@/api/generated/schema';
@@ -28,11 +30,13 @@ import { Button } from '@/components/Button';
 import { Field } from '@/components/Field';
 import { Input } from '@/components/Input';
 import { Select } from '@/components/Select';
+import { ThumbnailField } from '@/components/projects/ThumbnailField';
 import { formatDotDate } from '@/utils/date';
 import { getApiErrorMessage } from '@/utils/error';
 
 type JobPostingItem = AdminJobPostingFindAllSuccessResponse['data'][number];
-type JobPostingDetail = AdminJobPostingDetailSuccessResponse['data'];
+type JobPostingDetail = AdminJobPostingDetail;
+type JobPostingFormValues = AdminJobPostingCreateBody;
 type JobRole = AdminJobPostingSaveRequest['jobRole'];
 type RequirementCategory = AdminJobPostingSaveRequest['requirements'][number]['category'];
 
@@ -63,7 +67,8 @@ const STATUS_LABELS: Record<JobPostingItem['status'], string> = {
 const TEXTAREA_CLASS =
   'focus-visible:outline-primary-600 w-full rounded-lg bg-gray-100 px-4 py-3 text-sm text-gray-900 outline-none placeholder:text-gray-500 focus-visible:outline-2';
 
-const EMPTY_FORM: AdminJobPostingSaveRequest = {
+const EMPTY_FORM: JobPostingFormValues = {
+  logoImageId: null,
   sourceUrl: '',
   content: '',
   title: '',
@@ -76,7 +81,7 @@ const EMPTY_FORM: AdminJobPostingSaveRequest = {
 };
 
 /** 빈 문자열은 null로 보내 서버가 "값 없음"으로 저장하게 한다. */
-const toSaveBody = (values: AdminJobPostingSaveRequest): AdminJobPostingSaveRequest => ({
+const toSaveBody = (values: JobPostingFormValues): JobPostingFormValues => ({
   ...values,
   careerRequirement: values.careerRequirement?.trim() || null,
   employmentType: values.employmentType?.trim() || null,
@@ -84,8 +89,10 @@ const toSaveBody = (values: AdminJobPostingSaveRequest): AdminJobPostingSaveRequ
   requirements: values.requirements.filter((item) => item.name.trim()),
 });
 
-const fromDetail = (detail: JobPostingDetail): AdminJobPostingSaveRequest => ({
+const fromDetail = (detail: JobPostingDetail): JobPostingFormValues => ({
   sourceUrl: detail.sourceUrl,
+  // 수정은 전체 교체라 지금 로고를 다시 보내야 지워지지 않는다.
+  logoImageId: detail.logoImageId ?? null,
   // 서버가 원문을 저장하지 않아 상세에 없다. 비워 두면 수정 때 보내지 않는다.
   content: '',
   title: detail.title,
@@ -155,6 +162,7 @@ function JobPostingRow({ item }: { item: JobPostingItem }) {
   const client = useQueryClient();
   const [mode, setMode] = useState<'closed' | 'detail' | 'edit'>('closed');
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [savedMessage, setSavedMessage] = useState<string | null>(null);
   const detail = useQuery({
     ...adminJobPostingQuery(item.jobPostingId),
     enabled: mode !== 'closed',
@@ -260,6 +268,11 @@ function JobPostingRow({ item }: { item: JobPostingItem }) {
         )}
       </div>
 
+      {savedMessage && (
+        <p role="status" className="text-xs text-gray-600">
+          {savedMessage}
+        </p>
+      )}
       {reanalyze.data && (
         <p role="status" className="text-xs text-gray-600">
           요구사항 {reanalyze.data.reanalyzedRequirementCount}개를 다시 분석합니다.
@@ -284,7 +297,10 @@ function JobPostingRow({ item }: { item: JobPostingItem }) {
         <JobPostingForm
           jobPostingId={item.jobPostingId}
           initialValues={fromDetail(detail.data)}
-          onDone={() => setMode('closed')}
+          onDone={(message) => {
+            setSavedMessage(message ?? null);
+            setMode('closed');
+          }}
         />
       )}
     </li>
@@ -354,17 +370,17 @@ function JobPostingForm({
 }: {
   /** 있으면 수정, 없으면 새로 등록 */
   jobPostingId?: number;
-  initialValues?: AdminJobPostingSaveRequest;
-  onDone: () => void;
+  initialValues?: JobPostingFormValues;
+  /** 수정이면 저장 결과 문구(다시 분석했는지)를 넘긴다. */
+  onDone: (message?: string) => void;
 }) {
   const client = useQueryClient();
   const [values, setValues] = useState(initialValues);
   const [duplicateId, setDuplicateId] = useState<number | null>(null);
-  const onSaved = () => {
+  const refresh = () => {
     void client.invalidateQueries({ queryKey: ['admin', 'job-postings'] });
     void client.invalidateQueries({ queryKey: ['admin', 'job-posting'] });
     void client.invalidateQueries({ queryKey: ['job-postings'] });
-    onDone();
   };
   const extract = useMutation({
     ...extractJobPostingMutation,
@@ -382,20 +398,42 @@ function JobPostingForm({
       }));
     },
   });
-  const create = useMutation({ ...createJobPostingMutation, onSuccess: onSaved });
-  const update = useMutation({ ...updateJobPostingMutation, onSuccess: onSaved });
+  const create = useMutation({
+    ...createJobPostingMutation,
+    onSuccess: () => {
+      refresh();
+      onDone();
+    },
+  });
+  const update = useMutation({
+    ...updateJobPostingMutation,
+    onSuccess: ({ reanalyzed }) => {
+      refresh();
+      onDone(
+        reanalyzed
+          ? '본문이 바뀌어 역량을 바꾸고 다시 분석합니다.'
+          : '공고 정보만 바꿨어요. 역량과 분석 상태는 그대로예요.',
+      );
+    },
+  });
   const save = jobPostingId == null ? create : update;
-  // 새로 등록할 때만 본문이 필요하다. 수정은 본문을 비워 두면 서버가 기존 원문 기준을 그대로 둔다.
+  const isEdit = jobPostingId != null;
+  // 수정에서 본문을 비워 두면 content·requirements를 빼고 보내 공고 정보만 바꾼다.
+  // 서버도 빈 문자열·공백을 안 보낸 것으로 보지만, 역량까지 빼야 해서 화면에서 나눈다.
+  const changesContent = values.content.trim() !== '';
+  const editsRequirements = !isEdit || changesContent;
+  const validRequirements = values.requirements.filter((item) => item.name.trim());
+  // 본문을 보내면서 역량을 비우면 400(requirementsPresentWithContent)이라 미리 막는다.
+  const requirementsMissing = editsRequirements && validRequirements.length === 0;
   const canSave =
     values.sourceUrl.trim() &&
-    (jobPostingId != null || values.content.trim()) &&
+    (isEdit || changesContent) &&
+    !requirementsMissing &&
     values.title.trim() &&
     values.companyName.trim();
 
-  const setField = <K extends keyof AdminJobPostingSaveRequest>(
-    key: K,
-    value: AdminJobPostingSaveRequest[K],
-  ) => setValues((prev) => ({ ...prev, [key]: value }));
+  const setField = <K extends keyof JobPostingFormValues>(key: K, value: JobPostingFormValues[K]) =>
+    setValues((prev) => ({ ...prev, [key]: value }));
   const setRequirement = (
     index: number,
     patch: Partial<AdminJobPostingSaveRequest['requirements'][number]>,
@@ -412,12 +450,16 @@ function JobPostingForm({
         event.preventDefault();
         if (!canSave || save.isPending) return;
         const input = toSaveBody(values);
-        if (jobPostingId == null) create.mutate(input);
-        else
+        if (jobPostingId == null) {
+          create.mutate(input);
+        } else if (changesContent) {
+          update.mutate({ jobPostingId, input });
+        } else {
           update.mutate({
             jobPostingId,
-            input: { ...input, content: input.content.trim() ? input.content : undefined },
+            input: { ...input, content: undefined, requirements: undefined },
           });
+        }
       }}
     >
       <h2 className="font-bold">{jobPostingId == null ? '새 채용공고' : '채용공고 수정'}</h2>
@@ -442,7 +484,7 @@ function JobPostingForm({
             placeholder={
               jobPostingId == null
                 ? '공고 본문을 붙여 넣고 추출을 누르면 아래 항목을 채워 줘요.'
-                : '비워 두면 기존 원문 기준을 그대로 둬요. 새 본문으로 다시 추출할 때만 붙여 넣으세요.'
+                : '본문을 바꿀 때만 붙여 넣으세요. 비워 두면 공고 정보만 바뀌고 역량과 분석 상태는 그대로예요.'
             }
           />
         )}
@@ -535,69 +577,90 @@ function JobPostingForm({
         </Field>
       </div>
 
-      <fieldset className="flex flex-col gap-2">
-        <legend className="mb-2 text-sm font-semibold">요구사항</legend>
-        {values.requirements.map((requirement, index) => (
-          <div key={index} className="flex flex-col gap-2 rounded-lg bg-gray-50 p-3 md:flex-row">
-            <div className="md:w-36">
-              <Select
-                aria-label={`요구사항 ${index + 1} 분류`}
-                value={requirement.category}
-                onValueChange={(value) =>
-                  setRequirement(index, { category: value as RequirementCategory })
+      <ThumbnailField
+        label="회사 로고"
+        value={values.logoImageId ?? null}
+        onChange={(logoImageId) => setField('logoImageId', logoImageId)}
+        upload={uploadJobPostingLogo}
+      />
+
+      {editsRequirements ? (
+        <fieldset className="flex flex-col gap-2">
+          <legend className="mb-2 text-sm font-semibold">요구사항</legend>
+          {isEdit && (
+            <p className="text-xs text-gray-500">
+              본문이 실제로 바뀌었으면 아래 역량으로 바꾸고 다시 분석해요.
+            </p>
+          )}
+          {values.requirements.map((requirement, index) => (
+            <div key={index} className="flex flex-col gap-2 rounded-lg bg-gray-50 p-3 md:flex-row">
+              <div className="md:w-36">
+                <Select
+                  aria-label={`요구사항 ${index + 1} 분류`}
+                  value={requirement.category}
+                  onValueChange={(value) =>
+                    setRequirement(index, { category: value as RequirementCategory })
+                  }
+                >
+                  {Object.entries(CATEGORY_LABELS).map(([value, label]) => (
+                    <Select.Item key={value} value={value}>
+                      {label}
+                    </Select.Item>
+                  ))}
+                </Select>
+              </div>
+              <Input
+                size="sm"
+                aria-label={`요구사항 ${index + 1} 이름`}
+                value={requirement.name}
+                onChange={(event) => setRequirement(index, { name: event.target.value })}
+                placeholder="이름"
+              />
+              <Input
+                size="sm"
+                aria-label={`요구사항 ${index + 1} 요약`}
+                value={requirement.summary}
+                onChange={(event) => setRequirement(index, { summary: event.target.value })}
+                placeholder="요약"
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() =>
+                  setField(
+                    'requirements',
+                    values.requirements.filter((_, i) => i !== index),
+                  )
                 }
               >
-                {Object.entries(CATEGORY_LABELS).map(([value, label]) => (
-                  <Select.Item key={value} value={value}>
-                    {label}
-                  </Select.Item>
-                ))}
-              </Select>
+                빼기
+              </Button>
             </div>
-            <Input
-              size="sm"
-              aria-label={`요구사항 ${index + 1} 이름`}
-              value={requirement.name}
-              onChange={(event) => setRequirement(index, { name: event.target.value })}
-              placeholder="이름"
-            />
-            <Input
-              size="sm"
-              aria-label={`요구사항 ${index + 1} 요약`}
-              value={requirement.summary}
-              onChange={(event) => setRequirement(index, { summary: event.target.value })}
-              placeholder="요약"
-            />
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() =>
-                setField(
-                  'requirements',
-                  values.requirements.filter((_, i) => i !== index),
-                )
-              }
-            >
-              빼기
-            </Button>
-          </div>
-        ))}
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          className="self-start"
-          onClick={() =>
-            setField('requirements', [
-              ...values.requirements,
-              { category: 'REQUIRED', name: '', summary: '' },
-            ])
-          }
-        >
-          요구사항 추가
-        </Button>
-      </fieldset>
+          ))}
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="self-start"
+            onClick={() =>
+              setField('requirements', [
+                ...values.requirements,
+                { category: 'REQUIRED', name: '', summary: '' },
+              ])
+            }
+          >
+            요구사항 추가
+          </Button>
+          {requirementsMissing && (
+            <p className="text-xs text-red-600">요구사항을 1개 이상 넣어 주세요.</p>
+          )}
+        </fieldset>
+      ) : (
+        <p className="text-sm text-gray-500">
+          요구사항은 본문을 바꿀 때만 고칠 수 있어요. 지금 역량과 분석 상태는 그대로 둬요.
+        </p>
+      )}
 
       {save.error != null && (
         <p role="alert" className="text-xs text-red-600">
@@ -608,7 +671,7 @@ function JobPostingForm({
         <Button type="submit" disabled={!canSave || save.isPending}>
           {jobPostingId == null ? '등록' : '저장'}
         </Button>
-        <Button type="button" variant="ghost" onClick={onDone}>
+        <Button type="button" variant="ghost" onClick={() => onDone()}>
           닫기
         </Button>
       </div>

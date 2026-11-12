@@ -88,26 +88,63 @@ describe('채용공고', () => {
     );
   });
 
-  test('수정할 때 본문을 비워 두면 content를 보내지 않는다', async () => {
-    const user = userEvent.setup();
-    let saved: Record<string, unknown> | undefined;
+  const captureUpdate = () => {
+    const sent: Record<string, unknown>[] = [];
     server.use(
       http.put('/api/v1/admin/job-postings/:id', async ({ request }) => {
-        saved = (await request.json()) as Record<string, unknown>;
-        return HttpResponse.json({ status: 'success', data: { jobPostingId: 1 } });
+        const body = (await request.json()) as Record<string, unknown>;
+        sent.push(body);
+        const reanalyzed = typeof body.content === 'string';
+        return HttpResponse.json({
+          status: 'success',
+          data: { jobPostingId: 1, status: 'READY', reanalyzed },
+        });
       }),
     );
+    return sent;
+  };
+
+  test('본문을 비운 채 수정하면 content·requirements를 빼고 로고는 그대로 보낸다', async () => {
+    const user = userEvent.setup();
+    const sent = captureUpdate();
     renderRoute('/admin?tab=job-postings');
 
     const row = await rowOf('백엔드 개발자');
     await user.click(within(row).getByRole('button', { name: '수정' }));
     const title = await within(row).findByLabelText('제목 *');
+    expect(within(row).getByText(/요구사항은 본문을 바꿀 때만/)).toBeInTheDocument();
     await user.clear(title);
     await user.type(title, '서버 개발자');
     await user.click(within(row).getByRole('button', { name: '저장' }));
 
-    await waitFor(() => expect(saved).toMatchObject({ title: '서버 개발자', jobRole: 'BACKEND' }));
-    expect(saved).not.toHaveProperty('content');
+    await waitFor(() => expect(sent).toHaveLength(1));
+    expect(sent[0]).toMatchObject({ title: '서버 개발자', logoImageId: 30 });
+    expect(sent[0]).not.toHaveProperty('content');
+    expect(sent[0]).not.toHaveProperty('requirements');
+    expect(
+      await within(row).findByText('공고 정보만 바꿨어요. 역량과 분석 상태는 그대로예요.'),
+    ).toBeInTheDocument();
+  });
+
+  test('본문을 넣고 수정하면 content와 requirements를 같이 보낸다', async () => {
+    const user = userEvent.setup();
+    const sent = captureUpdate();
+    renderRoute('/admin?tab=job-postings');
+
+    const row = await rowOf('백엔드 개발자');
+    await user.click(within(row).getByRole('button', { name: '수정' }));
+    await user.type(await within(row).findByLabelText('공고 본문'), '바뀐 공고 본문');
+    expect(within(row).getByLabelText('요구사항 1 이름')).toHaveValue('Java');
+    await user.click(within(row).getByRole('button', { name: '저장' }));
+
+    await waitFor(() => expect(sent).toHaveLength(1));
+    expect(sent[0]).toMatchObject({
+      content: '바뀐 공고 본문',
+      requirements: [{ name: 'Java' }, { name: '대용량 트래픽' }],
+    });
+    expect(
+      await within(row).findByText('본문이 바뀌어 역량을 바꾸고 다시 분석합니다.'),
+    ).toBeInTheDocument();
   });
 
   test('상세를 열면 요구사항별 분석 상태를 보여 준다', async () => {
