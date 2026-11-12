@@ -26,6 +26,7 @@ import com.shoutoutz.api.jobposting.presentation.dto.request.AdminJobPostingExtr
 import com.shoutoutz.api.jobposting.presentation.dto.request.AdminJobPostingFindAllRequest;
 import com.shoutoutz.api.jobposting.presentation.dto.request.AdminJobPostingReanalysisRequest;
 import com.shoutoutz.api.jobposting.presentation.dto.request.AdminJobPostingSaveRequest;
+import com.shoutoutz.api.jobposting.presentation.dto.request.AdminJobPostingUpdateRequest;
 import com.shoutoutz.api.jobposting.presentation.dto.request.AdminJobPostingVisibilityUpdateRequest;
 import com.shoutoutz.api.jobposting.presentation.dto.response.AdminJobPostingDetailResponse;
 import com.shoutoutz.api.jobposting.presentation.dto.response.AdminJobPostingExtractResponse;
@@ -141,7 +142,7 @@ public class JobPostingAdminService {
     public AdminJobPostingUpdateResponse update(
             long jobPostingId,
             UserRole role,
-            AdminJobPostingSaveRequest request
+            AdminJobPostingUpdateRequest request
     ) {
         validateAdmin(role);
         validateLogo(request.logoImageId());

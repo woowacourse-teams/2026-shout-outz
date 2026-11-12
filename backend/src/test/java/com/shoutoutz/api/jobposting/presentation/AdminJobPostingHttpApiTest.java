@@ -41,6 +41,7 @@ import com.shoutoutz.api.jobposting.presentation.dto.request.AdminJobPostingExtr
 import com.shoutoutz.api.jobposting.presentation.dto.request.AdminJobPostingFindAllRequest;
 import com.shoutoutz.api.jobposting.presentation.dto.request.AdminJobPostingReanalysisRequest;
 import com.shoutoutz.api.jobposting.presentation.dto.request.AdminJobPostingSaveRequest;
+import com.shoutoutz.api.jobposting.presentation.dto.request.AdminJobPostingUpdateRequest;
 import com.shoutoutz.api.jobposting.presentation.dto.request.AdminJobPostingVisibilityUpdateRequest;
 import com.shoutoutz.api.jobposting.presentation.dto.response.AdminJobPostingDetailResponse;
 import com.shoutoutz.api.jobposting.presentation.dto.response.AdminJobPostingExtractResponse;
@@ -296,7 +297,7 @@ class AdminJobPostingHttpApiTest {
 
     @Test
     void updatesJobPosting() throws Exception {
-        given(jobPostingAdminService.update(eq(JOB_POSTING_ID), eq(UserRole.ADMIN), any(AdminJobPostingSaveRequest.class)))
+        given(jobPostingAdminService.update(eq(JOB_POSTING_ID), eq(UserRole.ADMIN), any(AdminJobPostingUpdateRequest.class)))
                 .willReturn(new AdminJobPostingUpdateResponse(JOB_POSTING_ID, MatchingStatus.PENDING, true));
 
         mockMvc.perform(put("/api/v1/admin/job-postings/{jobPostingId}", JOB_POSTING_ID)

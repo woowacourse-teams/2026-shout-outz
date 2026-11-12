@@ -41,6 +41,7 @@ import com.shoutoutz.api.jobposting.presentation.dto.request.AdminJobPostingExtr
 import com.shoutoutz.api.jobposting.presentation.dto.request.AdminJobPostingFindAllRequest;
 import com.shoutoutz.api.jobposting.presentation.dto.request.AdminJobPostingReanalysisRequest;
 import com.shoutoutz.api.jobposting.presentation.dto.request.AdminJobPostingSaveRequest;
+import com.shoutoutz.api.jobposting.presentation.dto.request.AdminJobPostingUpdateRequest;
 import com.shoutoutz.api.jobposting.presentation.dto.request.AdminJobPostingVisibilityUpdateRequest;
 import com.shoutoutz.api.jobposting.presentation.dto.response.AdminJobPostingReanalysisResponse;
 import com.shoutoutz.api.jobposting.presentation.dto.response.AdminJobPostingUpdateResponse;
@@ -287,6 +288,36 @@ class JobPostingAdminServiceTest {
     }
 
     @Test
+    void 원문_없이_고치면_공고_정보만_고치고_다시_분석하지_않는다() {
+        when(jobPostingRepository.findByIdForUpdate(100L)).thenReturn(Optional.of(analyzed()));
+
+        var response = service.update(100L, UserRole.ADMIN, updateRequest(null, "백엔드 개발자 (경력)"));
+
+        assertThat(response).isEqualTo(new AdminJobPostingUpdateResponse(100L, MatchingStatus.READY, false));
+        ArgumentCaptor<JobPosting> captor = ArgumentCaptor.forClass(JobPosting.class);
+        verify(jobPostingRepository).update(captor.capture(), eq(false));
+        JobPosting updated = captor.getValue();
+        assertThat(updated.getTitle()).isEqualTo("백엔드 개발자 (경력)");
+        assertThat(updated.getRequirements()).extracting(JobRequirement::getId).containsExactly(1000L);
+    }
+
+    @Test
+    void 원문과_역량_없이_고치면_기존_역량을_그대로_둔다() {
+        when(jobPostingRepository.findByIdForUpdate(100L)).thenReturn(Optional.of(analyzed()));
+        AdminJobPostingUpdateRequest request = new AdminJobPostingUpdateRequest(
+                SOURCE_URL, null, "회사", JobRole.BACKEND, "신입", "백엔드 개발자", "정규직",
+                LocalDate.of(2026, 12, 31), null, null
+        );
+
+        var response = service.update(100L, UserRole.ADMIN, request);
+
+        assertThat(response).isEqualTo(new AdminJobPostingUpdateResponse(100L, MatchingStatus.READY, false));
+        ArgumentCaptor<JobPosting> captor = ArgumentCaptor.forClass(JobPosting.class);
+        verify(jobPostingRepository).update(captor.capture(), eq(false));
+        assertThat(captor.getValue().getRequirements()).extracting(JobRequirement::getId).containsExactly(1000L);
+    }
+
+    @Test
     void 원문이_바뀌면_받은_역량으로_바꾸고_다시_분석한다() {
         when(jobPostingRepository.findByIdForUpdate(100L)).thenReturn(Optional.of(analyzed()));
 
@@ -306,7 +337,7 @@ class JobPostingAdminServiceTest {
     @Test
     void 공고_주소가_다르면_고치지_않는다() {
         when(jobPostingRepository.findByIdForUpdate(100L)).thenReturn(Optional.of(analyzed()));
-        AdminJobPostingSaveRequest request = new AdminJobPostingSaveRequest(
+        AdminJobPostingUpdateRequest request = new AdminJobPostingUpdateRequest(
                 "https://example.com/jobs/2", "원문", "회사", JobRole.BACKEND, "신입", "백엔드 개발자", "정규직",
                 LocalDate.of(2026, 12, 31), null,
                 List.of(new AdminJobPostingSaveRequest.Requirement("Spring", RequirementCategory.REQUIRED, "설명"))
@@ -323,7 +354,7 @@ class JobPostingAdminServiceTest {
     void 없는_공고를_고치면_404를_던진다() {
         when(jobPostingRepository.findByIdForUpdate(100L)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> service.update(100L, UserRole.ADMIN, saveRequest()))
+        assertThatThrownBy(() -> service.update(100L, UserRole.ADMIN, updateRequest("원문", "백엔드 개발자")))
                 .isInstanceOf(EntityNotFoundException.class)
                 .extracting("errorCode")
                 .isEqualTo(JobPostingErrorCode.JOB_POSTING_NOT_FOUND);
@@ -332,7 +363,7 @@ class JobPostingAdminServiceTest {
 
     @Test
     void 관리자가_아니면_공고를_고치지_않는다() {
-        assertThatThrownBy(() -> service.update(100L, UserRole.USER, saveRequest()))
+        assertThatThrownBy(() -> service.update(100L, UserRole.USER, updateRequest("원문", "백엔드 개발자")))
                 .isInstanceOf(ForbiddenException.class);
         verifyNoInteractions(jobPostingRepository);
     }
@@ -685,12 +716,12 @@ class JobPostingAdminServiceTest {
         );
     }
 
-    private AdminJobPostingSaveRequest updateRequest(String content, String title) {
+    private AdminJobPostingUpdateRequest updateRequest(String content, String title) {
         return updateRequest(content, title, null);
     }
 
-    private AdminJobPostingSaveRequest updateRequest(String content, String title, Long logoImageId) {
-        return new AdminJobPostingSaveRequest(
+    private AdminJobPostingUpdateRequest updateRequest(String content, String title, Long logoImageId) {
+        return new AdminJobPostingUpdateRequest(
                 SOURCE_URL, content, "회사", JobRole.BACKEND, "신입", title, "정규직",
                 LocalDate.of(2026, 12, 31), logoImageId,
                 List.of(

@@ -8,6 +8,7 @@ import com.shoutoutz.api.jobposting.presentation.dto.request.AdminJobPostingExtr
 import com.shoutoutz.api.jobposting.presentation.dto.request.AdminJobPostingFindAllRequest;
 import com.shoutoutz.api.jobposting.presentation.dto.request.AdminJobPostingReanalysisRequest;
 import com.shoutoutz.api.jobposting.presentation.dto.request.AdminJobPostingSaveRequest;
+import com.shoutoutz.api.jobposting.presentation.dto.request.AdminJobPostingUpdateRequest;
 import com.shoutoutz.api.jobposting.presentation.dto.request.AdminJobPostingVisibilityUpdateRequest;
 import com.shoutoutz.api.jobposting.presentation.dto.response.AdminJobPostingDetailResponse;
 import com.shoutoutz.api.jobposting.presentation.dto.response.AdminJobPostingExtractResponse;
@@ -89,7 +90,7 @@ public class AdminJobPostingHttpApi {
     public ResponseEntity<SuccessResponse<AdminJobPostingUpdateResponse>> updateJobPosting(
             @PathVariable long jobPostingId,
             @LoginUser AuthenticatedUser loginUser,
-            @Valid @RequestBody AdminJobPostingSaveRequest request
+            @Valid @RequestBody AdminJobPostingUpdateRequest request
     ) {
         return ResponseEntity.ok(SuccessResponse.success(
                 jobPostingAdminService.update(jobPostingId, loginUser.role(), request)
