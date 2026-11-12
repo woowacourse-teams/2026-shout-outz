@@ -9,10 +9,13 @@ import { Footer } from '@/components/Footer';
 import { Tab } from '@/components/Tab';
 import { AsyncBoundary } from '@/components/AsyncBoundary';
 import { BugReportPanel } from '@/components/admin/BugReportPanel';
+import { CategoryAdminPanel } from '@/components/admin/CategoryAdminPanel';
 import { CrewApprovalPanel } from '@/components/admin/CrewApprovalPanel';
 import { HomeBannerPanel } from '@/components/admin/HomeBannerPanel';
+import { JobPostingAdminPanel } from '@/components/admin/JobPostingAdminPanel';
 import { MagazineAdminPanel } from '@/components/admin/MagazineAdminPanel';
 import { NewsCreatePanel } from '@/components/admin/NewsCreatePanel';
+import { NewsManagePanel } from '@/components/admin/NewsManagePanel';
 import { ProjectApprovalPanel } from '@/components/admin/ProjectApprovalPanel';
 import { ProjectEditPanel } from '@/components/admin/ProjectEditPanel';
 import { ResourceReportPanel } from '@/components/admin/ResourceReportPanel';
@@ -97,7 +100,16 @@ function AdminTabPanel({ tab }: { tab: AdminTab }) {
     case 'project-edit':
       return <ProjectEditPanel />;
     case 'news':
-      return <NewsCreatePanel />;
+      return (
+        <div className="flex flex-col gap-12">
+          <NewsCreatePanel />
+          <NewsManagePanel />
+        </div>
+      );
+    case 'job-postings':
+      return <JobPostingAdminPanel />;
+    case 'categories':
+      return <CategoryAdminPanel />;
     case 'banners':
       return <HomeBannerPanel />;
     case 'magazines':
