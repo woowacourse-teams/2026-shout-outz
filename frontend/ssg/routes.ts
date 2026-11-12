@@ -1,8 +1,8 @@
-import { routeTree } from '@/routeTree.gen';
-import { createMemoryHistory, createRouter, type AnyRoute } from '@tanstack/react-router';
-import { PATH_PARAMS_ALLOWED_CHARACTERS } from '@/constants/router';
+import type { AnyRoute } from '@tanstack/react-router';
+import { createPathRouter, type PathRouter } from '../rendering/pathRouter';
 
-function normalizePrerenderPath(pathname: string): string {
+// 라우터의 trailing slash 정책(never)에 맞춰 경로 끝의 '/'를 뗍니다. '/'는 그대로 둡니다.
+export function removeTrailingSlash(pathname: string): string {
   return pathname === '/' ? pathname : pathname.replace(/\/+$/, '');
 }
 
@@ -16,24 +16,13 @@ export interface PrerenderRouteCollection {
   failures: PrerenderRouteFailure[];
 }
 
-// SSG, SSR 파이프라인에서 사용할 경로 매칭용 라우터
-export function createPathRouter() {
-  return createRouter({
-    routeTree,
-    pathParamsAllowedCharacters: [...PATH_PARAMS_ALLOWED_CHARACTERS],
-    history: createMemoryHistory({ initialEntries: ['/'] }),
-  });
-}
-
-type PathRouter = ReturnType<typeof createPathRouter>;
-
 function buildStaticPath(router: PathRouter, route: AnyRoute): string {
   // buildLocation으로 라우터의 경로 조립 규칙을 적용한 뒤, index route의 fullPath에
   // 남는 trailing slash를 기본 라우터 정책(never)에 맞게 제거합니다.
   const location = router.buildLocation({
     to: route.fullPath,
   } as unknown as Parameters<typeof router.buildLocation>[0]);
-  return normalizePrerenderPath(location.pathname);
+  return removeTrailingSlash(location.pathname);
 }
 
 // 경로에 매치되는 라우트 id를 루트부터 순서대로 돌려줍니다. 페이지별 HTML에 넣을 라우트 청크를
@@ -92,7 +81,7 @@ export async function collectPrerenderRoutes(): Promise<PrerenderRouteCollection
           to: route.fullPath,
           params,
         } as unknown as Parameters<typeof router.buildLocation>[0]);
-        routes.add(normalizePrerenderPath(location.pathname));
+        routes.add(removeTrailingSlash(location.pathname));
       }
     } catch (error) {
       failures.push({ route: route.fullPath, error });

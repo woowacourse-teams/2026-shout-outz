@@ -4,17 +4,13 @@ import { createRouter } from '@tanstack/react-router';
 import { PATH_PARAMS_ALLOWED_CHARACTERS } from '@/constants/router';
 import { RouteError } from '@/components/RouteError';
 
-// 전달받은 QueryClient를 Router의 SSG 직렬화 생명주기에 연결합니다. 호출자는 브라우저에서는 한 번,
-// 프리렌더에서는 페이지마다 QueryClient와 Router를 새로 만들어 상태가 섞이지 않게 합니다.
+// 렌더 목적의 라우터에서는 단 하나의 진실 원천이 되는 라우터
 export function createAppRouter(queryClient: QueryClient) {
   return createRouter({
     routeTree,
     scrollRestoration: true,
     defaultErrorComponent: RouteError,
     pathParamsAllowedCharacters: [...PATH_PARAMS_ALLOWED_CHARACTERS],
-    // React Query의 DehydratedState는 query key/data를 unknown으로 표현해 Router가
-    // 직렬화 가능성을 정적으로 증명할 수 없습니다. 이 앱의 query key/data는 JSON 값만 사용하므로
-    // Router에 넘기는 직렬화 경계에서만 타입을 단언합니다.
     dehydrate: () =>
       ({
         queryClientState: dehydrate(queryClient),

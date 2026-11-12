@@ -2,9 +2,7 @@ import { readFileSync } from 'node:fs';
 
 const PLUGIN_NAME = 'BuildAssetsPlugin';
 const ROUTE_ID_PATTERN = /createFileRoute\(\s*['"]([^'"]+)['"]\s*\)/;
-// TanStack Router의 autoCodeSplitting은 라우트 파일을 `?tsr-split=component` 같은 쿼리로 다시 import해
-// 별도 청크를 만듭니다. 이 쿼리가 붙은 import만 라우트 청크로 봅니다.
-const ROUTE_SPLIT_QUERY = 'tsr-split=';
+const ROUTE_SPLIT_QUERY = 'tsr-split='; // TanstackRouter의 autoCodeSplitting 옵션에 의해 붙는 라우트 청크 prefix
 
 function readRouteId(routeFilePath) {
   const routeId = readFileSync(routeFilePath, 'utf-8').match(ROUTE_ID_PATTERN)?.[1];
@@ -17,8 +15,10 @@ function readRouteId(routeFilePath) {
 }
 
 // dist/build-assets.json에 main entry의 scripts/styles와, 라우트 id별로 그 라우트를 그리는 데 필요한
-// 청크 파일 목록(routeChunks)을 남깁니다. ssg/generate.ts는 이 목록으로 페이지별 HTML에 preload를 넣어
+// 청크 파일 목록(routeChunks)을 남깁니다. 이 목록으로 아래 HTML의 <head>에 그 경로의 라우트 청크 preload를 넣어
 // main과 라우트 청크를 병렬로 내려받게 합니다.
+// - ssg/generate.ts: SSG 페이지, 경로별 CSR 셸(dist/community/new/index.html 등. 브라우저 렌더로 시작하는 페이지)
+// - server/index.ts: 요청마다 서버 렌더하는 SSR 페이지
 // importRequests에 적은 동적 import의 청크는 라우트와 무관하게 importChunks에 import 경로별로 남깁니다.
 export class BuildAssetsPlugin {
   constructor({ importRequests = [] } = {}) {
