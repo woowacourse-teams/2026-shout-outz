@@ -117,6 +117,11 @@ local-cache:
       refresh-after: ${LOCAL_CACHE_GUEST_FEED_FIRST_PAGE_REFRESH_AFTER:5s}
       expire-after: ${LOCAL_CACHE_GUEST_FEED_FIRST_PAGE_EXPIRE_AFTER:30s}
       maximum-size: 100
+    # 화면 상단의 내 핸들·이름·사진. 사용자별로 보관하고, 프로필 수정이나 인증 승인으로 바뀌면 그 사용자 것만 비운다.
+    user-profile-summary:
+      refresh-after: ${LOCAL_CACHE_USER_PROFILE_SUMMARY_REFRESH_AFTER:1m}
+      expire-after: ${LOCAL_CACHE_USER_PROFILE_SUMMARY_EXPIRE_AFTER:5m}
+      maximum-size: 1000
 
 github:
   oauth:

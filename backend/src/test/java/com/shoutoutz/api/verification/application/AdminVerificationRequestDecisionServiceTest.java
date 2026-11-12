@@ -16,6 +16,7 @@ import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
 import com.shoutoutz.api.common.exception.custom.ForbiddenException;
 import com.shoutoutz.api.cohort.domain.Cohort;
 import com.shoutoutz.api.project.application.ArchivedProjectMemberMatchService;
+import com.shoutoutz.api.user.application.UserService;
 import com.shoutoutz.api.user.domain.account.User;
 import com.shoutoutz.api.user.domain.account.UserRepository;
 import com.shoutoutz.api.user.domain.account.UserRole;
@@ -69,6 +70,9 @@ class AdminVerificationRequestDecisionServiceTest {
     @Mock
     private ArchivedProjectMemberMatchService archivedProjectMemberMatchService;
 
+    @Mock
+    private UserService userService;
+
     private AdminVerificationRequestDecisionService decisionService;
 
     @BeforeEach
@@ -80,6 +84,7 @@ class AdminVerificationRequestDecisionServiceTest {
                 userRepository,
                 oauthAccountRepository,
                 archivedProjectMemberMatchService,
+                userService,
                 Clock.fixed(NOW, ZoneOffset.UTC)
         );
     }
@@ -130,6 +135,7 @@ class AdminVerificationRequestDecisionServiceTest {
         assertThat(profileCaptor.getValue().getCohort()).isEqualTo(Cohort.COHORT_8);
         assertThat(profileCaptor.getValue().getTrack()).isEqualTo(Track.BACKEND);
         verify(archivedProjectMemberMatchService).matchGithubAccount(USER_ID, "12345678");
+        verify(userService).evictSummaryCache(USER_ID);
 
         ArgumentCaptor<UserVerificationRequestHistory> historyCaptor =
                 ArgumentCaptor.forClass(UserVerificationRequestHistory.class);
@@ -222,7 +228,7 @@ class AdminVerificationRequestDecisionServiceTest {
         assertThat(historyCaptor.getValue().getChangedAt()).isEqualTo(NOW);
 
         verifyNoInteractions(userProfileRepository);
-        verifyNoInteractions(oauthAccountRepository, archivedProjectMemberMatchService);
+        verifyNoInteractions(oauthAccountRepository, archivedProjectMemberMatchService, userService);
     }
 
     @Test
