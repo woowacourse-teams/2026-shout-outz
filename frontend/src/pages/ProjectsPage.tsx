@@ -43,11 +43,7 @@ export function ProjectsPage() {
     <div className="bg-background flex min-h-dvh flex-col text-gray-900">
       <Title>프로젝트 | shout-outz</Title>
       <AppGnb />
-      <main
-        id="projects-content"
-        tabIndex={-1}
-        className="mx-auto w-full max-w-6xl flex-1 px-4 pt-6 pb-12 md:pt-10 md:pb-20"
-      >
+      <main className="mx-auto w-full max-w-6xl flex-1 px-4 pt-6 pb-12 md:pt-10 md:pb-20">
         <div className="flex items-start justify-between gap-4">
           <div>
             <h1 className="text-xl font-bold md:text-2xl">프로젝트</h1>
