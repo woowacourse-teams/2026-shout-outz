@@ -4,6 +4,14 @@ import userEvent from '@testing-library/user-event';
 import { AuthSheet } from '@/components/auth/AuthSheet';
 
 describe('AuthSheet', () => {
+  it('환영 문구 대신 로그인 창이라는 목적을 모달 이름으로 알린다', () => {
+    render(<AuthSheet onClose={jest.fn()} />);
+
+    expect(screen.getByRole('dialog', { name: '로그인' })).toHaveAccessibleDescription(
+      '궁금한 건 편하게 묻고, 서로의 이야기에 응원을 보내 보세요.',
+    );
+  });
+
   it('GitHub 로그인을 시작하는 버튼을 보여준다', () => {
     render(<AuthSheet onClose={jest.fn()} />);
 

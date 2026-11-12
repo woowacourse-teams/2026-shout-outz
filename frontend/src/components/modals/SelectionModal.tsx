@@ -1,4 +1,4 @@
-import { type ReactNode } from 'react';
+import { useId, type ReactNode } from 'react';
 import { IconX } from '@tabler/icons-react';
 
 import { Modal } from '@/components/Modal';
@@ -25,14 +25,18 @@ export function SelectionModal({
   footer,
   width = 'md',
 }: SelectionModalProps) {
+  const titleId = useId();
+
   return (
-    <Modal onClose={onClose} className={WIDTHS[width]}>
+    <Modal onClose={onClose} labelledBy={titleId} className={WIDTHS[width]}>
       <div aria-hidden="true" className="flex justify-center pt-4 pb-1 md:hidden">
         <span className="h-1 w-9 rounded-full bg-gray-300" />
       </div>
 
       <header className="flex items-center justify-between gap-4 px-4 pt-3 pb-5 md:px-6 md:py-5.5">
-        <h2 className="text-lg font-bold">{title}</h2>
+        <h2 id={titleId} className="text-lg font-bold">
+          {title}
+        </h2>
         <Button
           variant="ghost"
           size="sm"

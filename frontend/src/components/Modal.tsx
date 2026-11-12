@@ -6,11 +6,20 @@ export interface ModalProps {
   children: ReactNode;
   onClose: () => void;
   className?: string;
+  /** 모달의 목적을 알리는 이름입니다. 화면의 제목이 목적을 설명하지 못할 때 `labelledBy` 대신 씁니다. */
+  label?: string;
   labelledBy?: string;
   describedBy?: string;
 }
 
-export function Modal({ children, onClose, className, labelledBy, describedBy }: ModalProps) {
+export function Modal({
+  children,
+  onClose,
+  className,
+  label,
+  labelledBy,
+  describedBy,
+}: ModalProps) {
   const ref = useRef<HTMLDialogElement>(null);
 
   // 닫을 때 브라우저가 연 버튼으로 포커스를 돌려주는 것은 dialog가 문서에 붙어 있을 때만이다.
@@ -33,6 +42,7 @@ export function Modal({ children, onClose, className, labelledBy, describedBy }:
   return (
     <dialog
       ref={ref}
+      aria-label={labelledBy ? undefined : label}
       aria-labelledby={labelledBy}
       aria-describedby={describedBy}
       onClose={onClose}

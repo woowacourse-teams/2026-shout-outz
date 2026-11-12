@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import { IconBrandGithub, IconX } from '@tabler/icons-react';
 
 import { Modal } from '@/components/Modal';
@@ -9,8 +10,16 @@ export interface AuthSheetProps {
 }
 
 export function AuthSheet({ onClose }: AuthSheetProps) {
+  const descriptionId = useId();
+
   return (
-    <Modal onClose={onClose} className="relative md:w-110">
+    // 환영 문구만으로는 로그인 창이라는 목적이 드러나지 않아, 제목 대신 목적을 이름으로 붙입니다.
+    <Modal
+      onClose={onClose}
+      label="로그인"
+      describedBy={descriptionId}
+      className="relative md:w-110"
+    >
       <div aria-hidden="true" className="flex justify-center pt-4 pb-1 md:hidden">
         <span className="h-1 w-9 rounded-full bg-gray-300" />
       </div>
@@ -37,7 +46,10 @@ export function AuthSheet({ onClose }: AuthSheetProps) {
         <h2 className="text-xl font-bold">
           <span className="text-primary-600 font-extrabold">샤라웃</span>에 오신 것을 환영해요!
         </h2>
-        <p className="-mt-2 text-sm leading-relaxed text-balance break-keep text-gray-600">
+        <p
+          id={descriptionId}
+          className="-mt-2 text-sm leading-relaxed text-balance break-keep text-gray-600"
+        >
           궁금한 건 편하게 묻고, 서로의 이야기에 응원을 보내 보세요.
         </p>
 

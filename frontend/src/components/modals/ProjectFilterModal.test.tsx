@@ -20,6 +20,7 @@ describe('프로젝트 상세 필터', () => {
 
     await openFilterModal(user);
 
+    expect(screen.getByRole('dialog', { name: '프로젝트 상세 필터' })).toBeInTheDocument();
     expect(await screen.findByRole('list', { name: '기술 스택 필터' })).toBeInTheDocument();
 
     await user.click(screen.getByRole('tab', { name: '기수' }));
