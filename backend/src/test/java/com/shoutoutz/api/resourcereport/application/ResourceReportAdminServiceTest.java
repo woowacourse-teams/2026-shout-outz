@@ -35,6 +35,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 
 @ExtendWith(MockitoExtension.class)
 class ResourceReportAdminServiceTest {
@@ -50,6 +51,9 @@ class ResourceReportAdminServiceTest {
     @Mock
     private ResourceReportRepository resourceReportRepository;
 
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
+
     private final ResourceReportAdminCursorCodec cursorCodec = new ResourceReportAdminCursorCodec();
 
     private ResourceReportAdminService resourceReportAdminService;
@@ -60,7 +64,8 @@ class ResourceReportAdminServiceTest {
                 resourceReportAdminQueryRepository,
                 resourceReportRepository,
                 cursorCodec,
-                Clock.fixed(NOW, ZoneOffset.UTC)
+                Clock.fixed(NOW, ZoneOffset.UTC),
+                eventPublisher
         );
     }
 
@@ -144,6 +149,38 @@ class ResourceReportAdminServiceTest {
                 NOW,
                 ADMIN_ID
         ));
+    }
+
+    @Test
+    @DisplayName("상태가 바뀌면 제보 종류를 담아 상태 변경을 알린다")
+    void publishesStatusChange() {
+        given(resourceReportRepository.findById(REPORT_ID)).willReturn(Optional.of(openReport()));
+        given(resourceReportRepository.updateStatus(any(ResourceReport.class)))
+                .willAnswer(invocation -> invocation.getArgument(0));
+
+        resourceReportAdminService.updateStatus(
+                REPORT_ID,
+                ADMIN_ID,
+                UserRole.ADMIN,
+                new ResourceReportStatusUpdateRequest(ResourceReportStatus.ACCEPTED)
+        );
+
+        verify(eventPublisher).publishEvent(new ResourceReportStatusChanged(ResourceReportKind.REMOVE));
+    }
+
+    @Test
+    @DisplayName("같은 상태로 바꾸면 상태 변경을 알리지 않는다")
+    void doesNotPublishWhenStatusIsSame() {
+        given(resourceReportRepository.findById(REPORT_ID)).willReturn(Optional.of(openReport()));
+
+        resourceReportAdminService.updateStatus(
+                REPORT_ID,
+                ADMIN_ID,
+                UserRole.ADMIN,
+                new ResourceReportStatusUpdateRequest(ResourceReportStatus.OPEN)
+        );
+
+        verifyNoInteractions(eventPublisher);
     }
 
     @Test
