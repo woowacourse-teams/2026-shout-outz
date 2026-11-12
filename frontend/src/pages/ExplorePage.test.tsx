@@ -252,6 +252,64 @@ describe('ExplorePage', () => {
     expect(within(summary).queryByText('결과')).not.toBeInTheDocument();
   });
 
+  it.each([
+    ['링크 미리보기가 아직 없으면', null],
+    ['대표 이미지가 열리지 않으면(429 등)', 'https://opengraph.githubassets.com/x/sample/8'],
+  ])(
+    '원문 카드는 %s 원문 사이트 파비콘, 그것도 안 열리면 회색 칸을 보여준다',
+    async (_, imageUrl) => {
+      const user = userEvent.setup();
+      server.use(
+        http.get('*/api/v1/resources/search', () =>
+          HttpResponse.json({
+            status: 'success',
+            data: {
+              blogs: { items: [] },
+              documents: { items: [serverMaterial(8, 'github-pr', '미리보기 없는 PR')] },
+              talks: { items: [] },
+            },
+          }),
+        ),
+        http.get('*/api/v1/resources/8', () =>
+          HttpResponse.json({
+            status: 'success',
+            data: {
+              ...serverMaterial(8, 'github-pr', '미리보기 없는 PR'),
+              contentType: null,
+              techTags: [],
+              keyPoints: [],
+              experiences: [],
+              linkPreview: imageUrl
+                ? { title: null, description: null, imageUrl, siteName: null }
+                : null,
+              topic: { topicId: 'cache', name: '캐시' },
+            },
+          }),
+        ),
+      );
+      renderRoute('/explore?q=미리보기');
+
+      const documents = await resultSection(/^PR과 팀 문서/);
+      await user.click(within(documents).getByRole('button', { name: /미리보기 없는 PR/ }));
+      const card = within(await screen.findByRole('dialog')).getByRole('link', {
+        name: /^원문 보기:/,
+      });
+      const thumbnail = () => card.querySelector('img');
+
+      if (imageUrl) {
+        await waitFor(() => expect(thumbnail()).toHaveAttribute('src', imageUrl));
+        fireEvent.error(thumbnail()!);
+      }
+      await waitFor(() =>
+        expect(thumbnail()).toHaveAttribute('src', 'https://github.com/favicon.ico'),
+      );
+
+      fireEvent.error(thumbnail()!);
+      expect(thumbnail()).not.toBeInTheDocument();
+      expect(card.querySelector('.bg-gray-100')).toBeInTheDocument();
+    },
+  );
+
   it('찾은 자료가 하나도 없으면 안내를 보여준다', async () => {
     renderRoute('/explore?q=없는검색어123');
 

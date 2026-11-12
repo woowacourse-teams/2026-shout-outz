@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { IconArrowUpRight, IconX } from '@tabler/icons-react';
 import { Link, RouterContextProvider, type AnyRouter } from '@tanstack/react-router';
 import { overlay } from 'overlay-kit';
-import type { ComponentProps, ComponentType, ReactNode } from 'react';
+import { useState, type ComponentProps, type ComponentType, type ReactNode } from 'react';
 
 import { materialDetailQuery, type Material, type MaterialDetail } from '@/apis/explore';
 import {
@@ -229,7 +229,7 @@ function SourcePreviewCard({
   thumbnailUrl,
 }: {
   material: Material;
-  /** 원문 페이지의 대표 이미지(링크 미리보기). 없으면 회색 칸 */
+  /** 원문 페이지의 대표 이미지(링크 미리보기). 없으면 원문 사이트 파비콘, 그것도 없으면 회색 칸 */
   thumbnailUrl: string | null;
 }) {
   return (
@@ -240,18 +240,12 @@ function SourcePreviewCard({
       aria-label={`원문 보기: ${material.title}`}
       className="focus-visible:outline-primary-600 bg-background flex overflow-hidden rounded-lg border border-gray-200 transition-colors hover:bg-gray-50 focus-visible:outline-2"
     >
-      {thumbnailUrl ? (
-        <img
-          src={thumbnailUrl}
-          alt=""
-          width={80}
-          height={80}
-          loading="lazy"
-          className="size-20 shrink-0 object-cover"
-        />
-      ) : (
-        <span aria-hidden="true" className="size-20 shrink-0 bg-gray-100" />
-      )}
+      {/* 주소가 바뀌면 열리지 않았던 기록을 지우도록 key로 새로 만든다. */}
+      <PreviewThumbnail
+        key={`${thumbnailUrl ?? ''}|${material.url}`}
+        thumbnailUrl={thumbnailUrl}
+        faviconUrls={faviconCandidatesOf(material)}
+      />
       <span className="flex min-w-0 flex-1 flex-col justify-center gap-1 border-l border-gray-200 px-4 py-3">
         <span className="truncate text-sm font-bold text-gray-900">{material.title}</span>
         <span className="flex min-w-0 items-center gap-1.5 text-xs text-gray-500">
@@ -260,6 +254,76 @@ function SourcePreviewCard({
         </span>
       </span>
     </a>
+  );
+}
+
+/**
+ * 원문 사이트 파비콘 후보. 서버가 준 파비콘(블로그)을 먼저, 없으면 원문 주소 도메인의 /favicon.ico를 쓴다.
+ * GitHub PR·팀 문서는 github.com/favicon.ico가 된다.
+ */
+function faviconCandidatesOf(material: Material) {
+  const candidates = [material.faviconUrl];
+  try {
+    candidates.push(new URL('/favicon.ico', material.url).href);
+  } catch {
+    // 주소를 읽을 수 없으면 도메인 파비콘은 건너뛴다.
+  }
+  return [...new Set(candidates.filter((url): url is string => Boolean(url)))];
+}
+
+/**
+ * 원문 카드 왼쪽 80px 칸.
+ * 대표 이미지 → 파비콘 → 회색 칸 순서로, 앞의 것이 없거나 열리지 않으면(onError) 다음 것을 보여 준다.
+ * 백엔드가 링크 미리보기를 아직 못 모았거나(null), GitHub 대표 이미지가 요청이 많아 429로 막힐 때를 대비한다.
+ */
+function PreviewThumbnail({
+  thumbnailUrl,
+  faviconUrls,
+}: {
+  thumbnailUrl: string | null;
+  faviconUrls: string[];
+}) {
+  const candidates = [
+    ...(thumbnailUrl ? [{ src: thumbnailUrl, kind: 'thumbnail' as const }] : []),
+    ...faviconUrls.map((src) => ({ src, kind: 'favicon' as const })),
+  ];
+  const [failedCount, setFailedCount] = useState(0);
+  const current = candidates[failedCount];
+
+  if (!current) {
+    return <span aria-hidden="true" className="size-20 shrink-0 bg-gray-100" />;
+  }
+
+  if (current.kind === 'thumbnail') {
+    return (
+      <img
+        src={current.src}
+        alt=""
+        width={80}
+        height={80}
+        loading="lazy"
+        className="size-20 shrink-0 object-cover"
+        onError={() => setFailedCount((count) => count + 1)}
+      />
+    );
+  }
+
+  // 파비콘은 작은 그림이라 늘리지 않고 회색 칸 가운데에 둔다.
+  return (
+    <span
+      aria-hidden="true"
+      className="flex size-20 shrink-0 items-center justify-center bg-gray-50"
+    >
+      <img
+        src={current.src}
+        alt=""
+        width={32}
+        height={32}
+        loading="lazy"
+        className="size-8 object-contain"
+        onError={() => setFailedCount((count) => count + 1)}
+      />
+    </span>
   );
 }
 
