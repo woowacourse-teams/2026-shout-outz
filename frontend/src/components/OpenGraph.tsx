@@ -37,7 +37,8 @@ export function OpenGraph({
       {!image && <meta property="og:image:height" content="630" />}
       <meta
         property="og:image:alt"
-        content={article ? title : '메가폰으로 응원을 외치는 shout-outz 캐릭터'}
+        // 기본 이미지일 때만 캐릭터 설명을 쓰고, 화면이 준 이미지는 제목으로 설명한다.
+        content={article || image ? title : '메가폰으로 응원을 외치는 shout-outz 캐릭터'}
       />
       {url && <meta property="og:url" content={url} />}
       <meta name="twitter:card" content="summary_large_image" />
