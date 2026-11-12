@@ -46,7 +46,7 @@ public class HttpLinkPreviewCollector implements LinkPreviewCollector {
 
     @Override
     public LinkPreviewMetadata collect(String url) throws IOException {
-        URI input = URI.create(url);
+        URI input = LinkPreviewUri.parse(url);
         urlPolicy.validateSyntax(input);
         Optional<String> youtubeVideoId = youtubeVideoId(input);
         if (youtubeVideoId.isPresent()) {
@@ -96,7 +96,7 @@ public class HttpLinkPreviewCollector implements LinkPreviewCollector {
             if (page.redirect() == null) {
                 return parse(page.body(), current);
             }
-            current = current.resolve(page.redirect());
+            current = LinkPreviewUri.resolveLocation(current, page.redirect());
         }
         throw new IOException("리다이렉트 횟수를 초과했습니다.");
     }
@@ -262,7 +262,7 @@ public class HttpLinkPreviewCollector implements LinkPreviewCollector {
             return null;
         }
         try {
-            URI image = pageUrl.resolve(value.strip());
+            URI image = LinkPreviewUri.resolve(pageUrl, value);
             return urlPolicy.requireFetchable(image).toString();
         } catch (IOException | IllegalArgumentException ignored) {
             return null;
