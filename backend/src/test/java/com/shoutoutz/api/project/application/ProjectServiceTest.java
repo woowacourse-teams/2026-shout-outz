@@ -804,10 +804,10 @@ class ProjectServiceTest {
         when(projectRepository.findKeywordCandidates(
                 new ProjectFilterCondition("eda", List.of(8), List.of()), List.of(3L, 1L)))
                 .thenReturn(List.of(
-                        new KeywordCandidate(1L, false),
-                        new KeywordCandidate(3L, false),
-                        new KeywordCandidate(4L, true),
-                        new KeywordCandidate(5L, false)
+                        new KeywordCandidate(1L, false, NOW),
+                        new KeywordCandidate(3L, false, NOW),
+                        new KeywordCandidate(4L, true, NOW),
+                        new KeywordCandidate(5L, false, NOW)
                 ));
         when(projectRepository.findAll(any(ProjectSearchCondition.class)))
                 .thenReturn(new ProjectPage(List.of(), false, 0));
@@ -828,7 +828,7 @@ class ProjectServiceTest {
         when(resourceSearchService.search("eda", null, 20))
                 .thenThrow(new EmbeddingException(null, "TRANSPORT_ERROR", true));
         when(projectRepository.findKeywordCandidates(new ProjectFilterCondition("eda", List.of(), List.of()), List.of()))
-                .thenReturn(List.of(new KeywordCandidate(2L, false)));
+                .thenReturn(List.of(new KeywordCandidate(2L, false, NOW)));
         when(projectRepository.findAll(any(ProjectSearchCondition.class)))
                 .thenReturn(new ProjectPage(List.of(), false, 0));
 
@@ -846,7 +846,7 @@ class ProjectServiceTest {
         when(projectRepository.findPublicProjectNames()).thenReturn(List.of());
         when(resourceSearchService.search("EDA", null, 20)).thenReturn(List.of(searchHit(10L)));
         when(projectRepository.findKeywordCandidates(new ProjectFilterCondition("EDA", List.of(), List.of()), List.of(10L)))
-                .thenReturn(List.of(new KeywordCandidate(10L, false)));
+                .thenReturn(List.of(new KeywordCandidate(10L, false, NOW)));
         when(projectRepository.findAll(any(ProjectSearchCondition.class)))
                 .thenReturn(new ProjectPage(List.of(summary(10L, 0L, NOW)), false, 1));
 

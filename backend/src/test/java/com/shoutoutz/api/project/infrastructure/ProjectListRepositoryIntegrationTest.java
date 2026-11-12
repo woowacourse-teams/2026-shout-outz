@@ -511,11 +511,11 @@ class ProjectListRepositoryIntegrationTest {
         );
 
         assertThat(candidates).containsExactlyInAnyOrder(
-                new KeywordCandidate(byTitle, true),
-                new KeywordCandidate(byTagline, false),
-                new KeywordCandidate(byRepository, true),
-                new KeywordCandidate(byDeployment, false),
-                new KeywordCandidate(byResource, false)
+                new KeywordCandidate(byTitle, true, BASE_TIME),
+                new KeywordCandidate(byTagline, false, BASE_TIME),
+                new KeywordCandidate(byRepository, true, BASE_TIME),
+                new KeywordCandidate(byDeployment, false, BASE_TIME),
+                new KeywordCandidate(byResource, false, BASE_TIME)
         );
         assertThat(candidates).extracting(KeywordCandidate::id).doesNotContain(unrelated, otherCohort, pendingResource);
         assertThat(projectRepository.findKeywordCandidates(

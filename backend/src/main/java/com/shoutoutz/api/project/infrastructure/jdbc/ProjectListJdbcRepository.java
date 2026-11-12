@@ -224,6 +224,7 @@ public class ProjectListJdbcRepository implements UserProjectQueryRepository {
      */
     private static final String KEYWORD_CANDIDATES_SQL = """
             SELECT p.id,
+                   p.created_at,
                    p.title ILIKE :keywordPattern ESCAPE '\\'
                        OR regexp_replace(p.github_repository_url, '^.*/', '') ILIKE :keywordPattern ESCAPE '\\'
                        AS name_matched
@@ -333,7 +334,8 @@ public class ProjectListJdbcRepository implements UserProjectQueryRepository {
                 parameters,
                 (resultSet, rowNumber) -> new KeywordCandidate(
                         resultSet.getLong("id"),
-                        resultSet.getBoolean("name_matched")
+                        resultSet.getBoolean("name_matched"),
+                        resultSet.getObject("created_at", OffsetDateTime.class).toInstant()
                 )
         );
     }

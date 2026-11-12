@@ -18,6 +18,10 @@ import java.util.stream.IntStream;
  */
 public record KeywordCandidates(List<KeywordCandidate> candidates, List<Long> resourceProjectIds) {
 
+    private static final Comparator<KeywordCandidate> NEWEST_FIRST = Comparator
+            .comparing(KeywordCandidate::createdAt, Comparator.reverseOrder())
+            .thenComparing(KeywordCandidate::id, Comparator.reverseOrder());
+
     public KeywordCandidates {
         candidates = List.copyOf(candidates);
         resourceProjectIds = List.copyOf(resourceProjectIds);
@@ -25,7 +29,8 @@ public record KeywordCandidates(List<KeywordCandidate> candidates, List<Long> re
 
     /**
      * 이름에 검색어가 든 프로젝트, 자료 검색 순서의 프로젝트, 나머지 글자 일치 프로젝트 순이다.
-     * 이름에 든 프로젝트끼리는 자료 검색 순서를 먼저 따르고, 나머지끼리는 나중에 등록된 프로젝트가 앞이다.
+     * 이름에 든 프로젝트끼리는 자료 검색 순서를 먼저 따르고, 그 밖에는 등록 시각이 최근인 프로젝트가 앞이다.
+     * 이관 프로젝트는 id가 커도 원래 등록 시각이 오래됐을 수 있어 id가 아닌 등록 시각으로 비교한다.
      */
     public List<Long> rankedIds(int limit) {
         Map<Long, Integer> resourceRanks = IntStream.range(0, resourceProjectIds.size())
@@ -39,14 +44,14 @@ public record KeywordCandidates(List<KeywordCandidate> candidates, List<Long> re
                 .filter(KeywordCandidate::nameMatched)
                 .sorted(Comparator.comparing((KeywordCandidate candidate) ->
                                 resourceRanks.getOrDefault(candidate.id(), Integer.MAX_VALUE))
-                        .thenComparing(KeywordCandidate::id, Comparator.reverseOrder()))
+                        .thenComparing(NEWEST_FIRST))
                 .forEach(candidate -> ranked.add(candidate.id()));
         resourceProjectIds.stream()
                 .filter(candidateById::containsKey)
                 .forEach(ranked::add);
         candidates.stream()
+                .sorted(NEWEST_FIRST)
                 .map(KeywordCandidate::id)
-                .sorted(Comparator.reverseOrder())
                 .forEach(ranked::add);
         return ranked.stream().limit(limit).toList();
     }
