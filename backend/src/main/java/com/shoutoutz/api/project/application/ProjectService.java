@@ -475,7 +475,8 @@ public class ProjectService {
 
     /**
      * 필터 모달에 보여줄 기수 및 기술 스택 목록과, 각 항목을 골랐을 때 나오는 프로젝트 수를 조회한다.
-     * 목록 조회와 숫자가 맞도록, 검색어와 필터는 목록 조회와 같은 방식으로 정리해 넘긴다.
+     * 검색어는 프로젝트 이름, 한 줄 소개, 크루 이름의 부분 일치로만 센다. 목록 조회의 검색어 해석(이름과 저장소 이름 일치,
+     * 기술 주제, 자료 검색)은 반영하지 않으므로, 검색어가 있으면 목록 전체 개수와 다를 수 있다.
      */
     @Transactional(readOnly = true)
     public ProjectFilterOptionsResponse findFilterOptions(ProjectFilterOptionsRequest request) {

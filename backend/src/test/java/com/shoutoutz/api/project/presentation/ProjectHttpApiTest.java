@@ -738,7 +738,9 @@ class ProjectHttpApiTest {
                                 .description(FILTER_OPTIONS_DESCRIPTION)
                                 .queryParameters(
                                         parameterWithName("keyword")
-                                                .description("목록 조회에 적용 중인 검색어. 목록 조회의 keyword와 같은 조건으로 검색하며 100자 이하")
+                                                .description("목록 조회에 적용 중인 검색어. 100자 이하. 프로젝트 이름, 한 줄 소개, 참여 크루 이름의 "
+                                                        + "부분 일치로만 센다. 목록 조회의 검색어 해석(이름과 저장소 이름 일치, 기술 주제, 자료 검색)은 "
+                                                        + "반영하지 않는다")
                                                 .optional(),
                                         parameterWithName("cohorts")
                                                 .description("모달에서 고른 기수. 쉼표로 구분 (ex. 6,7)")
@@ -765,8 +767,9 @@ class ProjectHttpApiTest {
                                                 .description("현재 조건에 이 기술 스택을 추가로 골랐을 때의 프로젝트 수. "
                                                         + "이미 고른 기술 스택은 matchedProjectCount와 같다."),
                                         fieldWithPath("data.matchedProjectCount").type(NUMBER)
-                                                .description("검색어와 고른 필터를 모두 적용한 프로젝트 수. "
-                                                        + "같은 조건의 목록 조회 meta.totalCount와 같다.")
+                                                .description("검색어(이름, 소개, 크루 이름 부분 일치)와 고른 필터를 모두 적용한 프로젝트 수. "
+                                                        + "검색어가 없으면 같은 조건의 목록 조회 meta.totalCount와 같고, "
+                                                        + "검색어가 있으면 목록 조회의 검색어 해석을 반영하지 않아 다를 수 있다.")
                                 )
                                 .build())
                 ));
