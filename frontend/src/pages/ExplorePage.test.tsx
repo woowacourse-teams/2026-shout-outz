@@ -398,6 +398,17 @@ describe('ExplorePage 프로젝트 탭', () => {
     );
   });
 
+  it('목록 아래에서 우리 팀 프로젝트 등록으로 이어진다', async () => {
+    renderRoute('/explore?tab=project');
+
+    await screen.findByRole('list', { name: '프로젝트' });
+    expect(screen.getByText(/찾는 프로젝트가 없나요\?/)).toBeVisible();
+    expect(screen.getByRole('link', { name: '우리 팀 프로젝트 등록하기 →' })).toHaveAttribute(
+      'href',
+      '/projects/new',
+    );
+  });
+
   it('기술 주제를 고르면 그 주제를 다룬 프로젝트만 보여주고, 다시 누르면 푼다', async () => {
     const user = userEvent.setup();
     renderRoute('/explore?tab=project');
