@@ -53,6 +53,7 @@ public interface ProjectResourceQueryRepository {
 
     /**
      * 카드별 근거 자료를 source_order 순으로 읽는다. 삭제된 경험과 자료, 받아들인 필요 없어요 제보 자료는 뺀다.
+     * 한 문서의 경험 여러 개가 같은 카드에 묶여도 그 문서는 한 번만 담는다.
      * 근거가 하나도 남지 않은 카드는 결과에 없다.
      */
     Map<Long, List<ResourceCard>> findCareerCardSources(Collection<Long> cardIds);
