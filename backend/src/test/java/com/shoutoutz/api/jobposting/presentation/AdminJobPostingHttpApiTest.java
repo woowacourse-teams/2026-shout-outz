@@ -315,8 +315,9 @@ class AdminJobPostingHttpApiTest {
                                 .tag(TAG)
                                 .summary("채용공고 변경")
                                 .description("""
-                                        기업이 바꾼 공고를 관리자가 다시 붙여넣어 고친다. 요청은 등록과 같다.
-                                        공고 글의 해시가 같으면 공고 정보만 고치고 역량과 분석 상태는 그대로 둔다. 이때 요청의 역량은 반영하지 않는다(reanalyzed=false).
+                                        관리자가 공고 정보를 고치거나, 기업이 바꾼 공고 글을 다시 붙여넣어 고친다. 요청은 등록과 같되 공고 글(content)은 선택값이다.
+                                        공고 글은 저장하지 않아 상세 조회로 받을 수 없다. 공고 정보만 고칠 때는 공고 글과 역량을 빼고 보낸다.
+                                        공고 글이 없거나 해시가 같으면 공고 정보만 고치고 역량과 분석 상태는 그대로 둔다. 이때 요청의 역량은 반영하지 않는다(reanalyzed=false).
                                         해시가 다르면 역량을 요청 목록으로 바꾸고 분석 상태를 PENDING으로 되돌려 다시 분석한다(reanalyzed=true).
                                         숨김 상태와 등록자, 등록 시각은 바꾸지 않는다.
                                         주소가 공고의 주소와 다르면 400(JOB_POSTING_URL_MISMATCH), 공고가 없으면 404(JOB_POSTING_NOT_FOUND)로 응답한다.
@@ -329,8 +330,8 @@ class AdminJobPostingHttpApiTest {
                                 )
                                 .pathParameters(parameterWithName("jobPostingId").type(SimpleType.INTEGER)
                                         .description("채용공고 ID"))
-                                .requestSchema(Schema.schema("AdminJobPostingSaveRequest"))
-                                .requestFields(saveRequestFields())
+                                .requestSchema(Schema.schema("AdminJobPostingUpdateRequest"))
+                                .requestFields(updateRequestFields())
                                 .responseSchema(Schema.schema("AdminJobPostingUpdateSuccessResponse"))
                                 .responseFields(
                                         fieldWithPath("status").type(STRING).description("응답 상태"),
@@ -343,6 +344,50 @@ class AdminJobPostingHttpApiTest {
                                 )
                                 .build())
                 ));
+    }
+
+    @Test
+    void updatesJobPostingWithoutContentAndRequirements() throws Exception {
+        given(jobPostingAdminService.update(eq(JOB_POSTING_ID), eq(UserRole.ADMIN), any(AdminJobPostingUpdateRequest.class)))
+                .willReturn(new AdminJobPostingUpdateResponse(JOB_POSTING_ID, MatchingStatus.READY, false));
+
+        mockMvc.perform(put("/api/v1/admin/job-postings/{jobPostingId}", JOB_POSTING_ID)
+                        .with(authenticated(UserRole.ADMIN))
+                        .header(HttpHeaders.COOKIE, "JSESSIONID=admin-session")
+                        .header("X-CSRF-Token", "csrf-token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "sourceUrl": "https://career.example.com/jobs/1",
+                                  "companyName": "우아한형제들",
+                                  "jobRole": "BACKEND",
+                                  "title": "백엔드 개발자"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.reanalyzed").value(false));
+    }
+
+    @Test
+    void rejectsUpdateWithContentButWithoutRequirements() throws Exception {
+        mockMvc.perform(put("/api/v1/admin/job-postings/{jobPostingId}", JOB_POSTING_ID)
+                        .with(authenticated(UserRole.ADMIN))
+                        .header(HttpHeaders.COOKIE, "JSESSIONID=admin-session")
+                        .header("X-CSRF-Token", "csrf-token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "sourceUrl": "https://career.example.com/jobs/1",
+                                  "content": "[백엔드 개발자] 자격 요건: Java, Spring 경험",
+                                  "companyName": "우아한형제들",
+                                  "jobRole": "BACKEND",
+                                  "title": "백엔드 개발자"
+                                }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.details[0].field").value("requirementsPresentWithContent"));
+
+        verifyNoInteractions(jobPostingAdminService);
     }
 
     @Test
@@ -598,6 +643,26 @@ class AdminJobPostingHttpApiTest {
                 new EnumFields(RequirementCategory.class).withPath("requirements[].category").description("역량 구분"),
                 fieldWithPath("requirements[].summary").type(STRING).description("역량 요약(500자 이하)")
         );
+    }
+
+    /**
+     * 등록 요청과 같되 공고 글은 선택값이고, 역량은 공고 글을 보낼 때만 필수다.
+     */
+    private static List<FieldDescriptor> updateRequestFields() {
+        return saveRequestFields().stream()
+                .map(field -> switch (field.getPath()) {
+                    case "content" -> fieldWithPath("content").type(STRING)
+                            .description("공고 글(10,000자 이하). 해시만 만들고 저장하지 않는다. "
+                                    + "공고 정보만 고칠 때는 빼거나 null 로 보낸다. 비어 있거나 공백뿐이면 보내지 않은 것으로 본다.")
+                            .optional();
+                    case "requirements" -> fieldWithPath("requirements").type(ARRAY)
+                            .description("역량 목록(최대 50개). 공고 글을 보내면 1개 이상 필요하고, 없으면 "
+                                    + "400(오류 응답의 details.field는 requirementsPresentWithContent). "
+                                    + "공고 글이 없거나 해시가 같으면 반영하지 않으므로 빼도 된다.")
+                            .optional();
+                    default -> field;
+                })
+                .toList();
     }
 
     private static List<FieldDescriptor> detailResponseFields() {
