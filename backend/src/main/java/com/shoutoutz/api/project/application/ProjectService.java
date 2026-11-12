@@ -52,7 +52,7 @@ import com.shoutoutz.api.project.domain.ProjectRepository;
 import com.shoutoutz.api.project.domain.ProjectSearchCondition;
 import com.shoutoutz.api.project.domain.ProjectSort;
 import com.shoutoutz.api.project.domain.ProjectSummary;
-import com.shoutoutz.api.project.domain.PublicProjectTitle;
+import com.shoutoutz.api.project.domain.PublicProjectName;
 import com.shoutoutz.api.project.domain.RestorableProject;
 import com.shoutoutz.api.project.domain.RestoredProject;
 import com.shoutoutz.api.project.domain.Slug;
@@ -337,12 +337,12 @@ public class ProjectService {
         if (keyword.isEmpty()) {
             return ResolvedKeyword.of(condition, KeywordMatch.PLAIN);
         }
-        List<Long> titleMatchedIds = projectRepository.findPublicProjectTitles().stream()
-                .filter(project -> NormalizedKeyword.of(project.title()).equals(keyword))
-                .map(PublicProjectTitle::id)
+        List<Long> nameMatchedIds = projectRepository.findPublicProjectNames().stream()
+                .filter(project -> project.isNamed(keyword))
+                .map(PublicProjectName::id)
                 .toList();
-        if (!titleMatchedIds.isEmpty()) {
-            return ResolvedKeyword.of(condition.onlyProjects(titleMatchedIds), KeywordMatch.PROJECT_NAME);
+        if (!nameMatchedIds.isEmpty()) {
+            return ResolvedKeyword.of(condition.onlyProjects(nameMatchedIds), KeywordMatch.PROJECT_NAME);
         }
         Optional<ResourceTopic> matchedTopic = topicAliases.match(keyword)
                 .flatMap(projectResourceQueryRepository::findTopic);

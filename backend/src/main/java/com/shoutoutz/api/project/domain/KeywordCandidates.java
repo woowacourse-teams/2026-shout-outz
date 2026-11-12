@@ -36,7 +36,7 @@ public record KeywordCandidates(List<KeywordCandidate> candidates, List<Long> re
 
         SequencedSet<Long> ranked = new LinkedHashSet<>();
         candidates.stream()
-                .filter(KeywordCandidate::titleMatched)
+                .filter(KeywordCandidate::nameMatched)
                 .sorted(Comparator.comparing((KeywordCandidate candidate) ->
                                 resourceRanks.getOrDefault(candidate.id(), Integer.MAX_VALUE))
                         .thenComparing(KeywordCandidate::id, Comparator.reverseOrder()))

@@ -14,7 +14,7 @@ import com.shoutoutz.api.project.domain.ProjectFilterOptions.TechTagCount;
 import com.shoutoutz.api.project.domain.ProjectMemberProfile;
 import com.shoutoutz.api.project.domain.ProjectPage;
 import com.shoutoutz.api.project.domain.ProjectSearchCondition;
-import com.shoutoutz.api.project.domain.PublicProjectTitle;
+import com.shoutoutz.api.project.domain.PublicProjectName;
 import com.shoutoutz.api.project.domain.ProjectSort;
 import com.shoutoutz.api.project.domain.ProjectSummary;
 import com.shoutoutz.api.project.domain.ProjectTechTag;
@@ -219,10 +219,14 @@ public class ProjectListJdbcRepository implements UserProjectQueryRepository {
 
     /**
      * 직접 검색 후보. 공개되고 필터를 통과한 프로젝트 중 검색어가 이름, 소개, 크루 이름, 저장소와 배포 주소에 들었거나
-     * 자료 검색에 걸린 프로젝트다. 저장소 이름이 "2025-hearit"처럼 영문 표기를 담는 경우가 많아 주소도 본다.
+     * 자료 검색에 걸린 프로젝트다. 저장소 이름이 "2025-hearit"처럼 영문 이름을 담는 경우가 많아 주소도 보고,
+     * 저장소 이름에 든 프로젝트는 이름에 든 프로젝트와 같이 앞에 둔다. 조직 이름처럼 모든 주소에 있는 부분에 걸리지 않게 저장소 이름만 본다.
      */
     private static final String KEYWORD_CANDIDATES_SQL = """
-            SELECT p.id, p.title ILIKE :keywordPattern ESCAPE '\\' AS title_matched
+            SELECT p.id,
+                   p.title ILIKE :keywordPattern ESCAPE '\\'
+                       OR regexp_replace(p.github_repository_url, '^.*/', '') ILIKE :keywordPattern ESCAPE '\\'
+                       AS name_matched
             FROM projects p
             WHERE p.approval_status = 'APPROVED'
               AND p.deleted_at IS NULL
@@ -283,15 +287,19 @@ public class ProjectListJdbcRepository implements UserProjectQueryRepository {
         return new ProjectPage(withTechTagsAndMembers(items), hasNext, totalCount == null ? 0 : totalCount);
     }
 
-    public List<PublicProjectTitle> findPublicProjectTitles() {
+    public List<PublicProjectName> findPublicProjectNames() {
         return jdbcTemplate.query(
                 """
-                        SELECT id, title
+                        SELECT id, title, github_repository_url
                         FROM projects
                         WHERE approval_status = 'APPROVED'
                           AND deleted_at IS NULL
                         """,
-                (resultSet, rowNumber) -> new PublicProjectTitle(resultSet.getLong("id"), resultSet.getString("title"))
+                (resultSet, rowNumber) -> new PublicProjectName(
+                        resultSet.getLong("id"),
+                        resultSet.getString("title"),
+                        resultSet.getString("github_repository_url")
+                )
         );
     }
 
@@ -312,7 +320,7 @@ public class ProjectListJdbcRepository implements UserProjectQueryRepository {
             parameters.addValue("techTagCount", condition.techTagIds().size());
         }
         sql.append("  AND (\n").append(KEYWORD_MATCH).append("""
-                      OR p.github_repository_url ILIKE :keywordPattern ESCAPE '\\'
+                      OR regexp_replace(p.github_repository_url, '^.*/', '') ILIKE :keywordPattern ESCAPE '\\'
                       OR p.deployment_url ILIKE :keywordPattern ESCAPE '\\'
                 """);
         if (!resourceProjectIds.isEmpty()) {
@@ -325,7 +333,7 @@ public class ProjectListJdbcRepository implements UserProjectQueryRepository {
                 parameters,
                 (resultSet, rowNumber) -> new KeywordCandidate(
                         resultSet.getLong("id"),
-                        resultSet.getBoolean("title_matched")
+                        resultSet.getBoolean("name_matched")
                 )
         );
     }

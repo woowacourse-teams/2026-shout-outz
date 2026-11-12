@@ -1,6 +1,7 @@
 package com.shoutoutz.api.project.infrastructure;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.groups.Tuple.tuple;
 
 import com.shoutoutz.api.cohort.domain.Cohort;
 import com.shoutoutz.api.project.domain.KeywordCandidate;
@@ -16,7 +17,7 @@ import com.shoutoutz.api.project.domain.ProjectSearchCondition;
 import com.shoutoutz.api.project.domain.ProjectSort;
 import com.shoutoutz.api.project.domain.ProjectSummary;
 import com.shoutoutz.api.project.domain.ProjectTechTag;
-import com.shoutoutz.api.project.domain.PublicProjectTitle;
+import com.shoutoutz.api.project.domain.PublicProjectName;
 import com.shoutoutz.api.user.domain.account.User;
 import com.shoutoutz.api.user.domain.account.UserRepository;
 import java.sql.Timestamp;
@@ -429,10 +430,16 @@ class ProjectListRepositoryIntegrationTest {
         long deleted = saveProject(token + " 삭제", "소개", "APPROVED", 6, BASE_TIME);
         jdbcTemplate.update("UPDATE projects SET deleted_at = now() WHERE id = ?", deleted);
 
-        List<PublicProjectTitle> titles = projectRepository.findPublicProjectTitles();
+        List<PublicProjectName> titles = projectRepository.findPublicProjectNames();
 
-        assertThat(titles).contains(new PublicProjectTitle(approved, token + " 공개"));
-        assertThat(titles).extracting(PublicProjectTitle::id).doesNotContain(pending, deleted);
+        assertThat(titles).extracting(PublicProjectName::id, PublicProjectName::title)
+                .contains(tuple(approved, token + " 공개"));
+        assertThat(titles).filteredOn(name -> name.id() == approved)
+                .singleElement()
+                .extracting(PublicProjectName::githubRepositoryUrl)
+                .asString()
+                .startsWith("https://github.com/woowacourse-teams/list-");
+        assertThat(titles).extracting(PublicProjectName::id).doesNotContain(pending, deleted);
     }
 
     @Test
@@ -483,7 +490,7 @@ class ProjectListRepositoryIntegrationTest {
     }
 
     @Test
-    @DisplayName("직접 검색 후보는 필터를 통과한 프로젝트 중 이름, 소개, 크루 이름, 저장소와 배포 주소에 검색어가 들었거나 자료 검색에 걸린 프로젝트다.")
+    @DisplayName("직접 검색 후보는 필터를 통과한 프로젝트 중 이름, 소개, 크루 이름, 저장소와 배포 주소에 검색어가 들었거나 자료 검색에 걸린 프로젝트이고, 이름이나 저장소 주소에 든 프로젝트는 이름 일치로 표시한다.")
     void findsKeywordCandidates() {
         long byTitle = saveProject("[" + token + "] 제목", "소개", "APPROVED", 6, BASE_TIME);
         long byTagline = saveProject("제목", "소개 " + token, "APPROVED", 6, BASE_TIME);
@@ -506,11 +513,15 @@ class ProjectListRepositoryIntegrationTest {
         assertThat(candidates).containsExactlyInAnyOrder(
                 new KeywordCandidate(byTitle, true),
                 new KeywordCandidate(byTagline, false),
-                new KeywordCandidate(byRepository, false),
+                new KeywordCandidate(byRepository, true),
                 new KeywordCandidate(byDeployment, false),
                 new KeywordCandidate(byResource, false)
         );
         assertThat(candidates).extracting(KeywordCandidate::id).doesNotContain(unrelated, otherCohort, pendingResource);
+        assertThat(projectRepository.findKeywordCandidates(
+                new ProjectFilterCondition("woowacourse-teams/2025-" + token, List.of(6), List.of()), List.of()))
+                .extracting(KeywordCandidate::id)
+                .doesNotContain(byRepository);
     }
 
     private static Map<Long, Long> techTagCounts(ProjectFilterOptions options) {

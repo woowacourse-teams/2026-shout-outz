@@ -79,7 +79,7 @@ public interface ProjectRepository {
 
     ProjectPage findAll(ProjectSearchCondition condition, Long viewerId);
 
-    List<PublicProjectTitle> findPublicProjectTitles();
+    List<PublicProjectName> findPublicProjectNames();
 
     /**
      * 직접 검색 후보를 조회한다. 공개되고 기수, 기술 스택 필터를 통과한 프로젝트 중

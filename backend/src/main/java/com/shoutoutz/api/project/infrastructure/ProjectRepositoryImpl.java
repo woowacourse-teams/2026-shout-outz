@@ -17,7 +17,7 @@ import com.shoutoutz.api.project.domain.ProjectPage;
 import com.shoutoutz.api.project.domain.ProjectRepository;
 import com.shoutoutz.api.project.domain.KeywordCandidate;
 import com.shoutoutz.api.project.domain.ProjectSearchCondition;
-import com.shoutoutz.api.project.domain.PublicProjectTitle;
+import com.shoutoutz.api.project.domain.PublicProjectName;
 import com.shoutoutz.api.project.domain.RestorableProject;
 import com.shoutoutz.api.project.domain.Slug;
 import com.shoutoutz.api.project.infrastructure.jdbc.ProjectDetailJdbcRepository;
@@ -159,8 +159,8 @@ public class ProjectRepositoryImpl implements ProjectRepository {
     }
 
     @Override
-    public List<PublicProjectTitle> findPublicProjectTitles() {
-        return projectListJdbcRepository.findPublicProjectTitles();
+    public List<PublicProjectName> findPublicProjectNames() {
+        return projectListJdbcRepository.findPublicProjectNames();
     }
 
     @Override

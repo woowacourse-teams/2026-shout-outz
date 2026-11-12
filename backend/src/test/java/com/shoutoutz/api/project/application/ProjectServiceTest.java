@@ -60,7 +60,7 @@ import com.shoutoutz.api.project.domain.ProjectSummary;
 import com.shoutoutz.api.project.domain.RestorableProject;
 import com.shoutoutz.api.project.domain.RestoredProject;
 import com.shoutoutz.api.project.domain.ProjectTechTag;
-import com.shoutoutz.api.project.domain.PublicProjectTitle;
+import com.shoutoutz.api.project.domain.PublicProjectName;
 import com.shoutoutz.api.project.domain.TopicAliases;
 import com.shoutoutz.api.project.domain.ServiceStatus;
 import com.shoutoutz.api.user.domain.profile.Track;
@@ -755,16 +755,16 @@ class ProjectServiceTest {
         verify(projectRepository).findAll(conditionCaptor.capture());
         assertThat(conditionCaptor.getValue()).isEqualTo(new ProjectSearchCondition(
                 "모아", List.of(7, 6), List.of(2L, 1L), "concurrency", ProjectSort.POPULAR, 20, cursor));
-        verify(projectRepository, never()).findPublicProjectTitles();
+        verify(projectRepository, never()).findPublicProjectNames();
     }
 
     @Test
     @DisplayName("검색어가 공개 프로젝트 이름과 대소문자, 공백, 구두점을 빼고 같으면 검색어 대신 그 프로젝트들만 조회한다.")
     void findsOnlyProjectsWhoseTitleEqualsKeyword() {
-        when(projectRepository.findPublicProjectTitles()).thenReturn(List.of(
-                new PublicProjectTitle(1L, "Rilog."),
-                new PublicProjectTitle(2L, "Rilog 블로그"),
-                new PublicProjectTitle(3L, "rilog")
+        when(projectRepository.findPublicProjectNames()).thenReturn(List.of(
+                new PublicProjectName(1L, "Rilog.", "https://github.com/woowacourse-teams/2026-p1"),
+                new PublicProjectName(2L, "Rilog 블로그", "https://github.com/woowacourse-teams/2026-p2"),
+                new PublicProjectName(3L, "rilog", "https://github.com/woowacourse-teams/2026-p3")
         ));
         when(projectRepository.findAll(any(ProjectSearchCondition.class)))
                 .thenReturn(new ProjectPage(List.of(), false, 0));
@@ -778,9 +778,27 @@ class ProjectServiceTest {
     }
 
     @Test
+    @DisplayName("검색어가 연도 접두사를 뗀 저장소 이름과 같으면 그 프로젝트만 조회한다.")
+    void findsOnlyProjectWhoseRepositoryNameEqualsKeyword() {
+        when(projectRepository.findPublicProjectNames()).thenReturn(List.of(
+                new PublicProjectName(13L, "히어릿", "https://github.com/woowacourse-teams/2025-hearit"),
+                new PublicProjectName(14L, "히어로", "https://github.com/woowacourse-teams/2025-hero")
+        ));
+        when(projectRepository.findAll(any(ProjectSearchCondition.class)))
+                .thenReturn(new ProjectPage(List.of(), false, 0));
+
+        projectService.findAll(new ProjectFindAllRequest("hearit", null, null, null, "RELEVANCE", null, null));
+
+        ArgumentCaptor<ProjectSearchCondition> conditionCaptor = ArgumentCaptor.forClass(ProjectSearchCondition.class);
+        verify(projectRepository).findAll(conditionCaptor.capture());
+        assertThat(conditionCaptor.getValue().projectIds()).containsExactly(13L);
+        verifyNoInteractions(resourceSearchService);
+    }
+
+    @Test
     @DisplayName("이름도 기술 주제도 아니면 이름에 든 프로젝트, 자료 검색 순서의 프로젝트, 나머지 글자 일치 프로젝트 순으로 골라 조회한다.")
     void findsDirectSearchProjectsWhenKeywordIsNeitherTitleNorTopic() {
-        when(projectRepository.findPublicProjectTitles()).thenReturn(List.of(new PublicProjectTitle(1L, "Rilog.")));
+        when(projectRepository.findPublicProjectNames()).thenReturn(List.of(new PublicProjectName(1L, "Rilog.", "https://github.com/woowacourse-teams/2026-p1")));
         when(resourceSearchService.search("eda", null, 100))
                 .thenReturn(List.of(searchHit(3L), searchHit(null), searchHit(1L), searchHit(3L)));
         when(projectRepository.findKeywordCandidates(
@@ -806,7 +824,7 @@ class ProjectServiceTest {
     @Test
     @DisplayName("자료 검색의 임베딩 호출이 실패하면 글자 일치 프로젝트만으로 직접 검색 결과를 만든다.")
     void findsKeywordMatchesOnlyWhenEmbeddingFails(CapturedOutput output) {
-        when(projectRepository.findPublicProjectTitles()).thenReturn(List.of());
+        when(projectRepository.findPublicProjectNames()).thenReturn(List.of());
         when(resourceSearchService.search("eda", null, 100))
                 .thenThrow(new EmbeddingException(null, "TRANSPORT_ERROR", true));
         when(projectRepository.findKeywordCandidates(new ProjectFilterCondition("eda", List.of(), List.of()), List.of()))
@@ -825,7 +843,7 @@ class ProjectServiceTest {
     @Test
     @DisplayName("검색어로 조회하면 검색 id를 응답에 담고, 같은 id로 해석 경로와 결과를 한 줄 로그로 남긴다.")
     void logsKeywordSearchWithSearchId(CapturedOutput output) {
-        when(projectRepository.findPublicProjectTitles()).thenReturn(List.of());
+        when(projectRepository.findPublicProjectNames()).thenReturn(List.of());
         when(resourceSearchService.search("EDA", null, 100)).thenReturn(List.of(searchHit(10L)));
         when(projectRepository.findKeywordCandidates(new ProjectFilterCondition("EDA", List.of(), List.of()), List.of(10L)))
                 .thenReturn(List.of(new KeywordCandidate(10L, false)));
@@ -865,7 +883,7 @@ class ProjectServiceTest {
     @Test
     @DisplayName("검색어가 기술 주제 별칭과 맞으면 검색어 대신 그 주제로 조회하고, 응답에 해석한 주제를 담는다.")
     void findsTopicProjectsWhenKeywordMatchesTopicAlias() {
-        when(projectRepository.findPublicProjectTitles()).thenReturn(List.of(new PublicProjectTitle(1L, "Rilog.")));
+        when(projectRepository.findPublicProjectNames()).thenReturn(List.of(new PublicProjectName(1L, "Rilog.", "https://github.com/woowacourse-teams/2026-p1")));
         when(projectResourceQueryRepository.findTopic("concurrency")).thenReturn(Optional.of(
                 new ResourceTopic("concurrency", "동시성 제어/락", "backend", "동시성, 트랜잭션")));
         when(projectRepository.findAll(any(ProjectSearchCondition.class)))
@@ -885,7 +903,7 @@ class ProjectServiceTest {
     @Test
     @DisplayName("검색어가 프로젝트 이름과 같으면 기술 주제 별칭과 맞아도 이름을 먼저 따르고 주제를 담지 않는다.")
     void prefersProjectTitleOverTopicAlias() {
-        when(projectRepository.findPublicProjectTitles()).thenReturn(List.of(new PublicProjectTitle(5L, "동시성")));
+        when(projectRepository.findPublicProjectNames()).thenReturn(List.of(new PublicProjectName(5L, "동시성", "https://github.com/woowacourse-teams/2026-p5")));
         when(projectRepository.findAll(any(ProjectSearchCondition.class)))
                 .thenReturn(new ProjectPage(List.of(), false, 0));
 
