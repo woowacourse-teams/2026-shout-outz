@@ -4,6 +4,7 @@ import { popularKeywordsQuery } from '@/apis/explore';
 import { AppGnb } from '@/components/AppGnb';
 import { AsyncBoundary } from '@/components/AsyncBoundary';
 import { ExploreHero, type ExploreTab } from '@/components/explore/ExploreHero';
+import { exploreHead } from '@/components/explore/exploreHead';
 import { ExploreHome } from '@/components/explore/ExploreHome';
 import { ExploreSearchResult } from '@/components/explore/ExploreSearchResult';
 import { Footer } from '@/components/Footer';
@@ -41,7 +42,8 @@ export function ExplorePage({
 
   return (
     <div className="bg-background flex min-h-dvh flex-col text-gray-900">
-      <title>{query ? `${query} 검색 결과 | shout-outz` : '탐색 | shout-outz'}</title>
+      {/* 설명·canonical 같은 나머지 <head>는 루트 라우트의 RouteOpenGraph가 같은 exploreHead로 넣는다. */}
+      <title>{exploreHead({ tab, query, topic }).title}</title>
       <AppGnb />
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 pt-12 pb-18 break-keep md:pt-20 md:pb-28">
         <ExploreHero

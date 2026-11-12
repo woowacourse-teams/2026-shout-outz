@@ -8,6 +8,7 @@ import {
 } from '@/apis/project-explore';
 import type { Material } from '@/apis/explore';
 import { myResourceReportsQuery, RESOURCE_REMOVAL_MAX_COUNT } from '@/apis/resource-report';
+import { AsyncBoundary } from '@/components/AsyncBoundary';
 import { Button } from '@/components/Button';
 import { DotTab } from '@/components/explore/DotTab';
 import { chipClass } from '@/components/explore/ExploreHero';
@@ -197,15 +198,32 @@ export function ProjectMaterials({ slug, projectName, memberUserIds }: ProjectMa
             {data.kindCounts.pr} · 팀 문서 {data.kindCounts.teamDoc}
           </p>
           {topic && (
-            <TopicMaterials
-              key={`${topic.topicId}-${jobRole}`}
-              slug={slug}
-              projectName={projectName}
-              topic={topic}
-              jobRole={jobRole}
-              selection={selection}
-              reportedIds={isMember ? reportedIds : undefined}
-            />
+            <>
+              <h2 className="mt-1.5 text-2xl font-extrabold text-gray-900">{topic.name}</h2>
+              {/* 빌드할 때 첫 주제의 자료까지 미리 그리도록 주제 자료도 Suspense로 받는다. */}
+              <AsyncBoundary
+                key={`${topic.topicId}-${jobRole}`}
+                fallback={
+                  <p role="status" className="py-10 text-center text-sm text-gray-500">
+                    자료를 불러오는 중이에요.
+                  </p>
+                }
+                errorFallback={(error) => (
+                  <p role="alert" className="py-10 text-center text-sm text-gray-500">
+                    {getApiErrorMessage(error)}
+                  </p>
+                )}
+              >
+                <TopicMaterials
+                  slug={slug}
+                  projectName={projectName}
+                  topicId={topic.topicId}
+                  jobRole={jobRole}
+                  selection={selection}
+                  reportedIds={isMember ? reportedIds : undefined}
+                />
+              </AsyncBoundary>
+            </>
           )}
           {/* 모바일에는 왼쪽 주제 목록이 없어 제보 링크를 자료 아래에 둔다. */}
           {reportLinks && <div className="mt-10 lg:hidden">{reportLinks}</div>}
@@ -240,7 +258,7 @@ export function ProjectMaterials({ slug, projectName, memberUserIds }: ProjectMa
 interface TopicMaterialsProps {
   slug: string;
   projectName: string;
-  topic: { topicId: string; name: string };
+  topicId: string;
   jobRole: MaterialJobRole;
   selection?: MaterialSelection;
   /** 내가 "필요 없어요"로 보낸 자료. 팀원이 아니면 없다. */
@@ -250,60 +268,43 @@ interface TopicMaterialsProps {
 function TopicMaterials({
   slug,
   projectName,
-  topic,
+  topicId,
   jobRole,
   selection,
   reportedIds,
 }: TopicMaterialsProps) {
-  const { data, error, isPending } = useQuery(
-    projectTopicResourcesQuery(slug, topic.topicId, jobRole),
-  );
+  const { data } = useSuspenseQuery(projectTopicResourcesQuery(slug, topicId, jobRole));
 
   return (
-    <>
-      <h2 className="mt-1.5 text-2xl font-extrabold text-gray-900">{topic.name}</h2>
-      {isPending && (
-        <p role="status" className="py-10 text-center text-sm text-gray-500">
-          자료를 불러오는 중이에요.
-        </p>
+    <div className="mt-5 flex flex-col gap-14">
+      <MaterialSection title={`${projectName}의 이야기`} count={data.resources.length}>
+        <MaterialList
+          materials={data.resources}
+          selection={selection}
+          renderExtra={(material: Material) =>
+            reportedIds?.has(material.resourceId) && (
+              <p className="text-xs font-semibold text-gray-500">필요 없어요 보냄</p>
+            )
+          }
+        />
+      </MaterialSection>
+      {data.talks.length > 0 && (
+        <MaterialSection title="관련 테코톡" count={data.talks.length}>
+          <div className="pt-4">
+            <TechTalkList talks={data.talks} columns={3} />
+          </div>
+        </MaterialSection>
       )}
-      {error && (
-        <p role="alert" className="py-10 text-center text-sm text-gray-500">
-          {getApiErrorMessage(error)}
-        </p>
+      {data.otherTeamResources.length > 0 && (
+        <MaterialSection
+          title="다른 팀의 이야기"
+          count={data.otherTeamResources.length}
+          description="같은 주제를 다룬 다른 팀의 자료예요."
+        >
+          <MaterialList materials={data.otherTeamResources} />
+        </MaterialSection>
       )}
-      {data && (
-        <div className="mt-5 flex flex-col gap-14">
-          <MaterialSection title={`${projectName}의 이야기`} count={data.resources.length}>
-            <MaterialList
-              materials={data.resources}
-              selection={selection}
-              renderExtra={(material: Material) =>
-                reportedIds?.has(material.resourceId) && (
-                  <p className="text-xs font-semibold text-gray-500">필요 없어요 보냄</p>
-                )
-              }
-            />
-          </MaterialSection>
-          {data.talks.length > 0 && (
-            <MaterialSection title="관련 테코톡" count={data.talks.length}>
-              <div className="pt-4">
-                <TechTalkList talks={data.talks} columns={3} />
-              </div>
-            </MaterialSection>
-          )}
-          {data.otherTeamResources.length > 0 && (
-            <MaterialSection
-              title="다른 팀의 이야기"
-              count={data.otherTeamResources.length}
-              description="같은 주제를 다룬 다른 팀의 자료예요."
-            >
-              <MaterialList materials={data.otherTeamResources} />
-            </MaterialSection>
-          )}
-        </div>
-      )}
-    </>
+    </div>
   );
 }
 

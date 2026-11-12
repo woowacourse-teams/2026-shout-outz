@@ -5,7 +5,13 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { renderCsrShell, renderStaticPage } from './render';
 import { getPreloadFiles, injectBuildAssets, loadBuildAssets, type BuildAssets } from './assets';
-import { collectCsrShellRoutes, collectPrerenderRoutes, createRouteIdMatcher } from './routes';
+import {
+  collectCsrShellRoutes,
+  collectPrerenderRoutes,
+  collectSitemapStaticRoutes,
+  createRouteIdMatcher,
+} from './routes';
+import { writeSiteFiles } from './site-files';
 import { resolveHtmlPath } from './paths';
 
 const PRERENDER_ORIGIN = 'http://prerender.local';
@@ -164,6 +170,12 @@ async function main(): Promise<void> {
   }
 
   printGenerationSummary(results);
+
+  // 실제로 만든 SSG 페이지와, 검색에 노출하기로 한 고정 경로(staticData.sitemap)로 sitemap.xml을 만듭니다.
+  const generatedPages = results.flatMap((result) =>
+    result.status === 'success' ? [result.url] : [],
+  );
+  writeSiteFiles(distDir, [...collectSitemapStaticRoutes(), ...generatedPages]);
 }
 
 void main().catch((error: unknown) => {

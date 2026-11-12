@@ -59,6 +59,22 @@ export function collectCsrShellRoutes(): string[] {
   return [...routes].sort();
 }
 
+// staticData.sitemap이 true인 고정 경로($param 없음) 목록입니다. SSR·CSR 라우트 중 검색에 노출할 경로를
+// sitemap.xml에 넣을 때 씁니다. prerender 라우트는 만든 페이지 목록에서 따로 넣습니다.
+export function collectSitemapStaticRoutes(): string[] {
+  const router = createPathRouter();
+  const routes = new Set<string>();
+
+  for (const route of Object.values(router.routesById) as AnyRoute[]) {
+    if (route.isRoot || route.fullPath.includes('$') || !route.options.staticData?.sitemap) {
+      continue;
+    }
+    routes.add(buildStaticPath(router, route));
+  }
+
+  return [...routes].sort();
+}
+
 // routeTree.gen.ts는 건드리지 않고, 라우터 인스턴스의 routesById를 순회해 각 라우트의
 // staticData.prerender를 읽어 SSG 대상 경로 목록을 만듭니다. 동적 라우트는
 // generateStaticParams가 돌려준 파라미터마다 경로를 펼칩니다.

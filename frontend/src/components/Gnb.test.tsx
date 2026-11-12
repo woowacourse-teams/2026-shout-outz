@@ -11,7 +11,6 @@ import { Gnb, GNB_ITEMS, type GnbProps } from '@/components/Gnb';
 
 const ROUTE_PATHS = [
   '/',
-  '/explore',
   '/community',
   '/community/$feedId',
   '/projects',
@@ -68,13 +67,8 @@ describe('Gnb', () => {
       expect(activeLabels()).toEqual(['커뮤니티']);
     });
 
-    it('홈에서는 활성 항목이 없다', async () => {
+    it('홈(탐색 화면)에서는 탐색이 활성이다', async () => {
       await renderGnb('/');
-      expect(activeLabels()).toEqual([]);
-    });
-
-    it('탐색 화면에서는 탐색이 활성이다', async () => {
-      await renderGnb('/explore');
       expect(activeLabels()).toEqual(['탐색']);
     });
 
