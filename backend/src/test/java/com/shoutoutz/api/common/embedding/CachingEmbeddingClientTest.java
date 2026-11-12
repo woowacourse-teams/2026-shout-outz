@@ -82,6 +82,17 @@ class CachingEmbeddingClientTest {
     }
 
     @Test
+    @DisplayName("한 번에 받은 벡터는 캐시에서 밀려나도 다시 부르지 않고 그대로 돌려준다")
+    void returnsBatchVectorsEvenWhenCacheCannotHoldThem() {
+        CachingEmbeddingClient noRoomClient = new CachingEmbeddingClient(delegate, 0, registry);
+
+        List<float[]> vectors = noRoomClient.embedAll(List.of("부하 테스트", "LLM"));
+
+        assertThat(delegate.embeddedTexts).isEmpty();
+        assertThat(vectors).extracting(vector -> vector[0]).containsExactly(6f, 3f);
+    }
+
+    @Test
     @DisplayName("적중과 미적중 횟수를 search.embedding 캐시 지표로 남긴다")
     void recordsHitAndMissMetrics() {
         client.embed("동시성");
