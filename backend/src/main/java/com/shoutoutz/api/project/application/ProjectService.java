@@ -115,9 +115,10 @@ public class ProjectService {
 
     /**
      * 직접 검색에서 읽는 자료 수와 남기는 프로젝트 수. 벡터 검색은 맞는 자료가 없어도 가까운 자료를 돌려주므로,
-     * 관련이 약한 프로젝트가 끝없이 붙지 않게 상한을 둔다. 데모 검색 로그를 보고 다시 정하는 초안 값이다.
+     * 관련이 약한 프로젝트가 끝없이 붙지 않게 상한을 둔다. 실데이터에서 자료 100건이면 결과가 늘 30개를 채우고 뒤쪽 연관이 약해
+     * 20건으로 줄였다. 데모 검색 로그를 보고 다시 정하는 초안 값이다.
      */
-    private static final int DIRECT_SEARCH_RESOURCES = 100;
+    private static final int DIRECT_SEARCH_RESOURCES = 20;
     private static final int DIRECT_SEARCH_PROJECTS = 30;
     private static final int LOGGED_PROJECTS = 10;
     private static final Pattern WHITESPACES = Pattern.compile("\\s+");

@@ -799,7 +799,7 @@ class ProjectServiceTest {
     @DisplayName("이름도 기술 주제도 아니면 이름에 든 프로젝트, 자료 검색 순서의 프로젝트, 나머지 글자 일치 프로젝트 순으로 골라 조회한다.")
     void findsDirectSearchProjectsWhenKeywordIsNeitherTitleNorTopic() {
         when(projectRepository.findPublicProjectNames()).thenReturn(List.of(new PublicProjectName(1L, "Rilog.", "https://github.com/woowacourse-teams/2026-p1")));
-        when(resourceSearchService.search("eda", null, 100))
+        when(resourceSearchService.search("eda", null, 20))
                 .thenReturn(List.of(searchHit(3L), searchHit(null), searchHit(1L), searchHit(3L)));
         when(projectRepository.findKeywordCandidates(
                 new ProjectFilterCondition("eda", List.of(8), List.of()), List.of(3L, 1L)))
@@ -818,14 +818,14 @@ class ProjectServiceTest {
         verify(projectRepository).findAll(conditionCaptor.capture());
         assertThat(conditionCaptor.getValue()).isEqualTo(new ProjectSearchCondition(
                 null, List.of(8), List.of(), null, ProjectSort.RELEVANCE, 8, null, List.of(4L, 3L, 1L, 5L)));
-        verify(resourceSearchService).search("eda", null, 100);
+        verify(resourceSearchService).search("eda", null, 20);
     }
 
     @Test
     @DisplayName("자료 검색의 임베딩 호출이 실패하면 글자 일치 프로젝트만으로 직접 검색 결과를 만든다.")
     void findsKeywordMatchesOnlyWhenEmbeddingFails(CapturedOutput output) {
         when(projectRepository.findPublicProjectNames()).thenReturn(List.of());
-        when(resourceSearchService.search("eda", null, 100))
+        when(resourceSearchService.search("eda", null, 20))
                 .thenThrow(new EmbeddingException(null, "TRANSPORT_ERROR", true));
         when(projectRepository.findKeywordCandidates(new ProjectFilterCondition("eda", List.of(), List.of()), List.of()))
                 .thenReturn(List.of(new KeywordCandidate(2L, false)));
@@ -844,7 +844,7 @@ class ProjectServiceTest {
     @DisplayName("검색어로 조회하면 검색 id를 응답에 담고, 같은 id로 해석 경로와 결과를 한 줄 로그로 남긴다.")
     void logsKeywordSearchWithSearchId(CapturedOutput output) {
         when(projectRepository.findPublicProjectNames()).thenReturn(List.of());
-        when(resourceSearchService.search("EDA", null, 100)).thenReturn(List.of(searchHit(10L)));
+        when(resourceSearchService.search("EDA", null, 20)).thenReturn(List.of(searchHit(10L)));
         when(projectRepository.findKeywordCandidates(new ProjectFilterCondition("EDA", List.of(), List.of()), List.of(10L)))
                 .thenReturn(List.of(new KeywordCandidate(10L, false)));
         when(projectRepository.findAll(any(ProjectSearchCondition.class)))
