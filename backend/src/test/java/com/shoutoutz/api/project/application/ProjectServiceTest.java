@@ -822,6 +822,61 @@ class ProjectServiceTest {
     }
 
     @Test
+    @DisplayName("직접 검색의 다음 페이지가 있으면 첫 페이지의 순위 목록과 마지막 카드의 위치를 커서로 내려준다.")
+    void returnsRankedCursorForDirectSearch() {
+        when(projectRepository.findPublicProjectNames()).thenReturn(List.of());
+        when(resourceSearchService.search("eda", null, 20)).thenReturn(List.of(searchHit(3L), searchHit(1L)));
+        when(projectRepository.findKeywordCandidates(new ProjectFilterCondition("eda", List.of(), List.of()), List.of(3L, 1L)))
+                .thenReturn(List.of(
+                        new KeywordCandidate(1L, false, NOW),
+                        new KeywordCandidate(3L, false, NOW),
+                        new KeywordCandidate(4L, true, NOW),
+                        new KeywordCandidate(5L, false, NOW)
+                ));
+        when(projectRepository.findAll(any(ProjectSearchCondition.class)))
+                .thenReturn(new ProjectPage(List.of(summary(4L, 0L, NOW), summary(3L, 0L, NOW)), true, 4));
+
+        ProjectFindAllResponse response = projectService.findAll(
+                new ProjectFindAllRequest("eda", null, null, null, "RELEVANCE", 2, null));
+
+        assertThat(ProjectCursorCodec.decode(response.meta().nextCursor(), ProjectSort.RELEVANCE))
+                .isEqualTo(ProjectCursor.ranked(List.of(4L, 3L, 1L, 5L), 2));
+    }
+
+    @Test
+    @DisplayName("순위 목록 커서로 다음 페이지를 요청하면 검색어를 다시 해석하지 않고 커서의 순위 목록을 이어 읽는다.")
+    void continuesRankedCursorWithoutResolvingKeywordAgain() {
+        ProjectCursor cursor = ProjectCursor.ranked(List.of(4L, 3L, 1L, 5L), 2);
+        when(projectRepository.findAll(any(ProjectSearchCondition.class)))
+                .thenReturn(new ProjectPage(List.of(), false, 4));
+
+        projectService.findAll(new ProjectFindAllRequest(
+                "eda", List.of(8), null, null, "RELEVANCE", 2, ProjectCursorCodec.encode(cursor)));
+
+        ArgumentCaptor<ProjectSearchCondition> conditionCaptor = ArgumentCaptor.forClass(ProjectSearchCondition.class);
+        verify(projectRepository).findAll(conditionCaptor.capture());
+        assertThat(conditionCaptor.getValue()).isEqualTo(new ProjectSearchCondition(
+                null, List.of(8), List.of(), null, ProjectSort.RELEVANCE, 2, cursor, List.of(4L, 3L, 1L, 5L)));
+        verify(projectRepository, never()).findPublicProjectNames();
+        verifyNoInteractions(resourceSearchService);
+    }
+
+    @Test
+    @DisplayName("직접 검색인데 순위 목록이 없는 관련도순 커서를 보내면 이어 읽을 위치를 알 수 없어 400을 던진다.")
+    void rejectsUnrankedCursorForDirectSearch() {
+        when(projectRepository.findPublicProjectNames()).thenReturn(List.of());
+        when(resourceSearchService.search("eda", null, 20)).thenReturn(List.of());
+        when(projectRepository.findKeywordCandidates(new ProjectFilterCondition("eda", List.of(), List.of()), List.of()))
+                .thenReturn(List.of(new KeywordCandidate(1L, false, NOW)));
+        String unranked = ProjectCursorCodec.encode(ProjectCursor.relevance(NOW, 1L));
+
+        assertThatThrownBy(() -> projectService.findAll(
+                new ProjectFindAllRequest("eda", null, null, null, "RELEVANCE", 2, unranked)))
+                .isInstanceOf(InvalidProjectCursorException.class);
+        verify(projectRepository, never()).findAll(any(ProjectSearchCondition.class));
+    }
+
+    @Test
     @DisplayName("자료 검색의 임베딩 호출이 실패하면 글자 일치 프로젝트만으로 직접 검색 결과를 만든다.")
     void findsKeywordMatchesOnlyWhenEmbeddingFails(CapturedOutput output) {
         when(projectRepository.findPublicProjectNames()).thenReturn(List.of());

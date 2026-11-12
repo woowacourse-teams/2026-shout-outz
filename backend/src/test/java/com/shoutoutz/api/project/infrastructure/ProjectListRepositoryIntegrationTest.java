@@ -457,8 +457,8 @@ class ProjectListRepositoryIntegrationTest {
     }
 
     @Test
-    @DisplayName("관련도순은 미리 고른 프로젝트 순서대로 조회하고, 커서로 이어 읽으면 그 순서를 이어간다.")
-    void sortsRelevanceByGivenOrderAndPaginates() {
+    @DisplayName("관련도순은 미리 고른 프로젝트 순서대로 조회하고, 순위 목록 커서의 위치 다음부터 이어 읽는다.")
+    void sortsRelevanceByGivenOrderAndPaginatesWithRankedCursor() {
         long first = saveProject("APPROVED", 6, BASE_TIME);
         long second = saveProject("APPROVED", 6, BASE_TIME.plus(2, ChronoUnit.HOURS));
         long third = saveProject("APPROVED", 6, BASE_TIME.plus(1, ChronoUnit.HOURS));
@@ -466,15 +466,29 @@ class ProjectListRepositoryIntegrationTest {
 
         ProjectPage firstPage = findAll(new ProjectSearchCondition(
                 null, List.of(), List.of(), null, ProjectSort.RELEVANCE, 2, null, rankedIds));
-        ProjectCursor cursor = firstPage.nextCursor(ProjectSort.RELEVANCE);
         ProjectPage secondPage = findAll(new ProjectSearchCondition(
-                null, List.of(), List.of(), null, ProjectSort.RELEVANCE, 2, cursor, rankedIds));
+                null, List.of(), List.of(), null, ProjectSort.RELEVANCE, 2, ProjectCursor.ranked(rankedIds, 2), rankedIds));
 
         assertThat(ids(firstPage)).containsExactly(second, first);
         assertThat(firstPage.hasNext()).isTrue();
         assertThat(ids(secondPage)).containsExactly(third);
         assertThat(secondPage.hasNext()).isFalse();
         assertThat(secondPage.totalCount()).isEqualTo(3);
+    }
+
+    @Test
+    @DisplayName("순위 목록 커서는 위치로 이어 읽으므로, 앞 페이지의 프로젝트가 그사이 삭제돼도 남은 프로젝트를 이어서 준다.")
+    void continuesRankedPageAfterCursorProjectDeleted() {
+        long first = saveProject("APPROVED", 6, BASE_TIME);
+        long second = saveProject("APPROVED", 6, BASE_TIME.plus(1, ChronoUnit.HOURS));
+        long third = saveProject("APPROVED", 6, BASE_TIME.plus(2, ChronoUnit.HOURS));
+        List<Long> rankedIds = List.of(first, second, third);
+        jdbcTemplate.update("UPDATE projects SET deleted_at = now() WHERE id = ?", second);
+
+        ProjectPage page = findAll(new ProjectSearchCondition(
+                null, List.of(), List.of(), null, ProjectSort.RELEVANCE, 2, ProjectCursor.ranked(rankedIds, 2), rankedIds));
+
+        assertThat(ids(page)).containsExactly(third);
     }
 
     @Test

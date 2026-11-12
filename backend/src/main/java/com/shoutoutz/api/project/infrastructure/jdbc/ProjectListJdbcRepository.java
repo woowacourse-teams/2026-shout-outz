@@ -585,8 +585,8 @@ public class ProjectListJdbcRepository implements UserProjectQueryRepository {
      * 커서가 있으면 커서 위치 다음부터, 정렬 기준대로 조회 개수보다 하나 더 조회한다.
      * 정렬의 마지막 기준을 항상 id로 두어, 등록 시각이나 좋아요 수가 같아도 순서가 하나로 정해진다.
      * 커서 조건은 정렬 기준과 같은 순서로 (값1, 값2, ...) < (커서 값1, 커서 값2, ...) 를 비교한다.
-     * 관련도순은 미리 고른 프로젝트 순서(projectIds)를 그대로 쓰고, 커서 프로젝트보다 뒤에 있는 프로젝트부터 읽는다.
-     * 고른 순서가 없으면 최신순과 같다.
+     * 관련도순은 미리 고른 프로젝트 순서(projectIds)를 그대로 쓰고, 순위 목록 커서의 위치보다 뒤에 있는 프로젝트부터 읽는다.
+     * 위치를 번호로 비교하므로 앞 페이지의 프로젝트가 그사이 삭제돼도 이어 읽을 수 있다. 고른 순서가 없으면 최신순과 같다.
      */
     private static String pageSql(
             String filteredProjectsSql,
@@ -603,10 +603,7 @@ public class ProjectListJdbcRepository implements UserProjectQueryRepository {
 
         ProjectCursor cursor = condition.cursor();
         if (cursor != null) {
-            sql.append(cursorCondition(popular, ranked));
-            parameters.addValue("cursorLikeCount", cursor.likeCount());
-            parameters.addValue("cursorCreatedAt", OffsetDateTime.ofInstant(cursor.createdAt(), ZoneOffset.UTC));
-            parameters.addValue("cursorId", cursor.id());
+            sql.append(cursorCondition(cursor, parameters));
         }
 
         sql.append(orderBy(popular, ranked));
@@ -615,12 +612,15 @@ public class ProjectListJdbcRepository implements UserProjectQueryRepository {
         return sql.toString();
     }
 
-    private static String cursorCondition(boolean popular, boolean ranked) {
-        if (ranked) {
-            return "WHERE array_position(ARRAY[:projectIds]::bigint[], id) "
-                    + "> array_position(ARRAY[:projectIds]::bigint[], :cursorId::bigint)\n";
+    private static String cursorCondition(ProjectCursor cursor, MapSqlParameterSource parameters) {
+        if (cursor.isRanked()) {
+            parameters.addValue("cursorPosition", cursor.position());
+            return "WHERE array_position(ARRAY[:projectIds]::bigint[], id) > :cursorPosition\n";
         }
-        if (popular) {
+        parameters.addValue("cursorCreatedAt", OffsetDateTime.ofInstant(cursor.createdAt(), ZoneOffset.UTC));
+        parameters.addValue("cursorId", cursor.id());
+        if (cursor.sort() == ProjectSort.POPULAR) {
+            parameters.addValue("cursorLikeCount", cursor.likeCount());
             return "WHERE (like_count, created_at, id) < (:cursorLikeCount, :cursorCreatedAt, :cursorId)\n";
         }
         return "WHERE (created_at, id) < (:cursorCreatedAt, :cursorId)\n";

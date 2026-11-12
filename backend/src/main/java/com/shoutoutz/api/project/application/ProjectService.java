@@ -62,6 +62,7 @@ import com.shoutoutz.api.project.domain.Title;
 import com.shoutoutz.api.project.domain.TopicAliases;
 import com.shoutoutz.api.project.domain.exception.InvalidDescriptionMediaException;
 import com.shoutoutz.api.project.domain.exception.InvalidLogoException;
+import com.shoutoutz.api.project.domain.exception.InvalidProjectCursorException;
 import com.shoutoutz.api.project.domain.exception.InvalidProjectMemberException;
 import com.shoutoutz.api.project.domain.exception.InvalidTechTagException;
 import com.shoutoutz.api.project.domain.exception.InvalidThumbnailException;
@@ -119,7 +120,7 @@ public class ProjectService {
      * 20건으로 줄였다. 데모 검색 로그를 보고 다시 정하는 초안 값이다.
      */
     private static final int DIRECT_SEARCH_RESOURCES = 20;
-    private static final int DIRECT_SEARCH_PROJECTS = 30;
+    private static final int DIRECT_SEARCH_PROJECTS = ProjectCursor.MAX_RANKED_IDS;
     private static final int LOGGED_PROJECTS = 10;
     private static final Pattern WHITESPACES = Pattern.compile("\\s+");
 
@@ -263,10 +264,11 @@ public class ProjectService {
                 request.resolvedCursor()
         ));
         ProjectSearchCondition condition = resolved.condition();
+        validateRankedCursor(condition);
         ProjectPage page = viewerId == null
                 ? projectRepository.findAll(condition)
                 : projectRepository.findAll(condition, viewerId);
-        ProjectCursor nextCursor = page.nextCursor(sort);
+        ProjectCursor nextCursor = nextCursor(condition, page);
         Map<Long, URI> mediaUrls = resolveProjectMediaUrls(page.items());
         Map<Long, String> userAvatarUrls = resolveProjectSummaryUserAvatarUrls(page.items());
         String searchId = null;
@@ -283,6 +285,37 @@ public class ProjectService {
                 searchId,
                 resolved.matchedResources()
         );
+    }
+
+    /**
+     * 순위 목록으로 조회하면 다음 페이지도 같은 목록을 이어 읽도록 순위 목록과 마지막 카드의 위치를 커서에 담는다.
+     */
+    private ProjectCursor nextCursor(ProjectSearchCondition condition, ProjectPage page) {
+        if (!page.hasNext() || page.items().isEmpty()) {
+            return null;
+        }
+        if (isRanked(condition)) {
+            long lastId = page.items().getLast().id();
+            return ProjectCursor.ranked(condition.projectIds(), condition.projectIds().indexOf(lastId) + 1);
+        }
+        return page.nextCursor(condition.sort());
+    }
+
+    /**
+     * 순위 목록으로 조회하는데 순위 목록이 없는 커서가 오면 이어 읽을 위치를 알 수 없다.
+     * 검색어를 바꾸면서 다른 결과의 커서를 함께 보낸 경우라 처음부터 다시 요청해야 한다.
+     */
+    private static void validateRankedCursor(ProjectSearchCondition condition) {
+        ProjectCursor cursor = condition.cursor();
+        if (isRanked(condition) && cursor != null && !cursor.isRanked()) {
+            throw new InvalidProjectCursorException();
+        }
+    }
+
+    private static boolean isRanked(ProjectSearchCondition condition) {
+        return condition.sort() == ProjectSort.RELEVANCE
+                && condition.projectIds() != null
+                && !condition.projectIds().isEmpty();
     }
 
     /**
@@ -326,8 +359,13 @@ public class ProjectService {
      * 검색어가 공개 프로젝트 이름과 같으면 그 프로젝트로 가려는 입력으로 보고, 검색어 대신 그 프로젝트들만 조회한다.
      * 이름이 아니고 기술 주제 별칭과 맞는 주제가 하나면, 사이드바에서 그 주제를 고른 것과 같게 조회하고 해석한 주제를 알린다.
      * 둘 다 아니면 글자 일치와 자료 검색으로 직접 찾는다.
+     * 순위 목록 커서로 다음 페이지를 요청하면 다시 해석하지 않고 커서의 순위 목록을 이어 읽는다.
      */
     private ResolvedKeyword resolveKeyword(ProjectSearchCondition condition) {
+        ProjectCursor cursor = condition.cursor();
+        if (cursor != null && cursor.isRanked()) {
+            return ResolvedKeyword.of(condition.onlyProjects(cursor.rankedIds()), KeywordMatch.CONTINUED);
+        }
         if (condition.keyword() == null) {
             return ResolvedKeyword.of(condition, KeywordMatch.NONE);
         }
@@ -398,6 +436,7 @@ public class ProjectService {
      */
     private enum KeywordMatch {
         NONE,
+        CONTINUED,
         IN_TOPIC,
         PLAIN,
         PROJECT_NAME,

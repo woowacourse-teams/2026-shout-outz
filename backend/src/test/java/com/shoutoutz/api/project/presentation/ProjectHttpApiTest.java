@@ -528,7 +528,8 @@ class ProjectHttpApiTest {
                                                 .optional(),
                                         parameterWithName("sort")
                                                 .description("정렬 기준 (LATEST, POPULAR, RELEVANCE). 기본값 LATEST. "
-                                                        + "RELEVANCE는 직접 검색에서 고른 순서대로 주고, 그 밖에는 LATEST와 같다. "
+                                                        + "RELEVANCE는 직접 검색에서 고른 순서대로 주고, 다음 페이지도 첫 페이지에서 정한 순서를 이어 간다. "
+                                                        + "그 밖에는 LATEST와 같다. "
                                                         + "검색어가 있으면 RELEVANCE를 보내야 직접 검색의 관련도가 반영된다")
                                                 .optional(),
                                         parameterWithName("size")
