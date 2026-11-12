@@ -81,13 +81,17 @@ final class ProjectResourceFixtures {
     }
 
     long experience(long documentId, boolean deleted) {
+        return experience(documentId, 0, deleted);
+    }
+
+    long experience(long documentId, int experienceIndex, boolean deleted) {
         return jdbcTemplate.queryForObject("""
                 INSERT INTO resource_experiences (document_id, experience_index, problem, solution, source, deleted_at)
-                SELECT id, 0, '문제', '해결', source, CASE WHEN ? THEN now() END
+                SELECT id, ?, '문제', '해결', source, CASE WHEN ? THEN now() END
                 FROM resource_documents
                 WHERE id = ?
                 RETURNING id
-                """, Long.class, deleted, documentId);
+                """, Long.class, experienceIndex, deleted, documentId);
     }
 
     void cardSource(long cardId, long experienceId, int sourceOrder) {

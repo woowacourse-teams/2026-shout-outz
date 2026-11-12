@@ -294,6 +294,29 @@ class ProjectResourceQueryRepositoryIntegrationTest {
         assertThat(projectResourceQueryRepository.findCareerCardSources(List.of())).isEmpty();
     }
 
+    @Test
+    @DisplayName("한 문서의 경험 여러 개가 같은 카드에 묶여도 근거에는 그 문서를 가장 앞 경험 순서로 한 번만 담는다")
+    void findsCareerCardSourcesOncePerDocument() {
+        long card = fixtures.careerCard(projectId, "BE", "problem_solving", 0, false);
+        long otherCard = fixtures.careerCard(projectId, "BE", "problem_solving", 1, false);
+        long pr = fixtures.document("github-pr", "card-pr").project(projectId).topic(TOPIC).insert();
+        long blog = fixtures.document("blog-post", "card-blog").project(projectId).topic(TOPIC).insert();
+        long otherPr = fixtures.document("github-pr", "other-card-pr").project(projectId).topic(TOPIC).insert();
+        fixtures.cardSource(card, fixtures.experience(pr, 0, false), 1);
+        fixtures.cardSource(card, fixtures.experience(blog, false), 0);
+        fixtures.cardSource(card, fixtures.experience(pr, 1, false), 2);
+        fixtures.cardSource(card, fixtures.experience(pr, 2, false), 3);
+        fixtures.cardSource(otherCard, fixtures.experience(otherPr, 0, false), 0);
+        fixtures.cardSource(otherCard, fixtures.experience(otherPr, 1, false), 1);
+
+        Map<Long, List<ResourceCard>> sources = projectResourceQueryRepository.findCareerCardSources(
+                List.of(card, otherCard)
+        );
+
+        assertThat(sources.get(card)).extracting(ResourceCard::resourceId).containsExactly(blog, pr);
+        assertThat(sources.get(otherCard)).extracting(ResourceCard::resourceId).containsExactly(otherPr);
+    }
+
     private long idOf(String externalKey) {
         return jdbcTemplate.queryForObject(
                 "SELECT id FROM resource_documents WHERE external_key = ?",
