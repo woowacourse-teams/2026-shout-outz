@@ -122,8 +122,7 @@ describe('HomePage', () => {
 
       expect(within(feeds[0]!).getAllByRole('link')).toHaveLength(1);
       expect(within(feeds[0]!).getByRole('link')).toHaveAttribute('href', '/community/1');
-      expect(within(feeds[0]!).getByLabelText('좋아요 42개')).toBeInTheDocument();
-      expect(within(feeds[0]!).getByLabelText('댓글 2개')).toBeInTheDocument();
+      expect(within(feeds[0]!).getByRole('link')).toHaveAccessibleName(/좋아요 42개, 댓글 2개/);
       expect(feeds[2]).not.toHaveTextContent('답변을 기다리고 있어요');
       expect(
         within(feedRegion()).queryByRole('button', { name: /좋아요|댓글|공유/ }),

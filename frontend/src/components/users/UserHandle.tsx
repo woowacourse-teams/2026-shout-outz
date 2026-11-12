@@ -5,10 +5,13 @@ export function UserHandle({
   handle,
   userType,
   className,
+  badgeFocusable = true,
 }: {
   handle?: string | null;
   userType?: string | null;
   className?: string;
+  /** 소속 인증 아이콘이 키보드 포커스를 받을지 정합니다. */
+  badgeFocusable?: boolean;
 }) {
   if (!handle) return null;
   return (
@@ -19,7 +22,7 @@ export function UserHandle({
       )}
     >
       <span className="min-w-0 truncate">@{handle.replace(/^@/, '')}</span>
-      <WoowacourseIcon userType={userType} />
+      <WoowacourseIcon userType={userType} focusable={badgeFocusable} />
     </span>
   );
 }

@@ -1,4 +1,4 @@
-import { act, render, screen } from '@testing-library/react';
+import { act, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { createMemoryHistory, createRouter, RouterContextProvider } from '@tanstack/react-router';
 import { RecommendationCard } from '@/components/recommendations/RecommendationCard';
@@ -48,7 +48,7 @@ afterEach(() => {
   jest.restoreAllMocks();
 });
 
-function show(position = 1) {
+function show(position = 1, variant: 'list' | 'detail' = 'list') {
   const router = createRouter({
     routeTree,
     history: createMemoryHistory({ initialEntries: ['/community/3'] }),
@@ -59,6 +59,7 @@ function show(position = 1) {
         recommendation={recommendation}
         surface="feed_detail"
         position={position}
+        variant={variant}
       />
     </RouterContextProvider>
   );
@@ -92,7 +93,11 @@ it('카드가 절반 이상 보이면 노출을 한 번만 보내고, 리렌더�
 it('카드를 누르면 화면과 순서를 담아 클릭을 보내고 미리보기로 이동한다', async () => {
   const user = userEvent.setup();
   const { router } = show(0);
-  await user.click(screen.getByRole('button', { name: `추천 질문: ${recommendation.title}` }));
+  await user.click(
+    screen.getByRole('button', {
+      name: `${recommendation.title}, AI 추천 질문, 아직 등록되지 않았어요`,
+    }),
+  );
   expect(events).toContainEqual({
     name: 'recommendation_clicked',
     recommendationId: recommendation.recommendationId,
@@ -101,3 +106,20 @@ it('카드를 누르면 화면과 순서를 담아 클릭을 보내고 미리보
   });
   expect(router.state.location.pathname).toBe('/community/recommendations');
 });
+
+it.each(['list', 'detail'] as const)(
+  '%s 추천 카드는 제목 버튼 하나와 짧은 본문 설명으로 탐색한다',
+  async (variant) => {
+    show(0, variant);
+    const name = `${recommendation.title}, AI 추천 질문, 아직 등록되지 않았어요`;
+    const heading = screen.getByRole('heading', { level: 3, name: recommendation.title });
+    const button = within(heading).getByRole('button', { name });
+    expect(screen.getAllByRole('button')).toHaveLength(1);
+    expect(button).toHaveAccessibleDescription(
+      '조회 성능을 높이기 위해 캐시 도입을 고민하고 있어요. DB의 데이터가 변경됐을 때 캐시를 언제, 어떻게 갱신하는지 궁금합니다. TTL만으로 충분한 경우는 언제인가요? 캐시 무효화…',
+    );
+    const user = userEvent.setup();
+    await user.tab();
+    expect(button).toHaveFocus();
+  },
+);

@@ -1,4 +1,9 @@
-import { formatDateTime, formatDotDate, formatRelativeTime } from '@/utils/date';
+import {
+  formatSpokenRelativeTime,
+  formatDateTime,
+  formatDotDate,
+  formatRelativeTime,
+} from '@/utils/date';
 
 test('날짜와 시간을 한국 시간으로 표시한다', () => {
   expect(formatDateTime('2026-09-14T00:05:00Z')).toBe('2026.09.14 09:05');
@@ -72,5 +77,21 @@ describe('formatRelativeTime', () => {
 
   it('ISO 날짜로 시작하지 않는 값은 던진다', () => {
     expect(() => formatRelativeTime('2시간 전', NOW)).toThrow();
+  });
+});
+
+describe('formatSpokenRelativeTime', () => {
+  const NOW = new Date('2026-09-15T12:00:00+09:00');
+
+  it('7일 미만이면 상대 표현을 그대로 쓴다', () => {
+    expect(formatSpokenRelativeTime('2026-09-15T11:00:00+09:00', NOW)).toBe('1시간 전');
+  });
+
+  it('7일 이상 지나면 연월일로 읽히는 날짜로 보여준다', () => {
+    expect(formatSpokenRelativeTime('2026-09-08T12:00:00+09:00', NOW)).toBe('2026년 9월 8일');
+  });
+
+  it('UTC로 와도 한국 날짜로 보여준다', () => {
+    expect(formatSpokenRelativeTime('2026-09-01T16:00:00Z', NOW)).toBe('2026년 9월 2일');
   });
 });

@@ -1,8 +1,9 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useId, useRef } from 'react';
 import { useNavigate, useLocation } from '@tanstack/react-router';
 import { IconArrowUpRight, IconSparkles } from '@tabler/icons-react';
 import type { QuestionRecommendation } from '@/types/recommendation';
 import { toPlainText } from '@/utils/markdown';
+import { formatFeedCardPreview } from '@/utils/feed';
 import { cn } from '@/utils/cn';
 import { analytics, type RecommendationSurface } from '@/utils/analytics';
 
@@ -53,65 +54,101 @@ export function RecommendationCard({
     return () => observer.disconnect();
   }, [recommendationId, surface, position]);
 
+  const previewId = useId();
+  const preview = toPlainText(recommendation.content);
+  const spokenPreview = formatFeedCardPreview(recommendation);
+  const open = () => {
+    analytics.track({ name: 'recommendation_clicked', recommendationId, surface, position });
+    void navigate({
+      to: '/community/recommendations',
+      state: { questionRecommendation: { recommendation, from } },
+    });
+  };
+
   return (
     <article
       ref={card}
       className={cn(
-        'group relative min-w-0 border transition-colors',
+        'group relative flex min-w-0 flex-col border transition-colors',
         isDetail
-          ? 'bg-background flex flex-col gap-2.5 rounded-xl border-gray-200 p-5 hover:border-gray-300'
+          ? 'bg-background gap-2.5 rounded-xl border-gray-200 p-5 hover:border-gray-300'
           : 'border-primary-100 bg-primary-50/40 hover:border-primary-300 rounded-lg p-5 md:p-6',
         className,
       )}
     >
-      <button
-        type="button"
-        onClick={() => {
-          analytics.track({ name: 'recommendation_clicked', recommendationId, surface, position });
-          void navigate({
-            to: '/community/recommendations',
-            state: { questionRecommendation: { recommendation, from } },
-          });
-        }}
-        aria-label={`추천 질문: ${recommendation.title}`}
+      {/*
+        커뮤니티 카드와 같이, 스크린리더에서는 카드 하나가 제목 겸 버튼 하나로 읽힌다.
+        버튼 이름에 AI 추천 질문이라는 구분을 함께 담고, 본문은 설명으로 연결한다.
+        버튼은 제목 안에 두되 가상 요소로 카드 전체를 덮어, 카드 어디를 눌러도 미리보기로 이동한다.
+      */}
+      <h3
         className={cn(
-          'focus-visible:outline-primary-600 absolute inset-0 z-10 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2',
-          isDetail ? 'rounded-xl' : 'rounded-lg',
+          'group-hover:text-primary-600 order-2 break-words text-gray-900',
+          isDetail ? 'text-base font-bold' : 'text-base leading-6 font-semibold',
         )}
-      />
+      >
+        <button
+          type="button"
+          onClick={open}
+          aria-label={`${recommendation.title}, AI 추천 질문, 아직 등록되지 않았어요`}
+          aria-describedby={spokenPreview ? previewId : undefined}
+          className={cn(
+            'focus-visible:after:outline-primary-600 cursor-pointer text-left outline-none after:absolute after:inset-0 after:z-10 focus-visible:after:outline-2 focus-visible:after:outline-offset-2',
+            isDetail ? 'after:rounded-xl' : 'after:rounded-lg',
+          )}
+        >
+          <span aria-hidden="true" className="text-primary-600 mr-1.5">
+            Q.
+          </span>
+          {recommendation.title}
+        </button>
+      </h3>
+      {spokenPreview && (
+        <span id={previewId} hidden>
+          {spokenPreview}
+        </span>
+      )}
+      {/* 아래 정보는 버튼 이름과 설명으로 함께 읽으므로, 같은 내용을 다시 읽지 않게 숨긴다. */}
       {isDetail ? (
         <>
-          <div className="flex items-center justify-between gap-2 text-xs">
+          <div
+            aria-hidden="true"
+            className="order-1 flex items-center justify-between gap-2 text-xs"
+          >
             <span className="bg-primary-50 text-primary-600 rounded-sm px-2 py-0.5 font-bold">
               AI 추천 질문
             </span>
             <span className="text-gray-400">아직 등록되지 않았어요</span>
           </div>
-          <h3 className="group-hover:text-primary-600 text-base font-bold break-words text-gray-900">
-            <span className="text-primary-600 mr-1.5">Q.</span>
-            {recommendation.title}
-          </h3>
-          <p className="line-clamp-3 text-sm leading-relaxed break-words text-gray-600">
-            {toPlainText(recommendation.content)}
+          <p
+            aria-hidden="true"
+            className="order-3 line-clamp-3 text-sm leading-relaxed break-words text-gray-600"
+          >
+            {preview}
           </p>
         </>
       ) : (
         <>
-          <div className="mb-3 flex items-center justify-between gap-2 text-xs font-medium">
+          <div
+            aria-hidden="true"
+            className="order-1 mb-3 flex items-center justify-between gap-2 text-xs font-medium"
+          >
             <span className="text-primary-600 inline-flex items-center gap-1.5">
               <IconSparkles className="size-4" aria-hidden="true" />
               AI 추천 질문
             </span>
             <span className="text-gray-500">아직 등록되지 않았어요</span>
           </div>
-          <h3 className="group-hover:text-primary-600 text-base leading-6 font-semibold break-words text-gray-900">
-            <span className="text-primary-600 mr-1.5">Q.</span>
-            {recommendation.title}
-          </h3>
-          <p className="mt-2 line-clamp-2 text-sm leading-6 break-words text-gray-600">
-            {toPlainText(recommendation.content)}
+          <p
+            aria-hidden="true"
+            className="order-3 mt-2 line-clamp-2 text-sm leading-6 break-words text-gray-600"
+          >
+            {preview}
           </p>
-          <div className="text-primary-600 mt-4 flex items-center gap-1 text-xs font-medium">
+          <div
+            aria-hidden="true"
+            className="text-primary-600 order-4 mt-4 flex items-center gap-1 text-xs font-medium"
+          >
             궁금하다면 질문해 보세요 <IconArrowUpRight className="size-3.5" aria-hidden="true" />
           </div>
         </>

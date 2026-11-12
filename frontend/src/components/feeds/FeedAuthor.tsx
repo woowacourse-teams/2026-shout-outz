@@ -13,12 +13,15 @@ export function FeedAuthor({
   avatarSize = 'md',
   isAnonymous = false,
   profileLink = true,
+  badgeFocusable = true,
 }: {
   author: Feed['author'];
   createdAt?: string;
   avatarSize?: AvatarSize;
   isAnonymous?: boolean;
   profileLink?: boolean;
+  /** 소속 인증 아이콘이 키보드 포커스를 받을지 정합니다. 카드처럼 소속을 함께 읽어 주는 곳에서 끕니다. */
+  badgeFocusable?: boolean;
 }) {
   const isOwnAnonymous = isAnonymous && author.handle != null;
   const isCompact = avatarSize === 'xs';
@@ -34,7 +37,7 @@ export function FeedAuthor({
             >
               익명
             </p>
-            <WoowacourseIcon userType={author.userType} />
+            <WoowacourseIcon userType={author.userType} focusable={badgeFocusable} />
           </div>
           <UserAffiliation {...author} anonymous className={isCompact ? 'leading-4' : undefined} />
         </div>
@@ -57,7 +60,11 @@ export function FeedAuthor({
           >
             {author.displayName}
           </span>
-          <UserHandle handle={author.handle} userType={author.userType} />
+          <UserHandle
+            handle={author.handle}
+            userType={author.userType}
+            badgeFocusable={badgeFocusable}
+          />
           {isOwnAnonymous && (
             <span
               className={`bg-primary-50 text-primary-700 rounded-full text-xs font-medium ${isCompact ? 'px-1.5 py-0' : 'px-2 py-0.5'}`}

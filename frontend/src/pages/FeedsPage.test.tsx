@@ -102,10 +102,27 @@ test('피드 목록 카드는 전체가 상세 페이지로 이동하고 반응 
   const detailPath = `/community/${feed.feedId}`;
   show(<FeedList sort="LATEST" />);
   const first = (await screen.findAllByRole('article'))[0]!;
-  expect(within(first).getByRole('link', { name: feed.title })).toHaveAttribute('href', detailPath);
-  expect(within(first).getByLabelText('좋아요 12개')).toBeInTheDocument();
-  expect(within(first).getByLabelText('댓글 1개')).toBeInTheDocument();
+  expect(within(first).getByRole('link', { name: new RegExp(`^${feed.title}`) })).toHaveAttribute(
+    'href',
+    detailPath,
+  );
+  expect(within(first).getByRole('link')).toHaveAccessibleName(/좋아요 12개.*댓글 1개/);
   expect(within(first).queryByRole('button', { name: /좋아요|댓글|공유/ })).not.toBeInTheDocument();
+});
+test('스크린리더에서 카드 하나를 제목 링크 하나로 읽는다', async () => {
+  show(<FeedList sort="LATEST" />);
+  const first = (await screen.findAllByRole('article'))[0]!;
+  const link = within(first).getByRole('link');
+
+  expect(within(first).getByRole('heading', { level: 3 })).toContainElement(link);
+  expect(link).toHaveAccessibleName(
+    /^WebSocket 동기화 개선기, 개발 이야기, 정우진 우아한테크코스 8기 백엔드 크루, 2026년 9월 14일, 좋아요 12개, 댓글 1개$/,
+  );
+  expect(link).toHaveAccessibleDescription(/^Redis Pub\/Sub으로 WebSocket 동기화 지연을/);
+  // 화면의 날짜·반응 수·작성자는 링크 이름과 겹치므로, 링크 밖에서는 따로 읽히지 않는다.
+  expect(within(first).getAllByRole('link')).toHaveLength(1);
+  expect(within(first).queryAllByRole('button')).toHaveLength(0);
+  expect(within(first).queryByRole('img')).not.toBeInTheDocument();
 });
 test('인기글은 상세 링크 하나와 작성자, 좋아요·댓글 수를 보여준다', async () => {
   const feed = { ...mockFeeds[0]!, feedType: 'POST' as const, likeCount: 10, commentCount: 1 };
@@ -129,13 +146,13 @@ test('인기글은 상세 링크 하나와 작성자, 좋아요·댓글 수를 �
   const [item] = within(within(aside).getByRole('list')).getAllByRole('listitem');
   if (!item) throw new Error('인기 피드가 없습니다.');
   expect(within(item).getAllByRole('link')).toHaveLength(1);
-  expect(within(item).getByRole('link', { name: feed.title })).toHaveAttribute(
-    'href',
-    `/community/${feed.feedId}`,
+  const link = within(item).getByRole('link');
+  expect(link).toHaveAttribute('href', `/community/${feed.feedId}`);
+  expect(within(item).getByRole('heading', { level: 3 })).toContainElement(link);
+  expect(link).toHaveAccessibleName(
+    new RegExp(`^${feed.title}, .*${feed.author.displayName}.*, 좋아요 10개, 댓글 1개$`),
   );
   expect(item).toHaveTextContent(feed.author.displayName!);
-  expect(within(item).getByLabelText('좋아요 10개')).toBeInTheDocument();
-  expect(within(item).getByLabelText('댓글 1개')).toBeInTheDocument();
   expect(item).not.toHaveTextContent(feed.content);
 });
 test('인기 질문은 상세 링크와 궁금해요·답변 수를 보여준다', async () => {
@@ -147,12 +164,9 @@ test('인기 질문은 상세 링크와 궁금해요·답변 수를 보여준다
   if (!item) throw new Error('인기 질문이 없습니다.');
 
   expect(within(item).getAllByRole('link')).toHaveLength(1);
-  expect(within(item).getByRole('link', { name: feed.title })).toHaveAttribute(
-    'href',
-    `/community/${feed.feedId}`,
-  );
-  expect(within(item).getByLabelText('궁금해요 12개')).toBeInTheDocument();
-  expect(within(item).getByLabelText('답변 0개')).toBeInTheDocument();
+  const link = within(item).getByRole('link');
+  expect(link).toHaveAttribute('href', `/community/${feed.feedId}`);
+  expect(link).toHaveAccessibleName(new RegExp(`^${feed.title}, .*답변 대기.*저도 궁금해요 12개`));
 });
 test('카드는 첫 이미지와 남은 장수만 보여준다', async () => {
   server.use(
@@ -178,8 +192,11 @@ test('카드는 첫 이미지와 남은 장수만 보여준다', async () => {
   const card = await screen.findByRole('article');
 
   expect(card).toHaveTextContent('캐시 무효화를 Redis로 풀었다.');
-  expect(within(card).getAllByRole('img', { name: '피드 첨부 이미지' })).toHaveLength(1);
-  expect(card).toHaveTextContent('이미지 +2장 더 있음');
+  expect(within(card).getAllByRole('img', { name: '피드 첨부 이미지', hidden: true })).toHaveLength(
+    1,
+  );
+  expect(card).toHaveTextContent('+2');
+  expect(within(card).getByRole('link')).toHaveAccessibleName(/이미지 3장/);
 });
 test('카드는 본문의 코드 블록을 빼고 보여준다', async () => {
   server.use(
@@ -614,17 +631,14 @@ test.each(['LATEST', 'POPULAR', 'WAITING'] as const)('질문 %s 빈 목록을 �
   ).toBeInTheDocument();
 });
 
-test('목록에서 소속 아이콘의 호버와 탭으로 설명을 표시한다', async () => {
-  const user = userEvent.setup();
+test('목록에서 소속 아이콘은 탭 정지점이 되지 않고, 소속은 카드 링크 이름으로 읽는다', async () => {
   show(<FeedList sort="LATEST" />);
-  const icons = await screen.findAllByRole('button', { name: '우아한테크코스 소속' });
-  const icon = icons[0]!;
-  await user.hover(icon);
-  expect(screen.getByRole('tooltip')).toHaveTextContent('소속 인증을 완료한 사용자');
-  await user.unhover(icon);
-  expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
-  await user.pointer([{ keys: '[TouchA>]', target: icon }, { keys: '[/TouchA]' }]);
-  expect(screen.getByRole('tooltip')).toBeInTheDocument();
+  const first = (await screen.findAllByRole('article'))[0]!;
+
+  expect(
+    within(first).queryByRole('button', { name: '우아한테크코스 소속' }),
+  ).not.toBeInTheDocument();
+  expect(within(first).getByRole('link')).toHaveAccessibleName(/우아한테크코스 8기 백엔드 크루/);
 });
 
 test.each([
@@ -650,8 +664,10 @@ test.each([
     ),
   );
   expect(
-    await screen.findByLabelText(`${type === 'QUESTION' ? '궁금해요' : '좋아요'} 13개, 내가 누름`),
-  ).toBeInTheDocument();
+    await screen.findByRole('link', { name: new RegExp(`^${mockFeeds[0]!.title},`) }),
+  ).toHaveAccessibleName(
+    new RegExp(`${type === 'QUESTION' ? '저도 궁금해요' : '좋아요'} 13개, 내가 누름`),
+  );
 });
 
 test('답변이 있는 질문은 답변 수 배지를, 피드는 배지 없이 보여준다', async () => {

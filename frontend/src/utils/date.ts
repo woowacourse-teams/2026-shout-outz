@@ -11,6 +11,13 @@ const KST_DATE = new Intl.DateTimeFormat('ko-KR', {
   day: '2-digit',
 });
 
+const KST_SPOKEN_DATE = new Intl.DateTimeFormat('ko-KR', {
+  timeZone: 'Asia/Seoul',
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric',
+});
+
 export function formatDotDate(isoDateTime: string): string {
   if (!ISO_DATE.test(isoDateTime)) {
     throw new Error(`ISO 8601 날짜로 시작하지 않습니다: ${isoDateTime}`);
@@ -45,6 +52,17 @@ export function formatRelativeTime(isoDateTime: string, now: Date = new Date()):
   if (elapsed < 7 * DAY) return `${Math.floor(elapsed / DAY)}일 전`;
 
   return formatDotDate(isoDateTime);
+}
+
+/**
+ * `formatRelativeTime`과 같은 기준으로, 스크린리더가 읽기 좋은 문구를 만든다.
+ * 7일 이상 지나 점으로 구분한 날짜가 되는 경우에만 "2026년 9월 8일"처럼 바꾼다.
+ */
+export function formatSpokenRelativeTime(isoDateTime: string, now: Date = new Date()): string {
+  const relative = formatRelativeTime(isoDateTime, now);
+  return relative === formatDotDate(isoDateTime)
+    ? KST_SPOKEN_DATE.format(new Date(isoDateTime))
+    : relative;
 }
 
 export function formatDateTime(value: string) {

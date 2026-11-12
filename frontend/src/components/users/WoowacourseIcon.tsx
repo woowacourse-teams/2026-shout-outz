@@ -6,9 +6,15 @@ import { createPortal } from 'react-dom';
 export function WoowacourseIcon({
   userType,
   className,
+  focusable = true,
 }: {
   userType?: string | null;
   className?: string;
+  /**
+   * 키보드 포커스와 스크린리더 안내를 받을지 정합니다. 카드처럼 소속을 다른 곳에서 함께 읽어 주는 경우
+   * `false`로 두면, 마우스로 올렸을 때의 툴팁만 남기고 탐색 대상에서 뺍니다.
+   */
+  focusable?: boolean;
 }) {
   const id = useId();
   const ref = useRef<HTMLSpanElement>(null);
@@ -54,9 +60,10 @@ export function WoowacourseIcon({
     <>
       <span
         ref={ref}
-        role="button"
-        tabIndex={0}
-        aria-describedby={position ? id : undefined}
+        role={focusable ? 'button' : undefined}
+        tabIndex={focusable ? 0 : undefined}
+        aria-hidden={focusable ? undefined : true}
+        aria-describedby={focusable && position ? id : undefined}
         onPointerDown={(event) => {
           touchRef.current = event.pointerType === 'touch' || event.pointerType === 'pen';
           if (touchRef.current) event.preventDefault();
@@ -90,7 +97,7 @@ export function WoowacourseIcon({
             show();
           }
         }}
-        aria-label="우아한테크코스 소속"
+        aria-label={focusable ? '우아한테크코스 소속' : undefined}
         className={cn(
           'focus-visible:outline-primary-600 relative z-20 -m-1 inline-flex size-6 shrink-0 cursor-help items-center justify-center rounded-sm align-text-bottom text-gray-600 focus-visible:outline-2',
           className,

@@ -69,6 +69,15 @@ describe('UserProfilePage', () => {
 
       expect(feeds).toHaveLength(2);
       expect(feeds[0]).toHaveTextContent('영수증 OCR 파싱');
+      const card = within(feeds[0]!);
+      const link = card.getByRole('link');
+      expect(card.getAllByRole('link')).toHaveLength(1);
+      expect(card.getByRole('heading', { level: 3 })).toContainElement(link);
+      expect(link).toHaveAccessibleName(/^영수증 OCR 비동기 큐 최적화, 백엔드, 정우진/);
+      expect(link).toHaveAccessibleDescription(
+        '영수증 OCR 파싱 작업에서 멀티스레드 비동기 큐를 적용해 응답 시간을 단축했습니다.',
+      );
+      expect(card.queryByRole('button')).not.toBeInTheDocument();
       expect(tabNamed('피드 (18)')).toHaveAttribute('aria-selected', 'true');
     });
 

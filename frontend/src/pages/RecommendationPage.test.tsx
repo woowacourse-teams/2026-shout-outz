@@ -70,8 +70,10 @@ it('목록의 지정 위치에 추천을 넣고, 미리보기에서 작성 폼�
     ),
   );
   const router = renderRoute('/community?type=QUESTION&sort=POPULAR');
-  const link = await screen.findByRole('button', { name: `추천 질문: ${recommendation.title}` });
-  const fifth = screen.getByRole('link', { name: '기존 질문 5' }).closest('li')!;
+  const link = await screen.findByRole('button', {
+    name: `${recommendation.title}, AI 추천 질문, 아직 등록되지 않았어요`,
+  });
+  const fifth = screen.getByRole('link', { name: /^기존 질문 5,/ }).closest('li')!;
   expect(fifth.nextElementSibling).toContainElement(link);
   await user.click(link);
   expect(await screen.findByRole('heading', { level: 1 })).toHaveTextContent(recommendation.title);
@@ -108,7 +110,9 @@ it('목록의 추천 카드 클릭과 미리보기의 작성하기 클릭을 추
   const user = userEvent.setup();
   renderRoute('/community?type=QUESTION&sort=POPULAR');
   await user.click(
-    await screen.findByRole('button', { name: `추천 질문: ${recommendation.title}` }),
+    await screen.findByRole('button', {
+      name: `${recommendation.title}, AI 추천 질문, 아직 등록되지 않았어요`,
+    }),
   );
   await user.click(
     (await screen.findAllByRole('button', { name: '이 내용으로 질문 작성하기' }))[0]!,
@@ -147,7 +151,9 @@ it('작성 취소와 미리보기 뒤로 가기로 원래 정렬의 목록에 �
   const user = userEvent.setup();
   const router = renderRoute('/community?type=QUESTION&sort=POPULAR');
   await user.click(
-    await screen.findByRole('button', { name: `추천 질문: ${recommendation.title}` }),
+    await screen.findByRole('button', {
+      name: `${recommendation.title}, AI 추천 질문, 아직 등록되지 않았어요`,
+    }),
   );
   await user.click(
     (await screen.findAllByRole('button', { name: '이 내용으로 질문 작성하기' }))[0]!,
