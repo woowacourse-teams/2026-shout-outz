@@ -36,7 +36,6 @@ export function ProjectDetailContent({ slug, tab, onTabChange }: ProjectDetailCo
     <>
       {/* <title> 안 글자가 여러 조각이면 React가 제목을 비워 두어 한 문자열로 넘긴다. */}
       <title>{`${project.title} | shout-outz`}</title>
-      <meta name="description" content={project.tagline} />
       <ProjectDetailHeader project={project} />
       <Tab
         variant="underline"
