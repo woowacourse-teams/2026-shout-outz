@@ -48,8 +48,14 @@ public final class LocalCache<K, V> {
         return new LocalCache<>(loader, null);
     }
 
+    /**
+     * 트랜잭션 안에서 부르면 캐시를 거치지 않고 그 트랜잭션에서 바로 읽는다.
+     * 캐시에 값이 없을 때 읽은 값에는 그 트랜잭션이 아직 커밋하지 않은 변경이 섞일 수 있다.
+     * 이 값을 보관했다가 트랜잭션이 롤백되면, 롤백된 값을 갱신 시간까지 모두에게 돌려주게 된다.
+     * 새 트랜잭션을 따로 열지 않는 것은, 바깥 트랜잭션이 커넥션을 쥔 채 하나를 더 빌리지 않게 하기 위함이다.
+     */
     public V get(K key) {
-        if (cache == null) {
+        if (cache == null || TransactionSynchronizationManager.isActualTransactionActive()) {
             return loader.apply(key);
         }
         return cache.get(key);

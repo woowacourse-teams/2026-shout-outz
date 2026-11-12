@@ -177,11 +177,24 @@ class LocalCacheTest {
         });
         assertThat(cache.get("banner")).isEqualTo("banner-1");
 
-        transaction.executeWithoutResult(status -> {
-            cache.evictAfterCommit("banner");
-            assertThat(cache.get("banner")).isEqualTo("banner-1");
-        });
+        transaction.executeWithoutResult(status -> cache.evictAfterCommit("banner"));
         assertThat(cache.get("banner")).isEqualTo("banner-2");
+    }
+
+    @Test
+    @DisplayName("트랜잭션 안에서 조회하면 캐시를 거치지 않고 읽으며, 읽은 값을 보관하지 않는다")
+    void get_bypassesCacheInsideTransaction() {
+        LocalCache<String, String> cache = cache();
+        TransactionTemplate transaction = new TransactionTemplate(new NoOpTransactionManager());
+        cache.get("banner");
+
+        String inside = transaction.execute(status -> cache.get("banner"));
+        String insideOnEmptyCache = transaction.execute(status -> cache.get("summary"));
+
+        assertThat(inside).isEqualTo("banner-2");
+        assertThat(insideOnEmptyCache).isEqualTo("summary-3");
+        assertThat(cache.get("banner")).isEqualTo("banner-1");
+        assertThat(cache.get("summary")).isEqualTo("summary-4");
     }
 
     @Test
