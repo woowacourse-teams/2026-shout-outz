@@ -129,9 +129,11 @@ public final class JobPosting {
     }
 
     /**
-     * 기업이 바꾼 공고를 운영자가 다시 붙여넣었을 때 쓴다. 주소가 다르면 다른 공고이므로 받지 않는다.
+     * 운영자가 공고를 고칠 때 쓴다. 기업이 바꾼 원문을 다시 붙여 넣거나, 원문 없이 공고 정보만 고친다. 주소가 다르면 다른 공고이므로 받지 않는다.
      * 원문 해시가 같으면 공고 정보만 고치고, 역량과 분석 상태는 그대로 둔다. 요청의 역량은 쓰지 않는다.
      * 해시가 다르면 받은 역량으로 바꾸고 PENDING 으로 되돌려 다시 분석한다.
+     * 원문이 null 이면 원문은 그대로라고 보고, 원문이 같을 때처럼 공고 정보만 고친다.
+     * 원문은 저장하지 않아서 운영자가 공고 정보만 고칠 때 원문을 다시 붙여 넣지 않아도 되게 하려는 것이다.
      * 회사 로고는 원문과 상관없이 받은 값으로 바꾼다. 받은 값이 null 이면 로고를 지운다.
      * 숨김 시각, 등록자, 등록 시각은 바꾸지 않는다.
      */
@@ -151,7 +153,7 @@ public final class JobPosting {
         if (!this.sourceUrl.equals(new JobPostingUrl(sourceUrl))) {
             throw new BadRequestException(JobPostingErrorCode.JOB_POSTING_URL_MISMATCH);
         }
-        JobPostingContentHash newContentHash = JobPostingContentHash.from(content);
+        JobPostingContentHash newContentHash = content == null ? this.contentHash : JobPostingContentHash.from(content);
         boolean sameContent = this.contentHash.equals(newContentHash);
         return new JobPosting(
                 id,

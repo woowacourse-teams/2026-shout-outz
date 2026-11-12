@@ -20,10 +20,12 @@ const MEDIA_PATH = '/api/v1/media';
  * - `PROJECT_THUMBNAIL`   ProjectCreateRequest.thumbnailImageId
  * - `PROJECT_LOGO`        ProjectCreateRequest.logoImageId
  * - `USER_AVATAR`         UserProfileUpdateRequest.avatarImageId
+ * - `JOB_POSTING_COMPANY_LOGO` AdminJobPostingSaveRequest.logoImageId
  */
 export type MediaPurpose =
   | 'FEED_CONTENT'
   | 'HOME_BANNER'
+  | 'JOB_POSTING_COMPANY_LOGO'
   | 'MAGAZINE_CONTENT'
   | 'MAGAZINE_THUMBNAIL'
   | 'PROJECT_DESCRIPTION'
@@ -168,6 +170,8 @@ export const uploadProjectThumbnail = (file: File) => uploadMedia(file, 'PROJECT
 
 /** 자료 카드 팀 이름 앞에 작게 보여 주는 팀 로고 */
 export const uploadProjectLogo = (file: File) => uploadMedia(file, 'PROJECT_LOGO');
+
+export const uploadJobPostingLogo = (file: File) => uploadMedia(file, 'JOB_POSTING_COMPANY_LOGO');
 
 export const uploadHomeBannerImage = (file: File) => uploadMedia(file, 'HOME_BANNER');
 

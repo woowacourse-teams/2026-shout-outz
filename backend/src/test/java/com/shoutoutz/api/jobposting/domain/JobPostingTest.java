@@ -271,6 +271,42 @@ class JobPostingTest {
     }
 
     @Test
+    @DisplayName("원문 없이 고치면 원문은 그대로라고 보고, 공고 정보와 로고만 고치며 역량과 분석 상태는 그대로 둔다.")
+    void updatesOnlyPostingInfoWhenContentIsNull() {
+        JobPosting saved = savedPosting(MatchingStatus.FAILED);
+        Instant later = NOW.plusSeconds(60);
+
+        JobPosting updated = saved.update(
+                URL, null, "바뀐 회사", JobRole.FRONTEND, "신입", "프론트엔드 개발자", "계약직",
+                LocalDate.of(2026, 12, 31), 7L, requirements(3), later);
+
+        assertThat(updated.getContentHash()).isEqualTo(saved.getContentHash());
+        assertThat(updated.hasSameContentAs(saved)).isTrue();
+        assertThat(updated.getCompanyName()).isEqualTo("바뀐 회사");
+        assertThat(updated.getJobRole()).isEqualTo(JobRole.FRONTEND);
+        assertThat(updated.getCareerRequirement()).isEqualTo("신입");
+        assertThat(updated.getTitle()).isEqualTo("프론트엔드 개발자");
+        assertThat(updated.getEmploymentType()).isEqualTo("계약직");
+        assertThat(updated.getDeadline()).isEqualTo(LocalDate.of(2026, 12, 31));
+        assertThat(updated.getLogoMediaId()).isEqualTo(7L);
+        assertThat(updated.getStatus()).isEqualTo(MatchingStatus.FAILED);
+        assertThat(updated.getRequirements()).isEqualTo(saved.getRequirements());
+        assertThat(updated.getUpdatedAt()).isEqualTo(later);
+    }
+
+    @Test
+    @DisplayName("원문 없이 고쳐도 주소가 다르면 다른 공고이므로 400 예외를 던진다.")
+    void rejectsDifferentUrlWhenContentIsNull() {
+        JobPosting saved = savedPosting(MatchingStatus.READY);
+
+        assertThatThrownBy(() -> saved.update(
+                "https://careers.example.com/jobs/999", null, "예시 회사", JobRole.BACKEND, null, "백엔드 개발자", null,
+                null, null, requirements(1), NOW))
+                .isInstanceOfSatisfying(BadRequestException.class,
+                        error -> assertThat(error.getErrorCode()).isEqualTo(JobPostingErrorCode.JOB_POSTING_URL_MISMATCH));
+    }
+
+    @Test
     @DisplayName("원문의 공백과 줄바꿈만 다르면 같은 원문으로 본다.")
     void treatsWhitespaceOnlyChangeAsSameContent() {
         JobPosting saved = savedPosting(MatchingStatus.READY);
