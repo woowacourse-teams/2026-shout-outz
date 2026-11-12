@@ -64,6 +64,24 @@ test('상세 직접 진입 시 API 정보와 공통 레이아웃을 표시한다
   expect(screen.queryByLabelText('프로젝트 반응')).not.toBeInTheDocument();
 });
 
+test('프로젝트별 OG를 탭 주소 canonical과 함께 한 벌만 표시한다', async () => {
+  const { data: project } = await (await fetch('http://localhost/api/v1/projects/@dropit')).json();
+  renderPage('/projects/@dropit/materials');
+  await screen.findByRole('heading', { level: 1, name: 'Dropit' });
+  const content = (property: string) =>
+    document.querySelector(`meta[property="${property}"]`)?.getAttribute('content');
+
+  await waitFor(() => expect(content('og:title')).toBe(project.title));
+  expect(document.querySelectorAll('meta[property="og:title"]')).toHaveLength(1);
+  expect(content('og:description')).toBe(project.tagline);
+  expect(content('og:url')).toBe('https://shout-ou.tz/projects/@dropit/materials');
+  expect(document.querySelector('link[rel="canonical"]')).toHaveAttribute(
+    'href',
+    'https://shout-ou.tz/projects/@dropit/materials',
+  );
+  expect(document.querySelectorAll('meta[name="description"]')).toHaveLength(1);
+});
+
 test('목록 카드를 누르면 slug 주소의 상세 페이지로 이동한다', async () => {
   renderPage('/projects');
   const list = await screen.findByRole('list', { name: '프로젝트 목록' });
