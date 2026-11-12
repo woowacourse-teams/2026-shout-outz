@@ -78,7 +78,10 @@ describe('NotificationBell', () => {
     renderRoute('/');
 
     await screen.findByRole('button', { name: '로그인' });
-    expect(screen.queryByRole('button', { name: /^알림/ })).not.toBeInTheDocument();
+    // 홈(탐색 화면)에도 "알림/푸시" 주제 버튼이 있어 헤더 안에서만 찾는다.
+    expect(
+      within(screen.getByRole('banner')).queryByRole('button', { name: /^알림/ }),
+    ).not.toBeInTheDocument();
   });
 
   it('알림 박스를 열면 목록을 보여준다', async () => {

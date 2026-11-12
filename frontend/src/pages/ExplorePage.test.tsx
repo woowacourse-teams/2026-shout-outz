@@ -28,8 +28,10 @@ const serverMaterial = (resourceId: number, source: string, title: string) => ({
 });
 
 describe('ExplorePage', () => {
-  it('헤더에서 탐색을 현재 페이지로 표시한다', async () => {
-    renderRoute('/explore');
+  it('홈(/)이 탐색 화면이고, 헤더에서 탐색을 현재 페이지로 표시한다', async () => {
+    renderRoute('/');
+
+    expect(await screen.findByRole('heading', { name: '이런 컨텐츠는 어때요?' })).toBeVisible();
 
     const header = await screen.findByRole('banner');
     expect(within(header).getByRole('link', { name: '탐색' })).toHaveAttribute(
@@ -38,8 +40,15 @@ describe('ExplorePage', () => {
     );
   });
 
+  it('예전 /explore 주소로 들어오면 검색어와 탭을 그대로 들고 홈으로 간다', async () => {
+    const router = renderRoute('/explore?tab=job&q=토스');
+
+    await waitFor(() => expect(router.state.location.pathname).toBe('/'));
+    expect(router.state.location.search).toEqual({ tab: 'job', q: '토스' });
+  });
+
   it('검색 전에는 추천 콘텐츠와 키워드 목록을 보여준다', async () => {
-    renderRoute('/explore');
+    renderRoute('/');
 
     expect(await screen.findByRole('heading', { name: '이런 컨텐츠는 어때요?' })).toBeVisible();
     expect(screen.getByRole('heading', { name: '많이 다룬 키워드' })).toBeVisible();
@@ -48,7 +57,7 @@ describe('ExplorePage', () => {
   });
 
   it('처음에는 키워드 탭을 고르고, 모든 탭을 누를 수 있다', async () => {
-    renderRoute('/explore');
+    renderRoute('/');
 
     const tabs = await screen.findByRole('tablist', { name: '찾는 방법' });
     expect(within(tabs).getByRole('tab', { name: '키워드' })).toHaveAttribute(
@@ -61,7 +70,7 @@ describe('ExplorePage', () => {
 
   it('검색어를 입력하면 그 검색어로 찾은 자료를 종류별로 보여준다', async () => {
     const user = userEvent.setup();
-    renderRoute('/explore');
+    renderRoute('/');
 
     await user.type(await screen.findByRole('searchbox', { name: '기술 이야기 검색' }), '동시성');
     await user.click(screen.getByRole('button', { name: '검색' }));
@@ -75,7 +84,7 @@ describe('ExplorePage', () => {
 
   it('추천 검색어를 누르면 그 검색어로 검색한다', async () => {
     const user = userEvent.setup();
-    renderRoute('/explore');
+    renderRoute('/');
 
     const suggestions = await screen.findByRole('list', { name: '추천 검색어' });
     await user.click(within(suggestions).getByRole('button', { name: '무중단 배포' }));
@@ -90,7 +99,7 @@ describe('ExplorePage', () => {
 
   it('검색어를 지우고 검색하면 검색을 풀고 추천 검색어를 다시 보여준다', async () => {
     const user = userEvent.setup();
-    renderRoute('/explore?q=LLM');
+    renderRoute('/?q=LLM');
 
     const searchbox = await screen.findByRole('searchbox', { name: '기술 이야기 검색' });
     expect(screen.queryByRole('list', { name: '추천 검색어' })).not.toBeInTheDocument();
@@ -103,7 +112,7 @@ describe('ExplorePage', () => {
 
   it('자료 종류 탭을 고르면 그 종류만 보여준다', async () => {
     const user = userEvent.setup();
-    renderRoute('/explore?q=동시성');
+    renderRoute('/?q=동시성');
 
     const kinds = await screen.findByRole('tablist', { name: '자료 종류' });
     await user.click(within(kinds).getByRole('tab', { name: /테코톡/ }));
@@ -131,7 +140,7 @@ describe('ExplorePage', () => {
         }),
       ),
     );
-    renderRoute('/explore?q=동시성');
+    renderRoute('/?q=동시성');
 
     const documents = await resultSection(/^PR과 팀 문서/);
     for (const title of ['위키 자료', '디스커션 자료']) {
@@ -169,7 +178,7 @@ describe('ExplorePage', () => {
         }),
       ),
     );
-    renderRoute('/explore?q=동시성');
+    renderRoute('/?q=동시성');
 
     const blogs = await resultSection(/^블로그/);
     const itemOf = (title: string) =>
@@ -206,7 +215,7 @@ describe('ExplorePage', () => {
         }),
       ),
     );
-    renderRoute('/explore?q=동시성');
+    renderRoute('/?q=동시성');
 
     const documents = await resultSection(/^PR과 팀 문서/);
     const item = within(documents).getByRole('button', { name: /로고 없는 팀 PR/ });
@@ -252,7 +261,7 @@ describe('ExplorePage', () => {
         }),
       ),
     );
-    renderRoute('/explore?q=캐시');
+    renderRoute('/?q=캐시');
 
     const documents = await resultSection(/^PR과 팀 문서/);
     await user.click(within(documents).getByRole('button', { name: /캐시 복구 PR/ }));
@@ -302,7 +311,7 @@ describe('ExplorePage', () => {
           }),
         ),
       );
-      renderRoute('/explore?q=미리보기');
+      renderRoute('/?q=미리보기');
 
       const documents = await resultSection(/^PR과 팀 문서/);
       await user.click(within(documents).getByRole('button', { name: /미리보기 없는 PR/ }));
@@ -326,7 +335,7 @@ describe('ExplorePage', () => {
   );
 
   it('찾은 자료가 하나도 없으면 안내를 보여준다', async () => {
-    renderRoute('/explore?q=없는검색어123');
+    renderRoute('/?q=없는검색어123');
 
     expect(
       await screen.findByText("'없는검색어123'에 맞는 자료를 아직 못 찾았어요."),
@@ -334,7 +343,7 @@ describe('ExplorePage', () => {
   });
 
   it('테코톡은 영상 링크를 새 탭으로 연다', async () => {
-    renderRoute('/explore?q=동시성');
+    renderRoute('/?q=동시성');
 
     const talks = await resultSection(/^테코톡/);
     const [firstTalk] = within(talks).getAllByRole('link');
@@ -344,7 +353,7 @@ describe('ExplorePage', () => {
 
   it('PR을 누르면 기술 태그와 문제 해결 경험이 있는 요약을 연다', async () => {
     const user = userEvent.setup();
-    renderRoute('/explore?q=동시성');
+    renderRoute('/?q=동시성');
 
     const documents = await resultSection(/^PR과 팀 문서/);
     await user.click(within(documents).getAllByRole('button', { name: /^PR/ })[0]!);
@@ -372,7 +381,7 @@ describe('ExplorePage', () => {
 
   it('요약 아래 상세 보기를 누르면 모달을 닫고 자료 정리 보기 페이지로 간다', async () => {
     const user = userEvent.setup();
-    const router = renderRoute('/explore?q=동시성');
+    const router = renderRoute('/?q=동시성');
 
     const documents = await resultSection(/^PR과 팀 문서/);
     await user.click(within(documents).getAllByRole('button', { name: /^PR/ })[0]!);
@@ -390,7 +399,7 @@ describe('ExplorePage', () => {
 
   it('블로그 요약에는 기술 태그와 문제 해결 경험이 없다', async () => {
     const user = userEvent.setup();
-    renderRoute('/explore?q=동시성');
+    renderRoute('/?q=동시성');
 
     const blogs = await resultSection(/^블로그/);
     await user.click(within(blogs).getAllByRole('button', { name: /^블로그/ })[0]!);
@@ -409,7 +418,7 @@ describe('ExplorePage', () => {
 describe('ExplorePage 채용공고 탭', () => {
   it('채용공고 탭을 누르면 공고 카드 목록을 보여준다', async () => {
     const user = userEvent.setup();
-    renderRoute('/explore');
+    renderRoute('/');
 
     const tabs = await screen.findByRole('tablist', { name: '찾는 방법' });
     await user.click(within(tabs).getByRole('tab', { name: '채용공고' }));
@@ -430,7 +439,7 @@ describe('ExplorePage 채용공고 탭', () => {
 
   it('추천 검색어로 공고를 찾으면 맞는 공고만 보여준다', async () => {
     const user = userEvent.setup();
-    renderRoute('/explore?tab=job');
+    renderRoute('/?tab=job');
 
     const suggestions = await screen.findByRole('list', { name: '추천 검색어' });
     await user.click(within(suggestions).getByRole('button', { name: '토스증권' }));
@@ -442,7 +451,7 @@ describe('ExplorePage 채용공고 탭', () => {
   });
 
   it('맞는 공고가 없으면 안내를 보여준다', async () => {
-    renderRoute('/explore?tab=job&q=없는회사123');
+    renderRoute('/?tab=job&q=없는회사123');
 
     expect(await screen.findByText("'없는회사123'에 맞는 공고를 아직 못 찾았어요.")).toBeVisible();
   });
@@ -451,7 +460,7 @@ describe('ExplorePage 채용공고 탭', () => {
 describe('ExplorePage 프로젝트 탭', () => {
   it('프로젝트 탭을 누르면 프로젝트 카드 목록과 기술 주제를 보여준다', async () => {
     const user = userEvent.setup();
-    renderRoute('/explore');
+    renderRoute('/');
 
     const tabs = await screen.findByRole('tablist', { name: '찾는 방법' });
     await user.click(within(tabs).getByRole('tab', { name: '프로젝트' }));
@@ -472,7 +481,7 @@ describe('ExplorePage 프로젝트 탭', () => {
   });
 
   it('목록 아래에서 우리 팀 프로젝트 등록으로 이어진다', async () => {
-    renderRoute('/explore?tab=project');
+    renderRoute('/?tab=project');
 
     await screen.findByRole('list', { name: '프로젝트' });
     expect(screen.getByText(/찾는 프로젝트가 없나요\?/)).toBeVisible();
@@ -484,7 +493,7 @@ describe('ExplorePage 프로젝트 탭', () => {
 
   it('기술 주제를 고르면 그 주제를 다룬 프로젝트만 보여주고, 다시 누르면 푼다', async () => {
     const user = userEvent.setup();
-    renderRoute('/explore?tab=project');
+    renderRoute('/?tab=project');
 
     const nav = await screen.findByRole('navigation', { name: '기술 주제' });
     await user.click(within(nav).getByRole('button', { name: 'BE' }));
@@ -508,7 +517,7 @@ describe('ExplorePage 프로젝트 탭', () => {
 
   it('검색어와 기술 주제는 마지막에 고른 것 하나로만 거른다', async () => {
     const user = userEvent.setup();
-    renderRoute('/explore?tab=project&q=Dropit');
+    renderRoute('/?tab=project&q=Dropit');
 
     expect(await screen.findByText('키워드로 찾은 결과', { exact: false })).toHaveTextContent(
       'Dropit 키워드로 찾은 결과',
@@ -541,7 +550,7 @@ describe('ExplorePage 프로젝트 탭', () => {
 
   it('추천 주제를 누르면 기술 주제로 거른다', async () => {
     const user = userEvent.setup();
-    renderRoute('/explore?tab=project');
+    renderRoute('/?tab=project');
 
     const suggestions = await screen.findByRole('list', { name: '추천 검색어' });
     await user.click(within(suggestions).getByRole('button', { name: '트랜잭션/데드락' }));
@@ -553,7 +562,7 @@ describe('ExplorePage 프로젝트 탭', () => {
 
   it('좋아요순으로 바꾸면 좋아요가 많은 프로젝트부터 보여준다', async () => {
     const user = userEvent.setup();
-    renderRoute('/explore?tab=project');
+    renderRoute('/?tab=project');
 
     const sort = await screen.findByRole('group', { name: '정렬' });
     await user.click(within(sort).getByRole('button', { name: '좋아요순' }));
@@ -573,7 +582,7 @@ describe('ExplorePage 프로젝트 탭', () => {
 
   it('모바일 바텀시트에서 직군을 거쳐 주제를 고른다', async () => {
     const user = userEvent.setup();
-    renderRoute('/explore?tab=project');
+    renderRoute('/?tab=project');
 
     await user.click(await screen.findByRole('button', { name: '기술 주제: 전체 주제' }));
     const sheet = await screen.findByRole('dialog', { name: '기술 주제' });
@@ -592,7 +601,7 @@ describe('ExplorePage 프로젝트 탭', () => {
   });
 
   it('맞는 프로젝트가 없으면 안내를 보여준다', async () => {
-    renderRoute('/explore?tab=project&q=없는프로젝트123');
+    renderRoute('/?tab=project&q=없는프로젝트123');
 
     expect(
       await screen.findByText("'없는프로젝트123'에 맞는 프로젝트를 아직 못 찾았어요."),
