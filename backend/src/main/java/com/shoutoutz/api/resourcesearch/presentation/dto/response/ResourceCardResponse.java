@@ -8,8 +8,8 @@ import java.time.Instant;
  * 자료 카드 응답. 기술 자료 검색 명세의 결과 카드와 같은 칸이며, 검색과 프로젝트 기술 이야기 응답이 같이 쓴다.
  * 종류 배지, 테코톡 썸네일은 프론트가 source, url 로 만든다.
  *
- * @param faviconUrl 블로그 출처 아이콘 주소. tistory, velog, rilog 는 플랫폼 공식 아이콘, 그 밖의 블로그는 원문 페이지의 파비콘이다.
- *                   블로그가 아니거나 아직 파비콘을 수집하지 않았으면 null
+ * @param faviconUrl 원문 사이트 아이콘 주소. tistory, velog, rilog 블로그는 플랫폼 공식 아이콘, 그 밖의 자료는 원문 페이지의 파비콘이다.
+ *                   아직 파비콘을 수집하지 않았거나 파비콘이 없으면(테코톡 등) null
  */
 public record ResourceCardResponse(
         long resourceId,
