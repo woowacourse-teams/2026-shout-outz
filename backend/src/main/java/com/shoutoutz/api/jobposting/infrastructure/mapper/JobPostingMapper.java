@@ -24,6 +24,7 @@ public final class JobPostingMapper {
                 .title(jobPosting.getTitle())
                 .employmentType(jobPosting.getEmploymentType())
                 .deadline(jobPosting.getDeadline())
+                .logoMediaId(jobPosting.getLogoMediaId())
                 .status(jobPosting.getStatus())
                 .hiddenAt(jobPosting.getHiddenAt())
                 .registeredBy(jobPosting.getRegisteredBy())
@@ -65,6 +66,7 @@ public final class JobPostingMapper {
                 entity.getTitle(),
                 entity.getEmploymentType(),
                 entity.getDeadline(),
+                entity.getLogoMediaId(),
                 entity.getStatus(),
                 entity.getHiddenAt(),
                 entity.getRegisteredBy(),

@@ -17,11 +17,15 @@ import com.shoutoutz.api.jobposting.presentation.dto.response.JobPostingDetailRe
 import com.shoutoutz.api.jobposting.presentation.dto.response.JobPostingFindAllResponse;
 import com.shoutoutz.api.jobposting.presentation.dto.response.JobPostingListMetaResponse;
 import com.shoutoutz.api.jobposting.presentation.dto.response.JobRequirementRecommendationResponse;
+import com.shoutoutz.api.media.application.MediaUrlResolver;
+import com.shoutoutz.api.media.infrastructure.s3.MediaVariant;
+import java.net.URI;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -38,8 +42,14 @@ public class JobPostingService {
      */
     private static final ZoneId DEADLINE_ZONE = ZoneId.of("Asia/Seoul");
 
+    /**
+     * 회사 로고는 목록과 상세 모두 작게 보여서 작은 이미지를 쓴다.
+     */
+    private static final MediaVariant LOGO_VARIANT = MediaVariant.THUMBNAIL;
+
     private final JobPostingRepository jobPostingRepository;
     private final JobPostingQueryRepository queryRepository;
+    private final MediaUrlResolver mediaUrlResolver;
     private final Clock clock;
 
     /**
@@ -67,7 +77,7 @@ public class JobPostingService {
                 request.jobRole(),
                 countsByJobRole
         );
-        return JobPostingFindAllResponse.from(page.items(), meta);
+        return JobPostingFindAllResponse.from(page.items(), logoUrlsOf(page.items()), meta);
     }
 
     /**
@@ -76,8 +86,10 @@ public class JobPostingService {
     @Transactional(readOnly = true)
     public JobPostingDetailResponse findDetail(long jobPostingId) {
         JobPosting jobPosting = findVisible(jobPostingId);
+        URI logoUrl = mediaUrlResolver.resolve(jobPosting.getLogoMediaId(), LOGO_VARIANT);
         return JobPostingDetailResponse.from(
                 jobPosting,
+                logoUrl == null ? null : logoUrl.toString(),
                 queryRepository.countRecommendationsByRequirement(jobPostingId)
         );
     }
@@ -100,6 +112,17 @@ public class JobPostingService {
         return jobPostingRepository.findById(jobPostingId)
                 .filter(posting -> posting.isVisibleOn(today()))
                 .orElseThrow(() -> new EntityNotFoundException(JOB_POSTING_NOT_FOUND));
+    }
+
+    /**
+     * 페이지에 담긴 공고의 로고 주소를 한 번에 구한다.
+     */
+    private Map<Long, URI> logoUrlsOf(List<JobPostingListItem> items) {
+        List<Long> logoMediaIds = items.stream()
+                .map(JobPostingListItem::logoMediaId)
+                .filter(Objects::nonNull)
+                .toList();
+        return mediaUrlResolver.resolveAll(logoMediaIds, LOGO_VARIANT);
     }
 
     private LocalDate today() {

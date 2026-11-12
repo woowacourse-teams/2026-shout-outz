@@ -10,10 +10,12 @@ import java.util.Map;
 
 /**
  * 사용자 채용공고 상세. 마감일이 없으면 상시 채용이라 deadline 은 null 이다.
+ * 회사 로고가 없거나 이미지가 준비되지 않았으면 companyLogoUrl 은 null 이다.
  */
 public record JobPostingDetailResponse(
         long jobPostingId,
         String companyName,
+        String companyLogoUrl,
         JobRole jobRole,
         String employmentType,
         String careerRequirement,
@@ -30,10 +32,15 @@ public record JobPostingDetailResponse(
     /**
      * 역량은 공고에 적힌 순서대로 담고, 추천 자료가 없는 역량의 자료 수는 0이다.
      */
-    public static JobPostingDetailResponse from(JobPosting jobPosting, Map<Long, Long> recommendationCounts) {
+    public static JobPostingDetailResponse from(
+            JobPosting jobPosting,
+            String companyLogoUrl,
+            Map<Long, Long> recommendationCounts
+    ) {
         return new JobPostingDetailResponse(
                 jobPosting.getId(),
                 jobPosting.getCompanyName(),
+                companyLogoUrl,
                 jobPosting.getJobRole(),
                 jobPosting.getEmploymentType(),
                 jobPosting.getCareerRequirement(),

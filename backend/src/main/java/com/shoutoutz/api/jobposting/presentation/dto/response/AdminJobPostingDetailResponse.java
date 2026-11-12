@@ -25,6 +25,8 @@ public record AdminJobPostingDetailResponse(
         String title,
         String employmentType,
         LocalDate deadline,
+        Long logoImageId,
+        String logoUrl,
         MatchingStatus status,
         Instant hiddenAt,
         long registeredBy,
@@ -36,8 +38,13 @@ public record AdminJobPostingDetailResponse(
         requirements = List.copyOf(requirements);
     }
 
+    /**
+     * 수정은 전체 교체라서 수정 화면이 지금 로고를 다시 보낼 수 있게 logoImageId 를 함께 준다.
+     * logoUrl 은 로고가 없거나 이미지가 준비되지 않았으면 null 이다.
+     */
     public static AdminJobPostingDetailResponse from(
             JobPosting jobPosting,
+            String logoUrl,
             Map<Long, MatchingFailure> lastErrors,
             List<RequirementRecommendationDetail> recommendations
     ) {
@@ -52,6 +59,8 @@ public record AdminJobPostingDetailResponse(
                 jobPosting.getTitle(),
                 jobPosting.getEmploymentType(),
                 jobPosting.getDeadline(),
+                jobPosting.getLogoMediaId(),
+                logoUrl,
                 jobPosting.getStatus(),
                 jobPosting.getHiddenAt(),
                 jobPosting.getRegisteredBy(),
