@@ -91,7 +91,7 @@ class ProjectResourceApiDocumentationTest {
                                 "oEmbed로 유튜브 미리보기를 먼저 수집할 때 참고하기 좋아요.",
                                 Instant.parse("2026-10-20T05:12:00Z"),
                                 null,
-                                null,
+                                "https://github.githubassets.com/favicons/favicon.svg",
                                 new ResourceCardResponse.Team("샤라웃", SLUG, 31L, "https://cdn.example.com/media/project/31/thumbnail")
                         ),
                         new ResourceCardResponse(
@@ -246,7 +246,7 @@ class ProjectResourceApiDocumentationTest {
                                 "비관적 락으로 중복 예약을 막을 때 참고하기 좋아요.",
                                 Instant.parse("2026-10-20T05:12:00Z"),
                                 null,
-                                null,
+                                "https://github.githubassets.com/favicons/favicon.svg",
                                 new ResourceCardResponse.Team("샤라웃", SLUG, 31L, "https://cdn.example.com/media/project/31/thumbnail")
                         )),
                         List.of(new ResourceCardResponse(
@@ -459,7 +459,7 @@ class ProjectResourceApiDocumentationTest {
                 fieldWithPath(prefix + ".platform").type(STRING)
                         .description("블로그 플랫폼. 블로그가 아니면 null").optional(),
                 fieldWithPath(prefix + ".faviconUrl").type(STRING)
-                        .description("블로그 출처 아이콘 주소. tistory, velog, rilog 는 플랫폼 공식 아이콘, 그 밖의 블로그(개인 도메인 등)는 원문 페이지의 파비콘. 블로그가 아니거나 아직 수집 전이면 null").optional(),
+                        .description("원문 사이트 아이콘 주소. PR, 팀 문서, 위키, 디스커션은 GitHub 아이콘, tistory, velog, rilog 블로그는 플랫폼 공식 아이콘으로 고정. 그 밖의 블로그(개인 도메인 등)는 원문 페이지의 파비콘이고 아직 수집 전이면 null. 테코톡은 null").optional(),
                 fieldWithPath(prefix + ".team").type(OBJECT)
                         .description("자료를 만든 팀. 테코톡처럼 팀이 없거나 팀을 알 수 없으면 null").optional(),
                 fieldWithPath(prefix + ".team.name").type(STRING)
