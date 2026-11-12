@@ -45,7 +45,14 @@ import com.shoutoutz.api.jobposting.presentation.dto.request.AdminJobPostingVisi
 import com.shoutoutz.api.jobposting.presentation.dto.response.AdminJobPostingReanalysisResponse;
 import com.shoutoutz.api.jobposting.presentation.dto.response.AdminJobPostingUpdateResponse;
 import com.shoutoutz.api.jobposting.presentation.dto.response.AdminJobPostingVisibilityUpdateResponse;
+import com.shoutoutz.api.media.application.MediaUrlResolver;
+import com.shoutoutz.api.media.domain.MediaMetadata;
+import com.shoutoutz.api.media.domain.MediaMetadataRepository;
+import com.shoutoutz.api.media.domain.MediaPurpose;
+import com.shoutoutz.api.media.domain.MediaStatus;
+import com.shoutoutz.api.media.infrastructure.s3.MediaVariant;
 import com.shoutoutz.api.user.domain.account.UserRole;
+import java.net.URI;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -80,6 +87,12 @@ class JobPostingAdminServiceTest {
     @Mock
     private JobPostingExtractor extractor;
 
+    @Mock
+    private MediaMetadataRepository mediaMetadataRepository;
+
+    @Mock
+    private MediaUrlResolver mediaUrlResolver;
+
     private final JobPostingAdminCursorCodec cursorCodec = new JobPostingAdminCursorCodec();
 
     private JobPostingAdminService service;
@@ -91,6 +104,8 @@ class JobPostingAdminServiceTest {
                 queryRepository,
                 extractor,
                 cursorCodec,
+                mediaMetadataRepository,
+                mediaUrlResolver,
                 Clock.fixed(NOW, ZoneOffset.UTC)
         );
     }
@@ -293,7 +308,7 @@ class JobPostingAdminServiceTest {
         when(jobPostingRepository.findByIdForUpdate(100L)).thenReturn(Optional.of(analyzed()));
         AdminJobPostingSaveRequest request = new AdminJobPostingSaveRequest(
                 "https://example.com/jobs/2", "원문", "회사", JobRole.BACKEND, "신입", "백엔드 개발자", "정규직",
-                LocalDate.of(2026, 12, 31),
+                LocalDate.of(2026, 12, 31), null,
                 List.of(new AdminJobPostingSaveRequest.Requirement("Spring", RequirementCategory.REQUIRED, "설명"))
         );
 
@@ -320,6 +335,154 @@ class JobPostingAdminServiceTest {
         assertThatThrownBy(() -> service.update(100L, UserRole.USER, saveRequest()))
                 .isInstanceOf(ForbiddenException.class);
         verifyNoInteractions(jobPostingRepository);
+    }
+
+    @Test
+    void 회사_로고를_골라_등록하면_로고와_함께_저장한다() {
+        when(mediaMetadataRepository.findById(50L))
+                .thenReturn(Optional.of(media(50L, MediaPurpose.JOB_POSTING_COMPANY_LOGO, MediaStatus.READY)));
+        when(jobPostingRepository.findIdBySourceUrl(NORMALIZED_URL)).thenReturn(Optional.empty());
+        when(jobPostingRepository.save(any(JobPosting.class))).thenReturn(saved());
+
+        service.register(3L, UserRole.ADMIN, saveRequest(50L));
+
+        ArgumentCaptor<JobPosting> captor = ArgumentCaptor.forClass(JobPosting.class);
+        verify(jobPostingRepository).save(captor.capture());
+        assertThat(captor.getValue().getLogoMediaId()).isEqualTo(50L);
+    }
+
+    @Test
+    void 회사_로고_없이_등록하면_이미지를_찾지_않는다() {
+        when(jobPostingRepository.findIdBySourceUrl(NORMALIZED_URL)).thenReturn(Optional.empty());
+        when(jobPostingRepository.save(any(JobPosting.class))).thenReturn(saved());
+
+        service.register(3L, UserRole.ADMIN, saveRequest());
+
+        ArgumentCaptor<JobPosting> captor = ArgumentCaptor.forClass(JobPosting.class);
+        verify(jobPostingRepository).save(captor.capture());
+        assertThat(captor.getValue().getLogoMediaId()).isNull();
+        verifyNoInteractions(mediaMetadataRepository);
+    }
+
+    @Test
+    void 없는_이미지를_회사_로고로_등록하면_400을_던진다() {
+        when(mediaMetadataRepository.findById(50L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.register(3L, UserRole.ADMIN, saveRequest(50L)))
+                .isInstanceOf(BadRequestException.class)
+                .extracting("errorCode")
+                .isEqualTo(JobPostingErrorCode.JOB_POSTING_INVALID_LOGO);
+        verify(jobPostingRepository, never()).save(any());
+    }
+
+    @Test
+    void 다른_용도의_이미지를_회사_로고로_등록하면_400을_던진다() {
+        when(mediaMetadataRepository.findById(50L))
+                .thenReturn(Optional.of(media(50L, MediaPurpose.PROJECT_LOGO, MediaStatus.READY)));
+
+        assertThatThrownBy(() -> service.register(3L, UserRole.ADMIN, saveRequest(50L)))
+                .isInstanceOf(BadRequestException.class)
+                .extracting("errorCode")
+                .isEqualTo(JobPostingErrorCode.JOB_POSTING_INVALID_LOGO);
+        verify(jobPostingRepository, never()).save(any());
+    }
+
+    @Test
+    void 처리가_끝나지_않은_이미지를_회사_로고로_등록하면_400을_던진다() {
+        when(mediaMetadataRepository.findById(50L))
+                .thenReturn(Optional.of(
+                        media(50L, MediaPurpose.JOB_POSTING_COMPANY_LOGO, MediaStatus.PROCESSING)));
+
+        assertThatThrownBy(() -> service.register(3L, UserRole.ADMIN, saveRequest(50L)))
+                .isInstanceOf(BadRequestException.class)
+                .extracting("errorCode")
+                .isEqualTo(JobPostingErrorCode.JOB_POSTING_LOGO_NOT_READY);
+        verify(jobPostingRepository, never()).save(any());
+    }
+
+    @Test
+    void 공고를_고칠_때_받은_회사_로고로_바꾼다() {
+        when(mediaMetadataRepository.findById(51L))
+                .thenReturn(Optional.of(media(51L, MediaPurpose.JOB_POSTING_COMPANY_LOGO, MediaStatus.READY)));
+        when(jobPostingRepository.findByIdForUpdate(100L)).thenReturn(Optional.of(analyzed(50L)));
+
+        service.update(100L, UserRole.ADMIN, updateRequest("원문", "백엔드 개발자", 51L));
+
+        ArgumentCaptor<JobPosting> captor = ArgumentCaptor.forClass(JobPosting.class);
+        verify(jobPostingRepository).update(captor.capture(), eq(false));
+        assertThat(captor.getValue().getLogoMediaId()).isEqualTo(51L);
+    }
+
+    @Test
+    void 공고를_고칠_때_회사_로고를_비워_보내면_로고를_지운다() {
+        when(jobPostingRepository.findByIdForUpdate(100L)).thenReturn(Optional.of(analyzed(50L)));
+
+        service.update(100L, UserRole.ADMIN, updateRequest("원문", "백엔드 개발자"));
+
+        ArgumentCaptor<JobPosting> captor = ArgumentCaptor.forClass(JobPosting.class);
+        verify(jobPostingRepository).update(captor.capture(), eq(false));
+        assertThat(captor.getValue().getLogoMediaId()).isNull();
+        verifyNoInteractions(mediaMetadataRepository);
+    }
+
+    @Test
+    void 공고를_고칠_때_없는_이미지를_회사_로고로_보내면_400을_던진다() {
+        when(mediaMetadataRepository.findById(51L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.update(
+                100L, UserRole.ADMIN, updateRequest("원문", "백엔드 개발자", 51L)))
+                .isInstanceOf(BadRequestException.class)
+                .extracting("errorCode")
+                .isEqualTo(JobPostingErrorCode.JOB_POSTING_INVALID_LOGO);
+        verify(jobPostingRepository, never()).update(any(), anyBoolean());
+    }
+
+    @Test
+    void 공고를_고칠_때_다른_용도의_이미지를_회사_로고로_보내면_400을_던진다() {
+        when(mediaMetadataRepository.findById(51L))
+                .thenReturn(Optional.of(media(51L, MediaPurpose.HOME_BANNER, MediaStatus.READY)));
+
+        assertThatThrownBy(() -> service.update(
+                100L, UserRole.ADMIN, updateRequest("원문", "백엔드 개발자", 51L)))
+                .isInstanceOf(BadRequestException.class)
+                .extracting("errorCode")
+                .isEqualTo(JobPostingErrorCode.JOB_POSTING_INVALID_LOGO);
+        verify(jobPostingRepository, never()).update(any(), anyBoolean());
+    }
+
+    @Test
+    void 공고를_고칠_때_처리가_끝나지_않은_이미지를_회사_로고로_보내면_400을_던진다() {
+        when(mediaMetadataRepository.findById(51L))
+                .thenReturn(Optional.of(media(51L, MediaPurpose.JOB_POSTING_COMPANY_LOGO, MediaStatus.FAILED)));
+
+        assertThatThrownBy(() -> service.update(
+                100L, UserRole.ADMIN, updateRequest("원문", "백엔드 개발자", 51L)))
+                .isInstanceOf(BadRequestException.class)
+                .extracting("errorCode")
+                .isEqualTo(JobPostingErrorCode.JOB_POSTING_LOGO_NOT_READY);
+        verify(jobPostingRepository, never()).update(any(), anyBoolean());
+    }
+
+    @Test
+    void 공고_상세에_회사_로고_ID와_작은_이미지_주소를_담는다() {
+        when(jobPostingRepository.findById(100L)).thenReturn(Optional.of(analyzed(50L)));
+        when(mediaUrlResolver.resolve(50L, MediaVariant.THUMBNAIL))
+                .thenReturn(URI.create("https://cdn.example.com/media/logo/50-thumbnail.webp"));
+
+        var response = service.findDetail(100L, UserRole.ADMIN);
+
+        assertThat(response.logoImageId()).isEqualTo(50L);
+        assertThat(response.logoUrl()).isEqualTo("https://cdn.example.com/media/logo/50-thumbnail.webp");
+    }
+
+    @Test
+    void 회사_로고가_없는_공고_상세는_로고_주소를_비운다() {
+        when(jobPostingRepository.findById(100L)).thenReturn(Optional.of(saved()));
+
+        var response = service.findDetail(100L, UserRole.ADMIN);
+
+        assertThat(response.logoImageId()).isNull();
+        assertThat(response.logoUrl()).isNull();
     }
 
     @Test
@@ -470,9 +633,13 @@ class JobPostingAdminServiceTest {
     }
 
     private AdminJobPostingSaveRequest saveRequest() {
+        return saveRequest(null);
+    }
+
+    private AdminJobPostingSaveRequest saveRequest(Long logoImageId) {
         return new AdminJobPostingSaveRequest(
                 SOURCE_URL, "원문", "회사", JobRole.BACKEND, "신입", "백엔드 개발자", "정규직",
-                LocalDate.of(2026, 12, 31),
+                LocalDate.of(2026, 12, 31), logoImageId,
                 List.of(
                         new AdminJobPostingSaveRequest.Requirement("Spring", RequirementCategory.REQUIRED, "설명"),
                         new AdminJobPostingSaveRequest.Requirement("Kafka", RequirementCategory.PREFERRED, "설명")
@@ -519,9 +686,13 @@ class JobPostingAdminServiceTest {
     }
 
     private AdminJobPostingSaveRequest updateRequest(String content, String title) {
+        return updateRequest(content, title, null);
+    }
+
+    private AdminJobPostingSaveRequest updateRequest(String content, String title, Long logoImageId) {
         return new AdminJobPostingSaveRequest(
                 SOURCE_URL, content, "회사", JobRole.BACKEND, "신입", title, "정규직",
-                LocalDate.of(2026, 12, 31),
+                LocalDate.of(2026, 12, 31), logoImageId,
                 List.of(
                         new AdminJobPostingSaveRequest.Requirement("Spring", RequirementCategory.REQUIRED, "설명"),
                         new AdminJobPostingSaveRequest.Requirement("Kafka", RequirementCategory.PREFERRED, "설명")
@@ -533,12 +704,24 @@ class JobPostingAdminServiceTest {
      * '원문'으로 등록해 분석까지 끝난 공고. 원문이 같은지 보려면 해시가 실제 원문의 해시여야 한다.
      */
     private JobPosting analyzed() {
+        return analyzed(null);
+    }
+
+    private JobPosting analyzed(Long logoMediaId) {
         return JobPosting.reconstitute(
                 100L, NORMALIZED_URL.value(), JobPostingContentHash.from("원문").value(), "회사", JobRole.BACKEND,
-                "신입", "백엔드 개발자", "정규직", LocalDate.of(2026, 12, 31), null, MatchingStatus.READY, null, 3L,
+                "신입", "백엔드 개발자", "정규직", LocalDate.of(2026, 12, 31), logoMediaId, MatchingStatus.READY, null,
+                3L,
                 List.of(JobRequirement.reconstitute(1000L, 1, "Spring", RequirementCategory.REQUIRED, "설명",
                         MatchingStatus.READY)),
                 NOW.minusSeconds(3600), NOW.minusSeconds(3600)
+        );
+    }
+
+    private MediaMetadata media(long id, MediaPurpose purpose, MediaStatus status) {
+        return MediaMetadata.reconstitute(
+                id, 3L, purpose, "media/logo/" + id, null, "image/webp", 1024L, status,
+                NOW, null, NOW, NOW, NOW
         );
     }
 
