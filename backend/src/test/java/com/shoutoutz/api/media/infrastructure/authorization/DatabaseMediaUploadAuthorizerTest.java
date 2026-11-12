@@ -73,6 +73,25 @@ class DatabaseMediaUploadAuthorizerTest {
     }
 
     @Test
+    void 채용공고_회사_로고는_활성_관리자_권한을_검사한다() {
+        when(jdbcTemplate.queryForObject(anyString(), eq(Boolean.class), eq(7L))).thenReturn(true);
+
+        authorizer.authorize(7L, MediaPurpose.JOB_POSTING_COMPANY_LOGO);
+
+        ArgumentCaptor<String> sql = ArgumentCaptor.forClass(String.class);
+        verify(jdbcTemplate).queryForObject(sql.capture(), eq(Boolean.class), eq(7L));
+        assertThat(sql.getValue()).contains("status = 'ACTIVE'", "role = 'ADMIN'");
+    }
+
+    @Test
+    void 일반_사용자와_비활성_관리자는_채용공고_회사_로고를_업로드할_수_없다() {
+        when(jdbcTemplate.queryForObject(anyString(), eq(Boolean.class), eq(7L))).thenReturn(false);
+
+        assertThatThrownBy(() -> authorizer.authorize(7L, MediaPurpose.JOB_POSTING_COMPANY_LOGO))
+                .isInstanceOf(MediaUploadForbiddenException.class);
+    }
+
+    @Test
     void 활성_사용자는_기존_목적의_미디어를_업로드할_수_있다() {
         when(jdbcTemplate.queryForObject(anyString(), eq(Boolean.class), eq(7L)))
                 .thenReturn(true);
