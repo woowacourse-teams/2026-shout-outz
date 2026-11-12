@@ -1,3 +1,5 @@
+import { Link } from '@tanstack/react-router';
+
 import { AsyncBoundary } from '@/components/AsyncBoundary';
 import type { ExploreProjectFilter } from '@/apis/project-explore';
 import { ProjectExploreList } from '@/components/project-explore/ProjectExploreList';
@@ -30,6 +32,16 @@ export function ProjectExplore({ filter, onTopicChange, onSortChange }: ProjectE
         <AsyncBoundary>
           <ProjectExploreList filter={filter} onSortChange={onSortChange} />
         </AsyncBoundary>
+        {/* 비로그인이면 등록 화면이 로그인 안내를 보여 준다. */}
+        <p className="mt-10 border-t border-gray-100 pt-7 text-center text-sm text-gray-500">
+          찾는 프로젝트가 없나요?{' '}
+          <Link
+            to="/projects/new"
+            className="focus-visible:outline-primary-600 rounded-sm font-bold whitespace-nowrap text-gray-900 underline decoration-gray-200 underline-offset-3 hover:decoration-gray-500 focus-visible:outline-2"
+          >
+            우리 팀 프로젝트 등록하기 →
+          </Link>
+        </p>
       </div>
     </section>
   );
