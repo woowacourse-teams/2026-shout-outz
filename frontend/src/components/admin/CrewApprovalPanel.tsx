@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useMutation, useQueryClient, useSuspenseInfiniteQuery } from '@tanstack/react-query';
 
 import {
+  fetchAdminVerificationHistory,
   adminVerificationsQuery,
   approveVerificationMutation,
   rejectVerificationMutation,
@@ -10,6 +11,7 @@ import { Badge } from '@/components/Badge';
 import { Button } from '@/components/Button';
 import { AsyncBoundary } from '@/components/AsyncBoundary';
 import { ReviewActions } from '@/components/admin/ReviewActions';
+import { ReviewHistory } from '@/components/admin/ReviewHistory';
 import { ReviewStatusTab } from '@/components/admin/ReviewStatusTab';
 import { REVIEW_STATUS_LABELS } from '@/constants/admin';
 import type { AdminVerification, AdminVerificationStatus } from '@/types/admin';
@@ -89,6 +91,11 @@ function VerificationRow({ item }: { item: AdminVerification }) {
           {role && <Badge>{role}</Badge>}
         </div>
         <p className="text-xs text-gray-500">신청일 {formatDotDate(item.requestedAt)}</p>
+        <ReviewHistory
+          subject={item.nickname}
+          queryKey={['admin', 'verification-history', item.requestId]}
+          load={() => fetchAdminVerificationHistory(item.requestId)}
+        />
       </div>
       {item.status === 'PENDING' && (
         <ReviewActions

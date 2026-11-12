@@ -9,6 +9,7 @@ import { Link } from '@tanstack/react-router';
 
 import {
   adminProjectDetailQuery,
+  fetchAdminProjectHistory,
   adminProjectsQuery,
   approveProjectMutation,
   rejectProjectMutation,
@@ -18,6 +19,7 @@ import { Button } from '@/components/Button';
 import { MarkdownContent } from '@/components/MarkdownContent';
 import { AsyncBoundary } from '@/components/AsyncBoundary';
 import { ReviewActions } from '@/components/admin/ReviewActions';
+import { ReviewHistory } from '@/components/admin/ReviewHistory';
 import { ReviewStatusTab } from '@/components/admin/ReviewStatusTab';
 import { REVIEW_STATUS_LABELS } from '@/constants/admin';
 import type { AdminProject, AdminProjectStatus } from '@/types/admin';
@@ -111,6 +113,11 @@ function ProjectRow({ item }: { item: AdminProject }) {
         {item.rejectReason && (
           <p className="text-xs text-red-600">반려 사유: {item.rejectReason}</p>
         )}
+        <ReviewHistory
+          subject={item.title}
+          queryKey={['admin', 'project-history', item.id]}
+          load={() => fetchAdminProjectHistory(item.id)}
+        />
         <div id={detailId} hidden={!detailsOpen}>
           {detailsOpen && (
             <div className="mt-3 space-y-2 border-t border-gray-200 pt-3 text-sm">
