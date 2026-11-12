@@ -19,6 +19,7 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.event.TransactionPhase;
@@ -34,7 +35,8 @@ public class ResourceTopicQueryService {
     private static final long POPULAR_TOPICS_MAXIMUM_SIZE = 20;
 
     private final ResourceTopicQueryRepository resourceTopicQueryRepository;
-    private final Cache<Integer, List<PopularTopicResponse>> popularTopicsCache;
+    private final Cache<PopularTopicsKey, List<PopularTopicResponse>> popularTopicsCache;
+    private final AtomicLong popularTopicsGeneration = new AtomicLong();
 
     public ResourceTopicQueryService(
             ResourceTopicQueryRepository resourceTopicQueryRepository,
@@ -60,16 +62,19 @@ public class ResourceTopicQueryService {
     }
 
     public List<PopularTopicResponse> findPopular(ResourceTopicPopularRequest request) {
-        return popularTopicsCache.get(request.resolvedSize(), this::loadPopular);
+        PopularTopicsKey key = new PopularTopicsKey(popularTopicsGeneration.get(), request.resolvedSize());
+        return popularTopicsCache.get(key, ignored -> loadPopular(key.size()));
     }
 
     /**
      * 필요 없어요 제보의 승인 여부가 바뀌면 집계에서 빠지는 자료가 달라진다. 앱이 아는 변경이라 TTL을 기다리지 않고 바로 비운다.
      * 커밋 뒤에 비워야 비우는 사이에 다른 요청이 커밋 전 집계를 다시 담지 않는다.
+     * 비울 때 이미 집계 중이던 값은 invalidateAll에 보이지 않고 뒤늦게 담긴다. 세대를 올려 그 값을 이전 세대 키에 가둔다.
      */
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void evictPopularTopics(ResourceReportStatusChanged event) {
         if (event.kind() == ResourceReportKind.REMOVE) {
+            popularTopicsGeneration.incrementAndGet();
             popularTopicsCache.invalidateAll();
         }
     }
@@ -86,5 +91,8 @@ public class ResourceTopicQueryService {
                 () -> new EnumMap<>(ResourceTopicSide.class),
                 Collectors.mapping(topic -> ResourceTopicResponse.from(topic.topic()), Collectors.toList())
         ));
+    }
+
+    private record PopularTopicsKey(long generation, int size) {
     }
 }

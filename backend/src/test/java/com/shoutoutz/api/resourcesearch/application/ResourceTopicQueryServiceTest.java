@@ -22,6 +22,9 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -151,6 +154,32 @@ class ResourceTopicQueryServiceTest {
         resourceTopicQueryService.findPopular(new ResourceTopicPopularRequest(10));
 
         verify(resourceTopicQueryRepository, times(2)).findMostCovered(10);
+    }
+
+    @Test
+    @DisplayName("비우기 전에 시작한 집계가 비운 뒤에 끝나도 다음 조회는 다시 집계한다")
+    void reloadsWhenLoadStartedBeforeEvictionFinishesAfterIt() throws Exception {
+        CountDownLatch loadStarted = new CountDownLatch(1);
+        CountDownLatch releaseLoad = new CountDownLatch(1);
+        PopularTopic beforeApproval = new PopularTopic(new ResourceTopic("ci_cd", "CI/CD"), 42);
+        PopularTopic afterApproval = new PopularTopic(new ResourceTopic("ci_cd", "CI/CD"), 41);
+        given(resourceTopicQueryRepository.findMostCovered(10))
+                .willAnswer(invocation -> {
+                    loadStarted.countDown();
+                    releaseLoad.await(5, TimeUnit.SECONDS);
+                    return List.of(beforeApproval);
+                })
+                .willReturn(List.of(afterApproval));
+        CompletableFuture<List<PopularTopicResponse>> inFlight = CompletableFuture.supplyAsync(
+                () -> resourceTopicQueryService.findPopular(new ResourceTopicPopularRequest(10)));
+        assertThat(loadStarted.await(5, TimeUnit.SECONDS)).isTrue();
+
+        resourceTopicQueryService.evictPopularTopics(new ResourceReportStatusChanged(ResourceReportKind.REMOVE));
+        releaseLoad.countDown();
+        inFlight.get(5, TimeUnit.SECONDS);
+
+        assertThat(resourceTopicQueryService.findPopular(new ResourceTopicPopularRequest(10)))
+                .containsExactly(new PopularTopicResponse("ci_cd", "CI/CD", 41));
     }
 
     @Test
