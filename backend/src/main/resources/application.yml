@@ -100,6 +100,17 @@ resource:
 # expire-after(이 시간이 지나면 예전 값도 버림), maximum-size(보관할 최대 개수)를 caches 아래에 둔다.
 local-cache:
   enabled: ${LOCAL_CACHE_ENABLED:true}
+  caches:
+    # 모든 사용자에게 같은 응답. 관리자가 배너를 고치면 바로 비운다.
+    home-banners:
+      refresh-after: ${LOCAL_CACHE_HOME_BANNERS_REFRESH_AFTER:1m}
+      expire-after: ${LOCAL_CACHE_HOME_BANNERS_EXPIRE_AFTER:5m}
+      maximum-size: 1
+    # 모든 사용자에게 같은 응답. 숫자가 1분 늦게 바뀌는 것은 허용한다.
+    home-statistics:
+      refresh-after: ${LOCAL_CACHE_HOME_STATISTICS_REFRESH_AFTER:1m}
+      expire-after: ${LOCAL_CACHE_HOME_STATISTICS_EXPIRE_AFTER:5m}
+      maximum-size: 1
 
 github:
   oauth:

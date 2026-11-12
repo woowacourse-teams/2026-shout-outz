@@ -5,6 +5,8 @@ import com.github.benmanes.caffeine.cache.LoadingCache;
 import com.github.benmanes.caffeine.cache.Ticker;
 import java.util.concurrent.Executor;
 import java.util.function.Function;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 /**
  * 조회 결과를 앱 서버 메모리에 보관하는 캐시.
@@ -60,6 +62,27 @@ public final class LocalCache<K, V> {
         if (cache != null) {
             cache.invalidate(key);
         }
+    }
+
+    /**
+     * 트랜잭션 안에서 부르면 커밋된 뒤에 지운다. 트랜잭션 밖이면 바로 지운다.
+     * 커밋 전에 지우면, 그사이 들어온 조회가 아직 바뀌기 전 값을 읽어 다시 보관할 수 있다.
+     * 롤백되면 값이 바뀌지 않았으므로 지우지 않는다.
+     */
+    public void evictAfterCommit(K key) {
+        if (cache == null) {
+            return;
+        }
+        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+            evict(key);
+            return;
+        }
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                evict(key);
+            }
+        });
     }
 
     LoadingCache<K, V> caffeine() {

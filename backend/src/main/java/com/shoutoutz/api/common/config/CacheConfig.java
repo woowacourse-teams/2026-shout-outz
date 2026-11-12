@@ -9,6 +9,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 @Configuration(proxyBeanMethods = false)
 @EnableConfigurationProperties(LocalCacheProperties.class)
@@ -35,8 +37,11 @@ public class CacheConfig {
     LocalCacheFactory localCacheFactory(
             LocalCacheProperties properties,
             ExecutorService localCacheRefreshExecutor,
-            MeterRegistry meterRegistry
+            MeterRegistry meterRegistry,
+            PlatformTransactionManager transactionManager
     ) {
-        return new LocalCacheFactory(properties, localCacheRefreshExecutor, meterRegistry);
+        TransactionTemplate readOnlyTransaction = new TransactionTemplate(transactionManager);
+        readOnlyTransaction.setReadOnly(true);
+        return new LocalCacheFactory(properties, localCacheRefreshExecutor, meterRegistry, readOnlyTransaction);
     }
 }

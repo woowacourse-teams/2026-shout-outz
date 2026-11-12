@@ -24,6 +24,7 @@ public class HomeBannerAdminService {
     private final HomeBannerRepository homeBannerRepository;
     private final HomeBannerImageService imageService;
     private final HomeBannerTargetValidator targetValidator;
+    private final HomeBannerService homeBannerService;
 
     @Transactional(readOnly = true)
     public List<HomeBannerAdminResponse> findAll(UserRole role) {
@@ -55,6 +56,7 @@ public class HomeBannerAdminService {
                 request.active(),
                 userId
         ));
+        homeBannerService.evictCache();
         return toResponse(saved, imageUrl);
     }
 
@@ -82,6 +84,7 @@ public class HomeBannerAdminService {
         );
         HomeBanner saved = homeBannerRepository.update(updated)
                 .orElseThrow(() -> new NotFoundException(HomeBannerErrorCode.HOME_BANNER_NOT_FOUND));
+        homeBannerService.evictCache();
         return toResponse(saved, imageUrl);
     }
 
@@ -91,6 +94,7 @@ public class HomeBannerAdminService {
         if (!homeBannerRepository.deleteById(bannerId)) {
             throw new NotFoundException(HomeBannerErrorCode.HOME_BANNER_NOT_FOUND);
         }
+        homeBannerService.evictCache();
         return bannerId;
     }
 

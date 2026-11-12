@@ -17,6 +17,12 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.support.AbstractPlatformTransactionManager;
+import org.springframework.transaction.support.DefaultTransactionStatus;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 class LocalCacheTest {
 
@@ -120,6 +126,76 @@ class LocalCacheTest {
     }
 
     @Test
+    @DisplayName("트랜잭션 안에서 커밋 뒤 지우기를 부르면, 커밋될 때까지 보관한 값을 유지하다가 커밋 뒤에 지운다")
+    void evictAfterCommit_evictsAfterCommit() {
+        LocalCache<String, String> cache = cache();
+        cache.get("banner");
+
+        TransactionSynchronizationManager.initSynchronization();
+        try {
+            cache.evictAfterCommit("banner");
+
+            assertThat(cache.get("banner")).isEqualTo("banner-1");
+
+            TransactionSynchronizationManager.getSynchronizations().forEach(TransactionSynchronization::afterCommit);
+        } finally {
+            TransactionSynchronizationManager.clearSynchronization();
+        }
+
+        assertThat(cache.get("banner")).isEqualTo("banner-2");
+    }
+
+    @Test
+    @DisplayName("트랜잭션이 롤백되면 커밋 뒤 지우기를 불렀어도 보관한 값을 지우지 않는다")
+    void evictAfterCommit_keepsValueOnRollback() {
+        LocalCache<String, String> cache = cache();
+        cache.get("banner");
+
+        TransactionSynchronizationManager.initSynchronization();
+        try {
+            cache.evictAfterCommit("banner");
+
+            TransactionSynchronizationManager.getSynchronizations()
+                    .forEach(sync -> sync.afterCompletion(TransactionSynchronization.STATUS_ROLLED_BACK));
+        } finally {
+            TransactionSynchronizationManager.clearSynchronization();
+        }
+
+        assertThat(cache.get("banner")).isEqualTo("banner-1");
+    }
+
+    @Test
+    @DisplayName("실제 트랜잭션 매니저로 커밋하면 커밋 뒤에 지우고, 롤백하면 지우지 않는다")
+    void evictAfterCommit_withTransactionManager() {
+        LocalCache<String, String> cache = cache();
+        TransactionTemplate transaction = new TransactionTemplate(new NoOpTransactionManager());
+        cache.get("banner");
+
+        transaction.executeWithoutResult(status -> {
+            cache.evictAfterCommit("banner");
+            status.setRollbackOnly();
+        });
+        assertThat(cache.get("banner")).isEqualTo("banner-1");
+
+        transaction.executeWithoutResult(status -> {
+            cache.evictAfterCommit("banner");
+            assertThat(cache.get("banner")).isEqualTo("banner-1");
+        });
+        assertThat(cache.get("banner")).isEqualTo("banner-2");
+    }
+
+    @Test
+    @DisplayName("트랜잭션 밖에서 커밋 뒤 지우기를 부르면 바로 지운다")
+    void evictAfterCommit_evictsImmediatelyWithoutTransaction() {
+        LocalCache<String, String> cache = cache();
+        cache.get("banner");
+
+        cache.evictAfterCommit("banner");
+
+        assertThat(cache.get("banner")).isEqualTo("banner-2");
+    }
+
+    @Test
     @DisplayName("값이 없을 때 읽다가 실패하면 예외를 그대로 던지고, 실패는 보관하지 않는다")
     void get_propagatesLoadFailure() {
         AtomicInteger calls = new AtomicInteger();
@@ -197,6 +273,27 @@ class LocalCacheTest {
         Runnable task;
         while ((task = refreshTasks.poll()) != null) {
             task.run();
+        }
+    }
+
+    /** DB 없이 스프링의 커밋·롤백 흐름(동기화 콜백 포함)만 그대로 타는 트랜잭션 매니저. */
+    private static final class NoOpTransactionManager extends AbstractPlatformTransactionManager {
+
+        @Override
+        protected Object doGetTransaction() {
+            return new Object();
+        }
+
+        @Override
+        protected void doBegin(Object transaction, TransactionDefinition definition) {
+        }
+
+        @Override
+        protected void doCommit(DefaultTransactionStatus status) {
+        }
+
+        @Override
+        protected void doRollback(DefaultTransactionStatus status) {
         }
     }
 }
