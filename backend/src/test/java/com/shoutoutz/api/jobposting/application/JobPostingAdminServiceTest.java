@@ -483,7 +483,7 @@ class JobPostingAdminServiceTest {
     private JobPosting saved() {
         return JobPosting.reconstitute(
                 100L, NORMALIZED_URL.value(), "a".repeat(64), "회사", JobRole.BACKEND, "신입", "백엔드 개발자",
-                "정규직", LocalDate.of(2026, 12, 31), MatchingStatus.PENDING, null, 3L,
+                "정규직", LocalDate.of(2026, 12, 31), null, MatchingStatus.PENDING, null, 3L,
                 List.of(
                         JobRequirement.reconstitute(1000L, 1, "Spring", RequirementCategory.REQUIRED, "설명",
                                 MatchingStatus.PENDING),
@@ -500,7 +500,7 @@ class JobPostingAdminServiceTest {
     private JobPosting postingWith(MatchingStatus postingStatus, MatchingStatus... requirementStatuses) {
         return JobPosting.reconstitute(
                 100L, NORMALIZED_URL.value(), "a".repeat(64), "회사", JobRole.BACKEND, "신입", "백엔드 개발자",
-                "정규직", LocalDate.of(2026, 12, 31), postingStatus, null, 3L,
+                "정규직", LocalDate.of(2026, 12, 31), null, postingStatus, null, 3L,
                 IntStream.range(0, requirementStatuses.length)
                         .mapToObj(index -> JobRequirement.reconstitute(1000L + index, index + 1, "역량" + index,
                                 RequirementCategory.REQUIRED, "설명", requirementStatuses[index]))
@@ -535,7 +535,7 @@ class JobPostingAdminServiceTest {
     private JobPosting analyzed() {
         return JobPosting.reconstitute(
                 100L, NORMALIZED_URL.value(), JobPostingContentHash.from("원문").value(), "회사", JobRole.BACKEND,
-                "신입", "백엔드 개발자", "정규직", LocalDate.of(2026, 12, 31), MatchingStatus.READY, null, 3L,
+                "신입", "백엔드 개발자", "정규직", LocalDate.of(2026, 12, 31), null, MatchingStatus.READY, null, 3L,
                 List.of(JobRequirement.reconstitute(1000L, 1, "Spring", RequirementCategory.REQUIRED, "설명",
                         MatchingStatus.READY)),
                 NOW.minusSeconds(3600), NOW.minusSeconds(3600)

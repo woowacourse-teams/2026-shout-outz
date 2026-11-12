@@ -383,6 +383,7 @@ class JobPostingQueryRepositoryIntegrationTest {
                 title,
                 "정규직",
                 deadline,
+                null,
                 adminId,
                 requirements,
                 createdAt);

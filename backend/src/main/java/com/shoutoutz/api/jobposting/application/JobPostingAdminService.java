@@ -80,6 +80,7 @@ public class JobPostingAdminService {
                 request.title(),
                 request.employmentType(),
                 request.deadline(),
+                null,
                 adminUserId,
                 toRequirements(request.requirements()),
                 clock.instant()
@@ -140,6 +141,7 @@ public class JobPostingAdminService {
                 request.title(),
                 request.employmentType(),
                 request.deadline(),
+                null,
                 toRequirements(request.requirements()),
                 clock.instant()
         );

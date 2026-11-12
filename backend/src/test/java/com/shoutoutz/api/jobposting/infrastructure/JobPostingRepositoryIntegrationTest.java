@@ -299,7 +299,7 @@ class JobPostingRepositoryIntegrationTest {
         JobPosting locked = jobPostingRepository.findByIdForUpdate(saved.getId()).orElseThrow();
         JobPosting updated = locked.update(
                 "https://careers.example.com/jobs/1", CONTENT + "\n- Kotlin 개발 경험", "예시 회사", JobRole.BACKEND,
-                "3년 이상", "백엔드 개발자", null, LocalDate.of(2026, 12, 31),
+                "3년 이상", "백엔드 개발자", null, LocalDate.of(2026, 12, 31), null,
                 List.of(JobRequirement.create(1, "Kotlin", RequirementCategory.REQUIRED, "Kotlin 개발 경험")),
                 NOW.plusSeconds(60));
         jobPostingRepository.update(updated, true);
@@ -337,7 +337,7 @@ class JobPostingRepositoryIntegrationTest {
         JobPosting locked = jobPostingRepository.findByIdForUpdate(saved.getId()).orElseThrow();
         JobPosting updated = locked.update(
                 "https://careers.example.com/jobs/1", CONTENT, "바뀐 회사", JobRole.BACKEND, "3년 이상", "백엔드 개발자",
-                null, LocalDate.of(2026, 12, 31), List.of(), NOW.plusSeconds(60));
+                null, LocalDate.of(2026, 12, 31), null, List.of(), NOW.plusSeconds(60));
         jobPostingRepository.update(updated, false);
         clearPersistenceContext();
 
@@ -352,6 +352,27 @@ class JobPostingRepositoryIntegrationTest {
         assertThat(jdbcTemplate.queryForObject(
                 "SELECT count(*) FROM requirement_recommendations WHERE job_requirement_id = ?", Integer.class,
                 requirementIds.getFirst())).isOne();
+    }
+
+    @Test
+    void 회사_로고를_고치면_받은_로고로_바꾸고_비워서_보내면_지운다() {
+        JobPosting saved = jobPostingRepository.save(posting("https://careers.example.com/jobs/1", NOW));
+        long logoId = insertLogo();
+        clearPersistenceContext();
+
+        JobPosting withLogo = jobPostingRepository.findByIdForUpdate(saved.getId()).orElseThrow().update(
+                "https://careers.example.com/jobs/1", CONTENT, "예시 회사", JobRole.BACKEND, "3년 이상", "백엔드 개발자",
+                null, LocalDate.of(2026, 11, 30), logoId, List.of(), NOW.plusSeconds(60));
+        jobPostingRepository.update(withLogo, false);
+        clearPersistenceContext();
+        assertThat(jobPostingRepository.findById(saved.getId()).orElseThrow().getLogoMediaId()).isEqualTo(logoId);
+
+        JobPosting withoutLogo = jobPostingRepository.findByIdForUpdate(saved.getId()).orElseThrow().update(
+                "https://careers.example.com/jobs/1", CONTENT, "예시 회사", JobRole.BACKEND, "3년 이상", "백엔드 개발자",
+                null, LocalDate.of(2026, 11, 30), null, List.of(), NOW.plusSeconds(120));
+        jobPostingRepository.update(withoutLogo, false);
+        clearPersistenceContext();
+        assertThat(jobPostingRepository.findById(saved.getId()).orElseThrow().getLogoMediaId()).isNull();
     }
 
     @Test
@@ -660,11 +681,21 @@ class JobPostingRepositoryIntegrationTest {
                 "백엔드 개발자",
                 null,
                 LocalDate.of(2026, 11, 30),
+                null,
                 adminId,
                 List.of(
                         JobRequirement.create(1, "Java", RequirementCategory.REQUIRED, "Java로 서버를 개발해 본 경험"),
                         JobRequirement.create(2, "대용량 트래픽 처리", RequirementCategory.PREFERRED, "트래픽이 많은 서비스 운영 경험")),
                 now);
+    }
+
+    private long insertLogo() {
+        return jdbcTemplate.queryForObject("""
+                INSERT INTO media_metadata (
+                    uploaded_by, purpose, s3_key, mime_type, size_bytes, status, expires_at, uploaded_at
+                ) VALUES (?, 'JOB_POSTING_COMPANY_LOGO', ?, 'image/webp', 1024, 'READY', now(), now())
+                RETURNING id
+                """, Long.class, adminId, "media/job-posting-company-logo/" + UUID.randomUUID());
     }
 
     private long insertAdmin() {

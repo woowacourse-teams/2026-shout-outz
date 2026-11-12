@@ -270,7 +270,7 @@ class JobPostingServiceTest {
     private JobPosting posting(MatchingStatus status, Instant hiddenAt, LocalDate deadline) {
         return JobPosting.reconstitute(
                 JOB_POSTING_ID, SOURCE_URL, JobPostingContentHash.from("공고 원문").value(), "토스뱅크",
-                JobRole.BACKEND, "3년 이상", "Server Developer", "정규직", deadline, status, hiddenAt, 1L,
+                JobRole.BACKEND, "3년 이상", "Server Developer", "정규직", deadline, null, status, hiddenAt, 1L,
                 List.of(
                         JobRequirement.reconstitute(11L, 1, "Kotlin, Spring", RequirementCategory.REQUIRED,
                                 "Spring 서버 개발 경험", MatchingStatus.READY),
