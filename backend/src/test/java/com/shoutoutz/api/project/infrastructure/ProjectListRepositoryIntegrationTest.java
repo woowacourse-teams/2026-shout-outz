@@ -467,7 +467,7 @@ class ProjectListRepositoryIntegrationTest {
         ProjectPage firstPage = findAll(new ProjectSearchCondition(
                 null, List.of(), List.of(), null, ProjectSort.RELEVANCE, 2, null, rankedIds));
         ProjectPage secondPage = findAll(new ProjectSearchCondition(
-                null, List.of(), List.of(), null, ProjectSort.RELEVANCE, 2, ProjectCursor.ranked(rankedIds, 2), rankedIds));
+                null, List.of(), List.of(), null, ProjectSort.RELEVANCE, 2, ProjectCursor.ranked(rankedIds, 2, "0a1b2c3d"), rankedIds));
 
         assertThat(ids(firstPage)).containsExactly(second, first);
         assertThat(firstPage.hasNext()).isTrue();
@@ -486,7 +486,7 @@ class ProjectListRepositoryIntegrationTest {
         jdbcTemplate.update("UPDATE projects SET deleted_at = now() WHERE id = ?", second);
 
         ProjectPage page = findAll(new ProjectSearchCondition(
-                null, List.of(), List.of(), null, ProjectSort.RELEVANCE, 2, ProjectCursor.ranked(rankedIds, 2), rankedIds));
+                null, List.of(), List.of(), null, ProjectSort.RELEVANCE, 2, ProjectCursor.ranked(rankedIds, 2, "0a1b2c3d"), rankedIds));
 
         assertThat(ids(page)).containsExactly(third);
     }

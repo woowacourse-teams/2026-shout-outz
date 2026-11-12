@@ -56,7 +56,7 @@ class ProjectCursorCodecTest {
     @Test
     @DisplayName("직접 검색 커서는 첫 페이지의 순위 목록과 읽은 위치를 그대로 되돌린다.")
     void encodesAndDecodesRankedCursor() {
-        ProjectCursor cursor = ProjectCursor.ranked(List.of(4L, 3L, 1L, 5L), 2);
+        ProjectCursor cursor = ProjectCursor.ranked(List.of(4L, 3L, 1L, 5L), 2, "0a1b2c3d");
 
         String encoded = ProjectCursorCodec.encode(cursor);
 
@@ -66,16 +66,18 @@ class ProjectCursorCodecTest {
 
     @ParameterizedTest
     @ValueSource(strings = {
-            "RELEVANCE|RANKED|0|4,3",
-            "RELEVANCE|RANKED|2|4,3",
-            "RELEVANCE|RANKED|1|4,4",
-            "RELEVANCE|RANKED|1|4,0",
-            "RELEVANCE|RANKED|1|4,-3",
-            "RELEVANCE|RANKED|1|",
-            "RELEVANCE|RANKED|x|4,3",
-            "RELEVANCE|OTHER|1|4,3"
+            "RELEVANCE|RANKED|0|4,3|0a1b2c3d",
+            "RELEVANCE|RANKED|2|4,3|0a1b2c3d",
+            "RELEVANCE|RANKED|1|4,4|0a1b2c3d",
+            "RELEVANCE|RANKED|1|4,0|0a1b2c3d",
+            "RELEVANCE|RANKED|1|4,-3|0a1b2c3d",
+            "RELEVANCE|RANKED|1||0a1b2c3d",
+            "RELEVANCE|RANKED|x|4,3|0a1b2c3d",
+            "RELEVANCE|RANKED|1|4,3|XYZ",
+            "RELEVANCE|RANKED|1|4,3",
+            "RELEVANCE|OTHER|1|4,3|0a1b2c3d"
     })
-    @DisplayName("직접 검색 커서의 위치가 범위를 벗어나거나, id가 중복되거나 양수가 아니면 400을 던진다.")
+    @DisplayName("직접 검색 커서의 위치가 범위를 벗어나거나, id가 중복되거나 양수가 아니거나, 검색어 지문이 형식에 맞지 않으면 400을 던진다.")
     void rejectsInvalidRankedCursor(String payload) {
         assertInvalidCursor(encode(payload), ProjectSort.RELEVANCE);
     }
@@ -85,7 +87,7 @@ class ProjectCursorCodecTest {
     void rejectsRankedCursorWithTooManyIds() {
         String ids = LongStream.rangeClosed(1, 31).mapToObj(String::valueOf).collect(Collectors.joining(","));
 
-        assertInvalidCursor(encode("RELEVANCE|RANKED|1|" + ids), ProjectSort.RELEVANCE);
+        assertInvalidCursor(encode("RELEVANCE|RANKED|1|" + ids + "|0a1b2c3d"), ProjectSort.RELEVANCE);
     }
 
     @Test

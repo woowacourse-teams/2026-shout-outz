@@ -19,7 +19,7 @@ import java.util.stream.Collectors;
  * - LATEST : LATEST|{등록 시각}|{프로젝트 ID}
  * - POPULAR: POPULAR|{좋아요 수}|{등록 시각}|{프로젝트 ID}
  * - RELEVANCE: RELEVANCE|{등록 시각}|{프로젝트 ID}
- * - RELEVANCE 순위 목록: RELEVANCE|RANKED|{읽은 위치}|{프로젝트 ID,프로젝트 ID,...}
+ * - RELEVANCE 순위 목록: RELEVANCE|RANKED|{읽은 위치}|{프로젝트 ID,프로젝트 ID,...}|{검색어 지문}
  */
 public final class ProjectCursorCodec {
 
@@ -27,7 +27,7 @@ public final class ProjectCursorCodec {
     private static final String DELIMITER_REGEX = "\\|";
     private static final int LATEST_PARTS = 3;
     private static final int POPULAR_PARTS = 4;
-    private static final int RANKED_PARTS = 4;
+    private static final int RANKED_PARTS = 5;
     private static final String RANKED_MARKER = "RANKED";
     private static final String ID_DELIMITER = ",";
 
@@ -46,7 +46,8 @@ public final class ProjectCursorCodec {
     private static String payload(ProjectCursor cursor) {
         if (cursor.isRanked()) {
             String ids = cursor.rankedIds().stream().map(String::valueOf).collect(Collectors.joining(ID_DELIMITER));
-            return String.join(DELIMITER, cursor.sort().name(), RANKED_MARKER, String.valueOf(cursor.position()), ids);
+            return String.join(DELIMITER, cursor.sort().name(), RANKED_MARKER, String.valueOf(cursor.position()), ids,
+                    cursor.keywordKey());
         }
         if (cursor.sort() == ProjectSort.POPULAR) {
             return String.join(DELIMITER, cursor.sort().name(), String.valueOf(cursor.likeCount()),
@@ -72,7 +73,7 @@ public final class ProjectCursorCodec {
             }
             if (sort == ProjectSort.RELEVANCE && parts.length == RANKED_PARTS && parts[1].equals(RANKED_MARKER)) {
                 List<Long> rankedIds = Arrays.stream(parts[3].split(ID_DELIMITER, -1)).map(Long::parseLong).toList();
-                return ProjectCursor.ranked(rankedIds, Integer.parseInt(parts[2]));
+                return ProjectCursor.ranked(rankedIds, Integer.parseInt(parts[2]), parts[4]);
             }
             if (sort == ProjectSort.POPULAR) {
                 validatePartCount(parts, POPULAR_PARTS);

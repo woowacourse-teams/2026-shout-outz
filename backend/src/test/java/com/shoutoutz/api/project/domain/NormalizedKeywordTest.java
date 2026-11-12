@@ -34,6 +34,16 @@ class NormalizedKeywordTest {
     }
 
     @Test
+    @DisplayName("지문은 정규화한 검색어로 만든 16진수 8자라, 표기만 다른 검색어는 같고 다른 검색어는 다르다.")
+    void makesFingerprintFromNormalizedValue() {
+        String eda = NormalizedKeyword.of("EDA ").fingerprint();
+
+        assertThat(eda).matches("[0-9a-f]{8}");
+        assertThat(NormalizedKeyword.of("eda").fingerprint()).isEqualTo(eda);
+        assertThat(NormalizedKeyword.of("redis").fingerprint()).isNotEqualTo(eda);
+    }
+
+    @Test
     @DisplayName("구두점만 있는 입력은 비교할 글자가 없다.")
     void isEmptyWhenOnlyPunctuation() {
         assertThat(NormalizedKeyword.of(" ?! ").isEmpty()).isTrue();

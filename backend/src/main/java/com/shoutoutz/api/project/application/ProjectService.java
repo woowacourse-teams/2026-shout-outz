@@ -268,7 +268,7 @@ public class ProjectService {
         ProjectPage page = viewerId == null
                 ? projectRepository.findAll(condition)
                 : projectRepository.findAll(condition, viewerId);
-        ProjectCursor nextCursor = nextCursor(condition, page);
+        ProjectCursor nextCursor = nextCursor(condition, page, request.keyword());
         Map<Long, URI> mediaUrls = resolveProjectMediaUrls(page.items());
         Map<Long, String> userAvatarUrls = resolveProjectSummaryUserAvatarUrls(page.items());
         String searchId = null;
@@ -290,13 +290,17 @@ public class ProjectService {
     /**
      * 순위 목록으로 조회하면 다음 페이지도 같은 목록을 이어 읽도록 순위 목록과 마지막 카드의 위치를 커서에 담는다.
      */
-    private ProjectCursor nextCursor(ProjectSearchCondition condition, ProjectPage page) {
+    private ProjectCursor nextCursor(ProjectSearchCondition condition, ProjectPage page, String keyword) {
         if (!page.hasNext() || page.items().isEmpty()) {
             return null;
         }
         if (isRanked(condition)) {
             long lastId = page.items().getLast().id();
-            return ProjectCursor.ranked(condition.projectIds(), condition.projectIds().indexOf(lastId) + 1);
+            return ProjectCursor.ranked(
+                    condition.projectIds(),
+                    condition.projectIds().indexOf(lastId) + 1,
+                    NormalizedKeyword.of(keyword).fingerprint()
+            );
         }
         return page.nextCursor(condition.sort());
     }
@@ -308,6 +312,15 @@ public class ProjectService {
     private static void validateRankedCursor(ProjectSearchCondition condition) {
         ProjectCursor cursor = condition.cursor();
         if (isRanked(condition) && cursor != null && !cursor.isRanked()) {
+            throw new InvalidProjectCursorException();
+        }
+    }
+
+    /**
+     * 검색어를 바꾸면서 이전 검색의 커서를 함께 보내면 다른 검색의 결과를 이어 읽게 되므로 거부한다.
+     */
+    private static void validateSameKeyword(ProjectCursor cursor, String keyword) {
+        if (keyword == null || !NormalizedKeyword.of(keyword).fingerprint().equals(cursor.keywordKey())) {
             throw new InvalidProjectCursorException();
         }
     }
@@ -364,6 +377,7 @@ public class ProjectService {
     private ResolvedKeyword resolveKeyword(ProjectSearchCondition condition) {
         ProjectCursor cursor = condition.cursor();
         if (cursor != null && cursor.isRanked()) {
+            validateSameKeyword(cursor, condition.keyword());
             return ResolvedKeyword.of(condition.onlyProjects(cursor.rankedIds()), KeywordMatch.CONTINUED);
         }
         if (condition.keyword() == null) {

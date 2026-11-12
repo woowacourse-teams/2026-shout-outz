@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.regex.Pattern;
 
 /**
  * 프로젝트 목록에서 마지막으로 조회한 프로젝트의 위치
@@ -12,10 +13,11 @@ import java.util.Objects;
  *
  * 직접 검색은 순위를 매 요청 다시 계산하면 그사이 순위가 바뀌거나 프로젝트가 삭제될 때 겹치거나 빠질 수 있다.
  * 그래서 첫 페이지에서 정한 순위 목록(rankedIds)과 읽은 위치(position)를 커서에 담아 다음 페이지가 그 목록을 이어 읽는다.
- * 이때 등록 시각과 프로젝트 ID는 쓰지 않는다.
+ * 이때 등록 시각과 프로젝트 ID는 쓰지 않는다. 다른 검색어의 목록을 이어 읽지 않도록 검색어 지문(keywordKey)도 담는다.
  *
- * @param rankedIds 직접 검색의 순위 목록. 순위 목록 커서가 아니면 null
- * @param position  순위 목록에서 마지막으로 내려준 프로젝트의 위치(1부터). 순위 목록 커서가 아니면 0
+ * @param rankedIds  직접 검색의 순위 목록. 순위 목록 커서가 아니면 null
+ * @param position   순위 목록에서 마지막으로 내려준 프로젝트의 위치(1부터). 순위 목록 커서가 아니면 0
+ * @param keywordKey 순위 목록을 만든 검색어의 지문(16진수 8자). 순위 목록 커서가 아니면 null
  */
 public record ProjectCursor(
         ProjectSort sort,
@@ -23,7 +25,8 @@ public record ProjectCursor(
         Instant createdAt,
         long id,
         List<Long> rankedIds,
-        int position
+        int position,
+        String keywordKey
 ) {
 
     /**
@@ -31,18 +34,20 @@ public record ProjectCursor(
      */
     public static final int MAX_RANKED_IDS = 30;
 
+    private static final Pattern KEYWORD_KEY = Pattern.compile("[0-9a-f]{8}");
+
     public ProjectCursor {
         Objects.requireNonNull(sort, "커서의 정렬 기준은 null일 수 없습니다.");
         if (rankedIds != null) {
             rankedIds = List.copyOf(rankedIds);
-            validateRanked(sort, likeCount, createdAt, rankedIds, position);
+            validateRanked(sort, likeCount, createdAt, rankedIds, position, keywordKey);
         } else {
-            validatePositional(sort, likeCount, createdAt, id, position);
+            validatePositional(sort, likeCount, createdAt, id, position, keywordKey);
         }
     }
 
     public ProjectCursor(ProjectSort sort, Long likeCount, Instant createdAt, long id) {
-        this(sort, likeCount, createdAt, id, null, 0);
+        this(sort, likeCount, createdAt, id, null, 0, null);
     }
 
     public static ProjectCursor latest(Instant createdAt, long id) {
@@ -60,15 +65,22 @@ public record ProjectCursor(
         return new ProjectCursor(ProjectSort.POPULAR, likeCount, createdAt, id);
     }
 
-    public static ProjectCursor ranked(List<Long> rankedIds, int position) {
-        return new ProjectCursor(ProjectSort.RELEVANCE, null, null, 0, rankedIds, position);
+    public static ProjectCursor ranked(List<Long> rankedIds, int position, String keywordKey) {
+        return new ProjectCursor(ProjectSort.RELEVANCE, null, null, 0, rankedIds, position, keywordKey);
     }
 
     public boolean isRanked() {
         return rankedIds != null;
     }
 
-    private static void validatePositional(ProjectSort sort, Long likeCount, Instant createdAt, long id, int position) {
+    private static void validatePositional(
+            ProjectSort sort,
+            Long likeCount,
+            Instant createdAt,
+            long id,
+            int position,
+            String keywordKey
+    ) {
         Objects.requireNonNull(createdAt, "커서의 등록 시각은 null일 수 없습니다.");
         if (id <= 0) {
             throw new IllegalArgumentException("커서의 프로젝트 ID는 0보다 커야 합니다.");
@@ -79,8 +91,8 @@ public record ProjectCursor(
         if (likeCount != null && likeCount < 0) {
             throw new IllegalArgumentException("커서의 좋아요 수는 0 이상이어야 합니다.");
         }
-        if (position != 0) {
-            throw new IllegalArgumentException("순위 목록 위치는 순위 목록 커서에만 있어야 합니다.");
+        if (position != 0 || keywordKey != null) {
+            throw new IllegalArgumentException("순위 목록 위치와 검색어 지문은 순위 목록 커서에만 있어야 합니다.");
         }
     }
 
@@ -92,8 +104,12 @@ public record ProjectCursor(
             Long likeCount,
             Instant createdAt,
             List<Long> rankedIds,
-            int position
+            int position,
+            String keywordKey
     ) {
+        if (keywordKey == null || !KEYWORD_KEY.matcher(keywordKey).matches()) {
+            throw new IllegalArgumentException("순위 목록 커서의 검색어 지문은 16진수 8자여야 합니다.");
+        }
         if (sort != ProjectSort.RELEVANCE || likeCount != null || createdAt != null) {
             throw new IllegalArgumentException("순위 목록 커서는 관련도순에서 순위 목록과 위치만 담는다.");
         }

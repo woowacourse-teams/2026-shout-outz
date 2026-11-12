@@ -42,6 +42,7 @@ import com.shoutoutz.api.project.domain.Project;
 import com.shoutoutz.api.project.domain.ProjectApprovalHistory;
 import com.shoutoutz.api.project.domain.ProjectApprovalHistoryRepository;
 import com.shoutoutz.api.project.domain.KeywordCandidate;
+import com.shoutoutz.api.project.domain.NormalizedKeyword;
 import com.shoutoutz.api.project.domain.ProjectCursor;
 import com.shoutoutz.api.project.domain.ProjectDeletion;
 import com.shoutoutz.api.project.domain.ProjectDeletionRepository;
@@ -840,24 +841,39 @@ class ProjectServiceTest {
                 new ProjectFindAllRequest("eda", null, null, null, "RELEVANCE", 2, null));
 
         assertThat(ProjectCursorCodec.decode(response.meta().nextCursor(), ProjectSort.RELEVANCE))
-                .isEqualTo(ProjectCursor.ranked(List.of(4L, 3L, 1L, 5L), 2));
+                .isEqualTo(ProjectCursor.ranked(List.of(4L, 3L, 1L, 5L), 2, NormalizedKeyword.of("eda").fingerprint()));
     }
 
     @Test
     @DisplayName("순위 목록 커서로 다음 페이지를 요청하면 검색어를 다시 해석하지 않고 커서의 순위 목록을 이어 읽는다.")
     void continuesRankedCursorWithoutResolvingKeywordAgain() {
-        ProjectCursor cursor = ProjectCursor.ranked(List.of(4L, 3L, 1L, 5L), 2);
+        ProjectCursor cursor = ProjectCursor.ranked(List.of(4L, 3L, 1L, 5L), 2, NormalizedKeyword.of("eda").fingerprint());
         when(projectRepository.findAll(any(ProjectSearchCondition.class)))
                 .thenReturn(new ProjectPage(List.of(), false, 4));
 
         projectService.findAll(new ProjectFindAllRequest(
-                "eda", List.of(8), null, null, "RELEVANCE", 2, ProjectCursorCodec.encode(cursor)));
+                " EDA ", List.of(8), null, null, "RELEVANCE", 2, ProjectCursorCodec.encode(cursor)));
 
         ArgumentCaptor<ProjectSearchCondition> conditionCaptor = ArgumentCaptor.forClass(ProjectSearchCondition.class);
         verify(projectRepository).findAll(conditionCaptor.capture());
         assertThat(conditionCaptor.getValue()).isEqualTo(new ProjectSearchCondition(
                 null, List.of(8), List.of(), null, ProjectSort.RELEVANCE, 2, cursor, List.of(4L, 3L, 1L, 5L)));
         verify(projectRepository, never()).findPublicProjectNames();
+        verifyNoInteractions(resourceSearchService);
+    }
+
+    @Test
+    @DisplayName("다른 검색어에서 받은 순위 목록 커서를 보내면 다른 검색의 결과를 이어 읽지 않도록 400을 던진다.")
+    void rejectsRankedCursorOfDifferentKeyword() {
+        ProjectCursor edaCursor = ProjectCursor.ranked(List.of(4L, 3L), 1, NormalizedKeyword.of("eda").fingerprint());
+
+        assertThatThrownBy(() -> projectService.findAll(new ProjectFindAllRequest(
+                "redis", null, null, null, "RELEVANCE", 2, ProjectCursorCodec.encode(edaCursor))))
+                .isInstanceOf(InvalidProjectCursorException.class);
+        assertThatThrownBy(() -> projectService.findAll(new ProjectFindAllRequest(
+                null, null, null, null, "RELEVANCE", 2, ProjectCursorCodec.encode(edaCursor))))
+                .isInstanceOf(InvalidProjectCursorException.class);
+        verify(projectRepository, never()).findAll(any(ProjectSearchCondition.class));
         verifyNoInteractions(resourceSearchService);
     }
 
