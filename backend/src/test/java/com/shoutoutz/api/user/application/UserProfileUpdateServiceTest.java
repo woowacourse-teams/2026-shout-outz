@@ -5,7 +5,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 
+import com.shoutoutz.api.common.cache.TestLocalCacheFactory;
 import com.shoutoutz.api.common.exception.custom.BadRequestException;
 import com.shoutoutz.api.common.exception.custom.ConflictException;
 import com.shoutoutz.api.common.exception.custom.ForbiddenException;
@@ -28,6 +30,7 @@ import com.shoutoutz.api.user.presentation.dto.request.UserProfileUpdateRequest;
 import com.shoutoutz.api.user.presentation.dto.response.UserProfileUpdateResponse;
 import java.time.Instant;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -70,7 +73,8 @@ class UserProfileUpdateServiceTest {
                 userSearchCursorCodec,
                 mediaMetadataRepository,
                 mediaUrlResolver,
-                new UserAvatarUrlResolver(mediaUrlResolver, oauthAccountRepository)
+                new UserAvatarUrlResolver(mediaUrlResolver, oauthAccountRepository),
+                TestLocalCacheFactory.enabled("user-profile-summary")
         );
     }
 
@@ -165,6 +169,39 @@ class UserProfileUpdateServiceTest {
 
         assertThatThrownBy(() -> userService.updateMyProfile(1L, request("재키", 21L)))
                 .isInstanceOf(ConflictException.class);
+    }
+
+    @Test
+    @DisplayName("프로필을 수정하면 보관한 내 요약 정보를 비워, 다음 조회에서 바뀐 이름을 돌려준다")
+    void evictsSummaryAfterProfileUpdate() {
+        AtomicReference<UserProfile> stored = new AtomicReference<>(generalProfile());
+        given(userRepository.findById(1L)).willReturn(Optional.of(user()));
+        given(userProfileRepository.findByUserId(1L)).willAnswer(invocation -> Optional.of(stored.get()));
+        given(userProfileRepository.save(org.mockito.ArgumentMatchers.any(UserProfile.class)))
+                .willAnswer(invocation -> {
+                    stored.set(invocation.getArgument(0));
+                    return invocation.getArgument(0);
+                });
+        assertThat(userService.getMyProfileSummary(1L).displayName()).isEqualTo("재키");
+
+        userService.updateMyProfile(1L, request("새 이름", null));
+
+        assertThat(userService.getMyProfileSummary(1L).displayName()).isEqualTo("새 이름");
+    }
+
+    @Test
+    @DisplayName("저장 전에 프로필 수정이 실패하면 보관한 내 요약 정보를 비우지 않는다")
+    void keepsSummaryWhenProfileUpdateFails() {
+        givenProfileUpdateTargets();
+        given(mediaMetadataRepository.findById(21L))
+                .willReturn(Optional.of(media(MediaPurpose.USER_AVATAR, MediaStatus.READY, 2L)));
+        userService.getMyProfileSummary(1L);
+
+        assertThatThrownBy(() -> userService.updateMyProfile(1L, request("재키", 21L)))
+                .isInstanceOf(ForbiddenException.class);
+        userService.getMyProfileSummary(1L);
+
+        then(userRepository).should(times(2)).findById(1L);
     }
 
     private void givenProfileUpdateTargets() {

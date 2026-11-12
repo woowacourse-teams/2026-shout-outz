@@ -1,5 +1,7 @@
 package com.shoutoutz.api.user.application;
 
+import com.shoutoutz.api.common.cache.LocalCache;
+import com.shoutoutz.api.common.cache.LocalCacheFactory;
 import com.shoutoutz.api.common.exception.custom.BadRequestException;
 import com.shoutoutz.api.common.exception.custom.ConflictException;
 import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
@@ -30,18 +32,20 @@ import com.shoutoutz.api.user.presentation.dto.response.UserProfileUpdateRespons
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
  * 사용자 프로필 조회, 수정 및 우테코 사용자 검색 서비스.
+ * 내 요약 정보(화면 상단의 핸들·이름·사진)는 모든 페이지에서 불리므로 사용자별로 로컬 캐시에 보관한다.
+ * 이름이나 사진이 바뀌면 {@link #evictSummaryCache(long)}로 그 사용자 것만 비운다.
  */
 @Service
-@RequiredArgsConstructor
 public class UserService {
 
     private static final String DELETED_USER_DISPLAY_NAME = "탈퇴한 사용자";
+    private static final String SUMMARY_CACHE_NAME = "user-profile-summary";
+
     private final UserRepository userRepository;
     private final UserProfileRepository userProfileRepository;
     private final UserQueryRepository userQueryRepository;
@@ -49,6 +53,27 @@ public class UserService {
     private final MediaMetadataRepository mediaMetadataRepository;
     private final MediaUrlResolver mediaUrlResolver;
     private final UserAvatarUrlResolver userAvatarUrlResolver;
+    private final LocalCache<Long, UserProfileSummaryResponse> summaryCache;
+
+    public UserService(
+            UserRepository userRepository,
+            UserProfileRepository userProfileRepository,
+            UserQueryRepository userQueryRepository,
+            UserSearchCursorCodec userSearchCursorCodec,
+            MediaMetadataRepository mediaMetadataRepository,
+            MediaUrlResolver mediaUrlResolver,
+            UserAvatarUrlResolver userAvatarUrlResolver,
+            LocalCacheFactory cacheFactory
+    ) {
+        this.userRepository = userRepository;
+        this.userProfileRepository = userProfileRepository;
+        this.userQueryRepository = userQueryRepository;
+        this.userSearchCursorCodec = userSearchCursorCodec;
+        this.mediaMetadataRepository = mediaMetadataRepository;
+        this.mediaUrlResolver = mediaUrlResolver;
+        this.userAvatarUrlResolver = userAvatarUrlResolver;
+        this.summaryCache = cacheFactory.create(SUMMARY_CACHE_NAME, this::loadSummary);
+    }
 
     @Transactional
     public UserProfileUpdateResponse updateMyProfile(
@@ -67,6 +92,7 @@ public class UserService {
         );
         validateAvatarImage(userId, request.avatarImageId());
         UserProfile savedProfile = userProfileRepository.save(updatedProfile);
+        evictSummaryCache(userId);
 
         return new UserProfileUpdateResponse(
                 user.getId(),
@@ -82,8 +108,18 @@ public class UserService {
         );
     }
 
-    @Transactional(readOnly = true)
     public UserProfileSummaryResponse getMyProfileSummary(long userId) {
+        return summaryCache.get(userId);
+    }
+
+    /**
+     * 이름이나 사진을 바꾼 트랜잭션이 커밋된 뒤 그 사용자의 요약 정보를 지운다. 다음 조회가 새로 읽는다.
+     */
+    public void evictSummaryCache(long userId) {
+        summaryCache.evictAfterCommit(userId);
+    }
+
+    private UserProfileSummaryResponse loadSummary(long userId) {
         User user = findUser(userId);
         UserProfile profile = findProfile(userId);
 

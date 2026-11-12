@@ -46,6 +46,8 @@ dependencies {
     runtimeOnly 'io.micrometer:micrometer-registry-prometheus'
     // 부하 테스트에서 느린 쿼리를 찾기 위해 JPA·JdbcTemplate 쿼리의 실행 시간을 잰다 (slow-query-log.enabled일 때만 사용)
     implementation 'net.ttddyy:datasource-proxy:1.11.0'
+    // 누가 요청해도 답이 같은 조회 결과를 앱 서버 메모리에 보관해 DB로 가는 요청을 줄인다 (local-cache)
+    implementation 'com.github.ben-manes.caffeine:caffeine'
 
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
