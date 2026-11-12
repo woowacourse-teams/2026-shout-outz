@@ -1,6 +1,7 @@
 package com.shoutoutz.api.jobposting.infrastructure;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 
 import com.shoutoutz.api.jobposting.application.JobPostingQueryRepository;
 import com.shoutoutz.api.jobposting.application.dto.JobPostingListCursor;
@@ -186,7 +187,20 @@ class JobPostingQueryRepositoryIntegrationTest {
 
         assertThat(item).isEqualTo(new JobPostingListItem(
                 id, "토스뱅크", JobRole.BACKEND, "정규직", "3년 이상", "Server Developer", LocalDate.of(2026, 11, 30),
-                5, List.of("Kotlin, Spring", "데이터 모델링", "대용량 트래픽 처리"), NOW));
+                null, 5, List.of("Kotlin, Spring", "데이터 모델링", "대용량 트래픽 처리"), NOW));
+    }
+
+    @Test
+    void 공고_한_줄에_회사_로고_이미지_ID를_담는다() {
+        long withLogo = visiblePosting(NOW);
+        long logoMediaId = insertLogo();
+        jdbcTemplate.update("UPDATE job_postings SET logo_media_id = ? WHERE id = ?", logoMediaId, withLogo);
+        long withoutLogo = visiblePosting(NOW.minusSeconds(1));
+
+        List<JobPostingListItem> items = findAll(null, null, null, 20).items();
+
+        assertThat(items).extracting(JobPostingListItem::jobPostingId, JobPostingListItem::logoMediaId)
+                .containsExactly(tuple(withLogo, logoMediaId), tuple(withoutLogo, null));
     }
 
     @Test
@@ -428,6 +442,15 @@ class JobPostingQueryRepositoryIntegrationTest {
                 VALUES (7, ?, ?, '프로젝트', '한 줄 소개', ?, 'OPERATING', 'APPROVED', CASE WHEN ? THEN now() END)
                 RETURNING id
                 """, Long.class, teamName, slug, "https://github.com/example/" + slug, deleted);
+    }
+
+    private long insertLogo() {
+        return jdbcTemplate.queryForObject("""
+                INSERT INTO media_metadata (uploaded_by, purpose, s3_key, mime_type, size_bytes, status, expires_at,
+                                            uploaded_at)
+                VALUES (?, 'JOB_POSTING_COMPANY_LOGO', ?, 'image/webp', 1024, 'READY', now(), now())
+                RETURNING id
+                """, Long.class, adminId, "media/job-posting-company-logo/" + UUID.randomUUID());
     }
 
     private long insertAdmin() {

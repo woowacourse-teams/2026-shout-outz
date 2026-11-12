@@ -28,6 +28,9 @@ import com.shoutoutz.api.jobposting.presentation.dto.request.JobPostingFindAllRe
 import com.shoutoutz.api.jobposting.presentation.dto.response.JobPostingDetailResponse;
 import com.shoutoutz.api.jobposting.presentation.dto.response.JobPostingFindAllResponse;
 import com.shoutoutz.api.jobposting.presentation.dto.response.JobRequirementRecommendationResponse;
+import com.shoutoutz.api.media.application.MediaUrlResolver;
+import com.shoutoutz.api.media.infrastructure.s3.MediaVariant;
+import java.net.URI;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -61,11 +64,15 @@ class JobPostingServiceTest {
     @Mock
     private JobPostingQueryRepository queryRepository;
 
+    @Mock
+    private MediaUrlResolver mediaUrlResolver;
+
     private JobPostingService service;
 
     @BeforeEach
     void setUp() {
-        service = new JobPostingService(jobPostingRepository, queryRepository, Clock.fixed(NOW, ZoneOffset.UTC));
+        service = new JobPostingService(
+                jobPostingRepository, queryRepository, mediaUrlResolver, Clock.fixed(NOW, ZoneOffset.UTC));
     }
 
     @Test
@@ -136,7 +143,7 @@ class JobPostingServiceTest {
                 new JobPostingFindAllRequest(JobRole.BACKEND, null, null, null, null));
 
         assertThat(response.items()).containsExactly(new JobPostingFindAllResponse.Item(
-                8L, "토스뱅크", JobRole.BACKEND, "정규직", "3년 이상", "Server Developer", null,
+                8L, "토스뱅크", null, JobRole.BACKEND, "정규직", "3년 이상", "Server Developer", null,
                 4, List.of("Kotlin", "Spring", "Redis")));
         assertThat(response.meta().totalCount()).isEqualTo(1L);
         assertThat(response.meta().allCount()).isEqualTo(5L);
@@ -152,13 +159,39 @@ class JobPostingServiceTest {
         JobPostingDetailResponse response = service.findDetail(JOB_POSTING_ID);
 
         assertThat(response).isEqualTo(new JobPostingDetailResponse(
-                JOB_POSTING_ID, "토스뱅크", JobRole.BACKEND, "정규직", "3년 이상", "Server Developer", null,
+                JOB_POSTING_ID, "토스뱅크", null, JobRole.BACKEND, "정규직", "3년 이상", "Server Developer", null,
                 SOURCE_URL,
                 List.of(
                         new JobPostingDetailResponse.Requirement(
                                 11L, 1, "Kotlin, Spring", RequirementCategory.REQUIRED, "Spring 서버 개발 경험", 3L),
                         new JobPostingDetailResponse.Requirement(
                                 12L, 2, "Kafka", RequirementCategory.PREFERRED, "메시지 큐 운영 경험", 0L))));
+    }
+
+    @Test
+    @DisplayName("목록의 회사 로고는 작은 이미지 주소로 한 번에 바꾸고, 로고가 없거나 주소를 못 구하면 null 이다.")
+    void resolvesCompanyLogoUrls() {
+        givenPage(new JobPostingListPage(List.of(
+                item(9L, CREATED_AT, 50L), item(8L, CREATED_AT, 51L), item(7L, CREATED_AT)), false));
+        when(mediaUrlResolver.resolveAll(List.of(50L, 51L), MediaVariant.THUMBNAIL))
+                .thenReturn(Map.of(50L, URI.create("https://cdn.example.com/logo/50-thumbnail.webp")));
+
+        JobPostingFindAllResponse response = service.findAll(new JobPostingFindAllRequest(null, null, null, null, 3));
+
+        assertThat(response.items()).extracting(JobPostingFindAllResponse.Item::companyLogoUrl)
+                .containsExactly("https://cdn.example.com/logo/50-thumbnail.webp", null, null);
+    }
+
+    @Test
+    @DisplayName("상세의 회사 로고는 작은 이미지 주소다.")
+    void resolvesCompanyLogoUrlInDetail() {
+        given(posting(MatchingStatus.READY, null, null, 50L));
+        when(mediaUrlResolver.resolve(50L, MediaVariant.THUMBNAIL))
+                .thenReturn(URI.create("https://cdn.example.com/logo/50-thumbnail.webp"));
+
+        JobPostingDetailResponse response = service.findDetail(JOB_POSTING_ID);
+
+        assertThat(response.companyLogoUrl()).isEqualTo("https://cdn.example.com/logo/50-thumbnail.webp");
     }
 
     @Test
@@ -268,9 +301,14 @@ class JobPostingServiceTest {
     }
 
     private JobPosting posting(MatchingStatus status, Instant hiddenAt, LocalDate deadline) {
+        return posting(status, hiddenAt, deadline, null);
+    }
+
+    private JobPosting posting(MatchingStatus status, Instant hiddenAt, LocalDate deadline, Long logoMediaId) {
         return JobPosting.reconstitute(
                 JOB_POSTING_ID, SOURCE_URL, JobPostingContentHash.from("공고 원문").value(), "토스뱅크",
-                JobRole.BACKEND, "3년 이상", "Server Developer", "정규직", deadline, null, status, hiddenAt, 1L,
+                JobRole.BACKEND, "3년 이상", "Server Developer", "정규직", deadline, logoMediaId, status, hiddenAt,
+                1L,
                 List.of(
                         JobRequirement.reconstitute(11L, 1, "Kotlin, Spring", RequirementCategory.REQUIRED,
                                 "Spring 서버 개발 경험", MatchingStatus.READY),
@@ -290,7 +328,11 @@ class JobPostingServiceTest {
     }
 
     private JobPostingListItem item(long id, Instant createdAt) {
+        return item(id, createdAt, null);
+    }
+
+    private JobPostingListItem item(long id, Instant createdAt, Long logoMediaId) {
         return new JobPostingListItem(id, "토스뱅크", JobRole.BACKEND, "정규직", "3년 이상", "Server Developer", null,
-                4, List.of("Kotlin", "Spring", "Redis"), createdAt);
+                logoMediaId, 4, List.of("Kotlin", "Spring", "Redis"), createdAt);
     }
 }

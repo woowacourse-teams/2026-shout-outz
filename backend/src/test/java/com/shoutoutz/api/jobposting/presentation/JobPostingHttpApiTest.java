@@ -69,7 +69,9 @@ class JobPostingHttpApiTest {
         given(jobPostingService.findAll(any(JobPostingFindAllRequest.class)))
                 .willReturn(new JobPostingFindAllResponse(
                         List.of(new JobPostingFindAllResponse.Item(
-                                100L, "토스뱅크", JobRole.BACKEND, "정규직", "경력 3년 이상", "Server Developer",
+                                100L, "토스뱅크",
+                                "https://cdn.example.com/media/job-posting-company-logo/50-thumbnail.webp",
+                                JobRole.BACKEND, "정규직", "경력 3년 이상", "Server Developer",
                                 LocalDate.of(2026, 11, 30), 5, List.of("Kotlin, Spring", "데이터 모델링", "대용량 트래픽 처리"))),
                         JobPostingListMetaResponse.of("next-cursor", true, JobRole.BACKEND,
                                 Map.of(JobRole.BACKEND, 3L, JobRole.FRONTEND, 2L))
@@ -113,6 +115,9 @@ class JobPostingHttpApiTest {
                                         fieldWithPath("data").type(ARRAY).description("채용공고 목록"),
                                         fieldWithPath("data[].jobPostingId").type(NUMBER).description("채용공고 ID"),
                                         fieldWithPath("data[].companyName").type(STRING).description("회사명"),
+                                        fieldWithPath("data[].companyLogoUrl").type(STRING)
+                                                .description("회사 로고 작은 이미지 주소. 로고가 없거나 이미지가 준비되지 않았으면 null")
+                                                .optional(),
                                         new EnumFields(JobRole.class).withPath("data[].jobRole").description("직군"),
                                         fieldWithPath("data[].employmentType").type(STRING).description("고용 형태").optional(),
                                         fieldWithPath("data[].careerRequirement").type(STRING).description("경력 조건").optional(),
@@ -146,7 +151,8 @@ class JobPostingHttpApiTest {
     @Test
     void findsJobPostingDetail() throws Exception {
         given(jobPostingService.findDetail(JOB_POSTING_ID)).willReturn(new JobPostingDetailResponse(
-                JOB_POSTING_ID, "토스뱅크", JobRole.BACKEND, "정규직", "경력 3년 이상", "Server Developer",
+                JOB_POSTING_ID, "토스뱅크", "https://cdn.example.com/media/job-posting-company-logo/50-thumbnail.webp",
+                JobRole.BACKEND, "정규직", "경력 3년 이상", "Server Developer",
                 LocalDate.of(2026, 11, 30), "https://careers.example.com/jobs/100",
                 List.of(
                         new JobPostingDetailResponse.Requirement(11L, 1, "Kotlin, Spring", RequirementCategory.REQUIRED,
@@ -178,6 +184,9 @@ class JobPostingHttpApiTest {
                                         fieldWithPath("data").type(OBJECT).description("채용공고 상세"),
                                         fieldWithPath("data.jobPostingId").type(NUMBER).description("채용공고 ID"),
                                         fieldWithPath("data.companyName").type(STRING).description("회사명"),
+                                        fieldWithPath("data.companyLogoUrl").type(STRING)
+                                                .description("회사 로고 작은 이미지 주소. 로고가 없거나 이미지가 준비되지 않았으면 null")
+                                                .optional(),
                                         new EnumFields(JobRole.class).withPath("data.jobRole").description("직군"),
                                         fieldWithPath("data.employmentType").type(STRING).description("고용 형태").optional(),
                                         fieldWithPath("data.careerRequirement").type(STRING).description("경력 조건").optional(),

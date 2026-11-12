@@ -85,6 +85,7 @@ public class JobPostingQueryRepositoryImpl implements JobPostingQueryRepository 
                     p.career_requirement,
                     p.title,
                     p.deadline,
+                    p.logo_media_id,
                     p.created_at
                 FROM job_postings p
                 WHERE
@@ -230,6 +231,7 @@ public class JobPostingQueryRepositoryImpl implements JobPostingQueryRepository 
                             row.careerRequirement(),
                             row.title(),
                             row.deadline(),
+                            row.logoMediaId(),
                             names.size(),
                             names.subList(0, Math.min(names.size(), REQUIREMENT_PREVIEW_SIZE)),
                             row.createdAt()
@@ -247,6 +249,7 @@ public class JobPostingQueryRepositoryImpl implements JobPostingQueryRepository 
                 resultSet.getString("career_requirement"),
                 resultSet.getString("title"),
                 resultSet.getObject("deadline", LocalDate.class),
+                resultSet.getObject("logo_media_id", Long.class),
                 resultSet.getObject("created_at", OffsetDateTime.class).toInstant()
         );
     }
@@ -269,6 +272,7 @@ public class JobPostingQueryRepositoryImpl implements JobPostingQueryRepository 
             String careerRequirement,
             String title,
             LocalDate deadline,
+            Long logoMediaId,
             Instant createdAt
     ) {
     }
