@@ -67,7 +67,7 @@ class ResourceHttpApiSearchTest {
                                 3412L, "github-teamdoc", "포트폴리오 원장 변경 전에 포트폴리오 잠금 획득",
                                 "https://github.com/woowacourse-teams/2026-DAYNOMY/blob/main/docs/adr.md",
                                 "비관적 잠금으로 원장 정합성을 지켜요.", Instant.parse("2026-10-20T05:12:00Z"),
-                                null, null, null))),
+                                null, "https://github.githubassets.com/favicons/favicon.svg", null))),
                         new ResourceSectionResponse(List.of(new ResourceCardResponse(
                                 2301L, "youtube-tekotalk", "[10분 테코톡] 벨로의 Race Condition 이해하기",
                                 "https://www.youtube.com/watch?v=At4Gyezw8WA", "동시 요청에서 데이터 오류가 생기는 원리를 이해해요.",
@@ -195,7 +195,7 @@ class ResourceHttpApiSearchTest {
                 fieldWithPath("summary").type(STRING).description("한줄 소개").optional(),
                 fieldWithPath("publishedAt").type(STRING).description("원문 게시 시각(UTC)").optional(),
                 fieldWithPath("platform").type(STRING).description("블로그 플랫폼. 블로그가 아니면 null").optional(),
-                fieldWithPath("faviconUrl").type(STRING).description("원문 사이트 아이콘 주소. tistory, velog, rilog 블로그는 플랫폼 공식 아이콘, 그 밖의 자료(개인 도메인 블로그, PR, 팀 문서, 위키, 디스커션 등)는 원문 페이지의 파비콘. 아직 수집 전이거나 파비콘이 없으면(테코톡 등) null").optional(),
+                fieldWithPath("faviconUrl").type(STRING).description("원문 사이트 아이콘 주소. PR, 팀 문서, 위키, 디스커션은 GitHub 아이콘, tistory, velog, rilog 블로그는 플랫폼 공식 아이콘으로 고정. 그 밖의 블로그(개인 도메인 등)는 원문 페이지의 파비콘이고 아직 수집 전이면 null. 테코톡은 null").optional(),
                 fieldWithPath("team").type(OBJECT).description("자료를 만든 팀. 팀이 없거나 알 수 없으면 null").optional(),
                 fieldWithPath("team.name").type(STRING).description("등록된 프로젝트면 프로젝트 이름, 등록 전 팀이면 수집 때 저장한 프로젝트 이름").optional(),
                 fieldWithPath("team.projectSlug").type(STRING).description("등록된 프로젝트 slug. 등록 전 팀이면 null").optional(),

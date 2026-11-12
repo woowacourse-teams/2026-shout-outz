@@ -14,7 +14,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 /**
- * 자료 카드들의 팀 로고와 원문 사이트 파비콘 주소를 구한다. 카드가 몇 장이든 로고 조회 한 번, 파비콘 조회 한 번이다.
+ * 자료 카드들의 팀 로고와 블로그 파비콘 주소를 구한다. 카드가 몇 장이든 로고 조회 한 번, 파비콘 조회 한 번이다.
  * 로고는 카드 안 작은 아이콘이라 미디어의 가장 작은 크기(THUMBNAIL, 긴 변 320px)를 쓴다.
  */
 @Component

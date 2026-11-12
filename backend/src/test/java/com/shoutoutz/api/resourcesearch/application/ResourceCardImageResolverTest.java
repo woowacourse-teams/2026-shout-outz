@@ -18,6 +18,8 @@ import java.util.Set;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -27,6 +29,7 @@ class ResourceCardImageResolverTest {
 
     private static final URI LOGO_31 = URI.create("https://cdn.example.com/media/project/31/thumbnail");
     private static final String TISTORY_ICON = "https://t1.daumcdn.net/tistory_admin/top_v2/bi-tistory-favicon.svg";
+    private static final String GITHUB_ICON = "https://github.githubassets.com/favicons/favicon.svg";
 
     @Mock
     private MediaUrlResolver mediaUrlResolver;
@@ -56,11 +59,12 @@ class ResourceCardImageResolverTest {
     }
 
     @Test
-    @DisplayName("로고도, 수집한 파비콘이 필요한 자료도 없으면 아무것도 조회하지 않는다")
+    @DisplayName("로고도, 수집한 파비콘이 필요한 블로그도 없으면 아무것도 조회하지 않는다")
     void skipsLookupWhenNothingToResolve() {
         ResourceCardImages images = resourceCardImageResolver.resolve(List.of(
-                blog(1L, "velog", "https://velog.io/@jun/post"),
-                blog(2L, "tistory", "https://example.tistory.com/1")
+                pr(1L, null),
+                card(2L, "youtube-tekotalk", "https://www.youtube.com/watch?v=abcdefghijk"),
+                blog(3L, "tistory", "https://example.tistory.com/1")
         ));
 
         assertThat(images).isEqualTo(ResourceCardImages.NONE);
@@ -69,36 +73,51 @@ class ResourceCardImageResolverTest {
     }
 
     @Test
-    @DisplayName("블로그 플랫폼은 공식 아이콘을 쓰고, 그 밖의 블로그와 블로그가 아닌 자료는 수집한 파비콘을 쓴다")
-    void resolvesFavicons() {
+    @DisplayName("고정 아이콘이 없는 블로그만 수집한 파비콘을 조회하고, 블로그 플랫폼은 공식 아이콘을 쓴다")
+    void resolvesBlogFavicons() {
         ResourceCard personalBlog = blog(11L, "generic", "https://jun.dev/posts/1");
         ResourceCard notCollected = blog(12L, null, "https://another.blog/posts/2");
         ResourceCard tistory = blog(13L, "tistory", "https://example.tistory.com/3");
         ResourceCard velogWithoutPlatform = blog(14L, null, "https://velog.io/@jun/post");
-        ResourceCard pr = pr(15L, null);
-        ResourceCard talk = new ResourceCard(16L, "youtube-tekotalk", "제목", "https://www.youtube.com/watch?v=abcdefghijk",
-                null, null, null, null);
-        given(resourceFaviconQueryRepository.findFaviconUrls(List.of(11L, 12L, 15L, 16L)))
-                .willReturn(Map.of(
-                        11L, "https://jun.dev/favicon.png",
-                        15L, "https://github.githubassets.com/favicons/favicon.svg"
-                ));
+        given(resourceFaviconQueryRepository.findFaviconUrls(List.of(11L, 12L)))
+                .willReturn(Map.of(11L, "https://jun.dev/favicon.png"));
 
         ResourceCardImages images = resourceCardImageResolver.resolve(
-                List.of(personalBlog, notCollected, tistory, velogWithoutPlatform, pr, talk));
+                List.of(personalBlog, notCollected, tistory, velogWithoutPlatform));
 
         assertThat(images.faviconUrlOf(personalBlog)).isEqualTo("https://jun.dev/favicon.png");
         assertThat(images.faviconUrlOf(notCollected)).as("아직 수집 전").isNull();
         assertThat(images.faviconUrlOf(tistory)).isEqualTo(TISTORY_ICON);
         assertThat(images.faviconUrlOf(velogWithoutPlatform)).as("플랫폼 값이 없어도 주소로 판별")
                 .isEqualTo("https://velog.io/favicon.ico");
-        assertThat(images.faviconUrlOf(pr)).as("블로그가 아니어도 수집한 파비콘")
-                .isEqualTo("https://github.githubassets.com/favicons/favicon.svg");
-        assertThat(images.faviconUrlOf(talk)).as("수집한 파비콘이 없으면 null").isNull();
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"github-pr", "github-teamdoc", "github-wiki", "github-discussion"})
+    @DisplayName("PR, 팀 문서, 위키, 디스커션은 수집 결과와 관계없이 GitHub 아이콘으로 고정한다")
+    void usesGithubIconForGithubSources(String source) {
+        ResourceCard github = card(21L, source, "https://github.com/woowacourse-teams/2026-shout-outz/pull/1");
+
+        ResourceCardImages images = resourceCardImageResolver.resolve(List.of(github));
+
+        assertThat(images.faviconUrlOf(github)).isEqualTo(GITHUB_ICON);
+        verify(resourceFaviconQueryRepository, never()).findFaviconUrls(anyCollection());
+    }
+
+    @Test
+    @DisplayName("테코톡은 파비콘이 없다")
+    void returnsNullForTalks() {
+        ResourceCard talk = card(31L, "youtube-tekotalk", "https://www.youtube.com/watch?v=abcdefghijk");
+
+        assertThat(resourceCardImageResolver.resolve(List.of(talk)).faviconUrlOf(talk)).isNull();
     }
 
     private ResourceCard pr(long id, ResourceCard.Team team) {
         return new ResourceCard(id, "github-pr", "제목", "https://github.com/example/pull/" + id, null, null, null, team);
+    }
+
+    private ResourceCard card(long id, String source, String url) {
+        return new ResourceCard(id, source, "제목", url, null, null, null, null);
     }
 
     private ResourceCard blog(long id, String platform, String url) {
