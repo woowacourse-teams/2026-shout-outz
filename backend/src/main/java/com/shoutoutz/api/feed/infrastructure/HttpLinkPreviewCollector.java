@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
@@ -24,7 +25,7 @@ import tools.jackson.databind.ObjectMapper;
 @Component
 public class HttpLinkPreviewCollector implements LinkPreviewCollector {
 
-    // 일반 사이트의 HTML OG 수집 크기 제한.
+    // 일반 사이트 HTML 은 앞에서부터 이만큼만 읽는다.
     private static final int MAX_HTML_BYTES = 2 * 1_024 * 1_024;
     private static final int MAX_OEMBED_BYTES = 64 * 1_024;
     private static final int MAX_REDIRECTS = 3;
@@ -46,7 +47,7 @@ public class HttpLinkPreviewCollector implements LinkPreviewCollector {
 
     @Override
     public LinkPreviewMetadata collect(String url) throws IOException {
-        URI input = URI.create(url);
+        URI input = LinkPreviewUri.parse(url);
         urlPolicy.validateSyntax(input);
         Optional<String> youtubeVideoId = youtubeVideoId(input);
         if (youtubeVideoId.isPresent()) {
@@ -83,12 +84,11 @@ public class HttpLinkPreviewCollector implements LinkPreviewCollector {
                         && !mediaType.startsWith("application/xhtml+xml")) {
                     throw new IOException("HTML 페이지가 아닙니다.");
                 }
-                if (response.getEntity().getContentLength() > MAX_HTML_BYTES) {
-                    throw new IOException("HTML 응답이 너무 큽니다.");
-                }
                 byte[] body = response.getEntity().getContent().readNBytes(MAX_HTML_BYTES + 1);
                 if (body.length > MAX_HTML_BYTES) {
-                    throw new IOException("HTML 응답이 너무 큽니다.");
+                    // og 태그는 head 에 있으므로 앞부분만 쓴다. 남은 본문은 받지 않고 연결을 끊는다.
+                    request.cancel();
+                    body = Arrays.copyOf(body, MAX_HTML_BYTES);
                 }
                 return new PageResponse(null, body);
             });
@@ -96,7 +96,7 @@ public class HttpLinkPreviewCollector implements LinkPreviewCollector {
             if (page.redirect() == null) {
                 return parse(page.body(), current);
             }
-            current = current.resolve(page.redirect());
+            current = LinkPreviewUri.resolveLocation(current, page.redirect());
         }
         throw new IOException("리다이렉트 횟수를 초과했습니다.");
     }
@@ -262,7 +262,7 @@ public class HttpLinkPreviewCollector implements LinkPreviewCollector {
             return null;
         }
         try {
-            URI image = pageUrl.resolve(value.strip());
+            URI image = LinkPreviewUri.resolve(pageUrl, value);
             return urlPolicy.requireFetchable(image).toString();
         } catch (IOException | IllegalArgumentException ignored) {
             return null;

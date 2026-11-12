@@ -20,6 +20,7 @@ import com.shoutoutz.api.cohort.domain.InvalidCohortException;
 import com.shoutoutz.api.auth.domain.OAuthAccount;
 import com.shoutoutz.api.auth.domain.OAuthAccountRepository;
 import com.shoutoutz.api.auth.domain.OAuthProvider;
+import com.shoutoutz.api.common.embedding.EmbeddingException;
 import com.shoutoutz.api.common.exception.custom.ConflictException;
 import com.shoutoutz.api.common.exception.custom.DuplicateEntityException;
 import com.shoutoutz.api.common.exception.custom.DomainValidationException;
@@ -40,6 +41,8 @@ import com.shoutoutz.api.project.domain.GithubRepositoryUrl;
 import com.shoutoutz.api.project.domain.Project;
 import com.shoutoutz.api.project.domain.ProjectApprovalHistory;
 import com.shoutoutz.api.project.domain.ProjectApprovalHistoryRepository;
+import com.shoutoutz.api.project.domain.KeywordCandidate;
+import com.shoutoutz.api.project.domain.NormalizedKeyword;
 import com.shoutoutz.api.project.domain.ProjectCursor;
 import com.shoutoutz.api.project.domain.ProjectDeletion;
 import com.shoutoutz.api.project.domain.ProjectDeletionRepository;
@@ -58,6 +61,8 @@ import com.shoutoutz.api.project.domain.ProjectSummary;
 import com.shoutoutz.api.project.domain.RestorableProject;
 import com.shoutoutz.api.project.domain.RestoredProject;
 import com.shoutoutz.api.project.domain.ProjectTechTag;
+import com.shoutoutz.api.project.domain.PublicProjectName;
+import com.shoutoutz.api.project.domain.TopicAliases;
 import com.shoutoutz.api.project.domain.ServiceStatus;
 import com.shoutoutz.api.user.domain.profile.Track;
 import com.shoutoutz.api.project.domain.Slug;
@@ -72,6 +77,11 @@ import com.shoutoutz.api.project.domain.exception.InvalidLogoException;
 import com.shoutoutz.api.project.domain.exception.InvalidThumbnailException;
 import com.shoutoutz.api.project.domain.exception.ProjectRegistrationForbiddenException;
 import com.shoutoutz.api.project.presentation.dto.request.ProjectCreateRequest;
+import com.shoutoutz.api.projectresource.application.ProjectResourceQueryRepository;
+import com.shoutoutz.api.projectresource.domain.ResourceTopic;
+import com.shoutoutz.api.resourcesearch.application.ResourceSearchService;
+import com.shoutoutz.api.resourcesearch.application.dto.SearchHit;
+import com.shoutoutz.api.resourcesearch.domain.ResourceTrack;
 import com.shoutoutz.api.project.presentation.dto.request.ProjectFilterOptionsRequest;
 import com.shoutoutz.api.project.presentation.dto.request.ProjectFindAllRequest;
 import com.shoutoutz.api.project.presentation.dto.request.ProjectUpdateRequest;
@@ -114,8 +124,10 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 
-@ExtendWith(MockitoExtension.class)
+@ExtendWith({MockitoExtension.class, OutputCaptureExtension.class})
 class ProjectServiceTest {
 
     private static final long REGISTERED_BY = 7L;
@@ -168,6 +180,20 @@ class ProjectServiceTest {
     @Mock
     private BlogSourceRepository blogSourceRepository;
 
+    @Mock
+    private ProjectResourceQueryRepository projectResourceQueryRepository;
+
+    @Mock
+    private ResourceSearchService resourceSearchService;
+
+    private final TopicAliases topicAliases = TopicAliases.of(
+            Map.of(
+                    "concurrency", List.of("동시성 제어/락", "동시성"),
+                    "cache", List.of("redis")
+            ),
+            Set.of("concurrency", "cache")
+    );
+
     private ProjectService projectService;
 
     @BeforeEach
@@ -185,6 +211,9 @@ class ProjectServiceTest {
                 mediaUrlResolver,
                 new UserAvatarUrlResolver(mediaUrlResolver, oauthAccountRepository),
                 blogSourceRepository,
+                topicAliases,
+                projectResourceQueryRepository,
+                resourceSearchService,
                 Clock.fixed(NOW, ZoneOffset.UTC)
         );
         lenient().when(projectSlugResolver.resolveId(SLUG)).thenReturn(PROJECT_ID);
@@ -727,6 +756,236 @@ class ProjectServiceTest {
         verify(projectRepository).findAll(conditionCaptor.capture());
         assertThat(conditionCaptor.getValue()).isEqualTo(new ProjectSearchCondition(
                 "모아", List.of(7, 6), List.of(2L, 1L), "concurrency", ProjectSort.POPULAR, 20, cursor));
+        verify(projectRepository, never()).findPublicProjectNames();
+    }
+
+    @Test
+    @DisplayName("검색어가 공개 프로젝트 이름과 대소문자, 공백, 구두점을 빼고 같으면 검색어 대신 그 프로젝트들만 조회한다.")
+    void findsOnlyProjectsWhoseTitleEqualsKeyword() {
+        when(projectRepository.findPublicProjectNames()).thenReturn(List.of(
+                new PublicProjectName(1L, "Rilog.", "https://github.com/woowacourse-teams/2026-p1"),
+                new PublicProjectName(2L, "Rilog 블로그", "https://github.com/woowacourse-teams/2026-p2"),
+                new PublicProjectName(3L, "rilog", "https://github.com/woowacourse-teams/2026-p3")
+        ));
+        when(projectRepository.findAll(any(ProjectSearchCondition.class)))
+                .thenReturn(new ProjectPage(List.of(), false, 0));
+
+        projectService.findAll(new ProjectFindAllRequest(" RILOG ", List.of(8), null, null, null, null, null));
+
+        ArgumentCaptor<ProjectSearchCondition> conditionCaptor = ArgumentCaptor.forClass(ProjectSearchCondition.class);
+        verify(projectRepository).findAll(conditionCaptor.capture());
+        assertThat(conditionCaptor.getValue()).isEqualTo(new ProjectSearchCondition(
+                null, List.of(8), List.of(), null, ProjectSort.LATEST, 8, null, List.of(1L, 3L)));
+    }
+
+    @Test
+    @DisplayName("검색어가 연도 접두사를 뗀 저장소 이름과 같으면 그 프로젝트만 조회한다.")
+    void findsOnlyProjectWhoseRepositoryNameEqualsKeyword() {
+        when(projectRepository.findPublicProjectNames()).thenReturn(List.of(
+                new PublicProjectName(13L, "히어릿", "https://github.com/woowacourse-teams/2025-hearit"),
+                new PublicProjectName(14L, "히어로", "https://github.com/woowacourse-teams/2025-hero")
+        ));
+        when(projectRepository.findAll(any(ProjectSearchCondition.class)))
+                .thenReturn(new ProjectPage(List.of(), false, 0));
+
+        projectService.findAll(new ProjectFindAllRequest("hearit", null, null, null, "RELEVANCE", null, null));
+
+        ArgumentCaptor<ProjectSearchCondition> conditionCaptor = ArgumentCaptor.forClass(ProjectSearchCondition.class);
+        verify(projectRepository).findAll(conditionCaptor.capture());
+        assertThat(conditionCaptor.getValue().projectIds()).containsExactly(13L);
+        verifyNoInteractions(resourceSearchService);
+    }
+
+    @Test
+    @DisplayName("이름도 기술 주제도 아니면 이름에 든 프로젝트, 자료 검색 순서의 프로젝트, 나머지 글자 일치 프로젝트 순으로 골라 조회한다.")
+    void findsDirectSearchProjectsWhenKeywordIsNeitherTitleNorTopic() {
+        when(projectRepository.findPublicProjectNames()).thenReturn(List.of(new PublicProjectName(1L, "Rilog.", "https://github.com/woowacourse-teams/2026-p1")));
+        when(resourceSearchService.search("eda", null, 20))
+                .thenReturn(List.of(searchHit(3L), searchHit(null), searchHit(1L), searchHit(3L)));
+        when(projectRepository.findKeywordCandidates(
+                new ProjectFilterCondition("eda", List.of(8), List.of()), List.of(3L, 1L)))
+                .thenReturn(List.of(
+                        new KeywordCandidate(1L, false, NOW),
+                        new KeywordCandidate(3L, false, NOW),
+                        new KeywordCandidate(4L, true, NOW),
+                        new KeywordCandidate(5L, false, NOW)
+                ));
+        when(projectRepository.findAll(any(ProjectSearchCondition.class)))
+                .thenReturn(new ProjectPage(List.of(), false, 0));
+
+        projectService.findAll(new ProjectFindAllRequest("eda", List.of(8), null, null, "RELEVANCE", null, null));
+
+        ArgumentCaptor<ProjectSearchCondition> conditionCaptor = ArgumentCaptor.forClass(ProjectSearchCondition.class);
+        verify(projectRepository).findAll(conditionCaptor.capture());
+        assertThat(conditionCaptor.getValue()).isEqualTo(new ProjectSearchCondition(
+                null, List.of(8), List.of(), null, ProjectSort.RELEVANCE, 8, null, List.of(4L, 3L, 1L, 5L)));
+        verify(resourceSearchService).search("eda", null, 20);
+    }
+
+    @Test
+    @DisplayName("직접 검색의 다음 페이지가 있으면 첫 페이지의 순위 목록과 마지막 카드의 위치를 커서로 내려준다.")
+    void returnsRankedCursorForDirectSearch() {
+        when(projectRepository.findPublicProjectNames()).thenReturn(List.of());
+        when(resourceSearchService.search("eda", null, 20)).thenReturn(List.of(searchHit(3L), searchHit(1L)));
+        when(projectRepository.findKeywordCandidates(new ProjectFilterCondition("eda", List.of(), List.of()), List.of(3L, 1L)))
+                .thenReturn(List.of(
+                        new KeywordCandidate(1L, false, NOW),
+                        new KeywordCandidate(3L, false, NOW),
+                        new KeywordCandidate(4L, true, NOW),
+                        new KeywordCandidate(5L, false, NOW)
+                ));
+        when(projectRepository.findAll(any(ProjectSearchCondition.class)))
+                .thenReturn(new ProjectPage(List.of(summary(4L, 0L, NOW), summary(3L, 0L, NOW)), true, 4));
+
+        ProjectFindAllResponse response = projectService.findAll(
+                new ProjectFindAllRequest("eda", null, null, null, "RELEVANCE", 2, null));
+
+        assertThat(ProjectCursorCodec.decode(response.meta().nextCursor(), ProjectSort.RELEVANCE))
+                .isEqualTo(ProjectCursor.ranked(List.of(4L, 3L, 1L, 5L), 2, NormalizedKeyword.of("eda").fingerprint()));
+    }
+
+    @Test
+    @DisplayName("순위 목록 커서로 다음 페이지를 요청하면 검색어를 다시 해석하지 않고 커서의 순위 목록을 이어 읽는다.")
+    void continuesRankedCursorWithoutResolvingKeywordAgain() {
+        ProjectCursor cursor = ProjectCursor.ranked(List.of(4L, 3L, 1L, 5L), 2, NormalizedKeyword.of("eda").fingerprint());
+        when(projectRepository.findAll(any(ProjectSearchCondition.class)))
+                .thenReturn(new ProjectPage(List.of(), false, 4));
+
+        projectService.findAll(new ProjectFindAllRequest(
+                " EDA ", List.of(8), null, null, "RELEVANCE", 2, ProjectCursorCodec.encode(cursor)));
+
+        ArgumentCaptor<ProjectSearchCondition> conditionCaptor = ArgumentCaptor.forClass(ProjectSearchCondition.class);
+        verify(projectRepository).findAll(conditionCaptor.capture());
+        assertThat(conditionCaptor.getValue()).isEqualTo(new ProjectSearchCondition(
+                null, List.of(8), List.of(), null, ProjectSort.RELEVANCE, 2, cursor, List.of(4L, 3L, 1L, 5L)));
+        verify(projectRepository, never()).findPublicProjectNames();
+        verifyNoInteractions(resourceSearchService);
+    }
+
+    @Test
+    @DisplayName("다른 검색어에서 받은 순위 목록 커서를 보내면 다른 검색의 결과를 이어 읽지 않도록 400을 던진다.")
+    void rejectsRankedCursorOfDifferentKeyword() {
+        ProjectCursor edaCursor = ProjectCursor.ranked(List.of(4L, 3L), 1, NormalizedKeyword.of("eda").fingerprint());
+
+        assertThatThrownBy(() -> projectService.findAll(new ProjectFindAllRequest(
+                "redis", null, null, null, "RELEVANCE", 2, ProjectCursorCodec.encode(edaCursor))))
+                .isInstanceOf(InvalidProjectCursorException.class);
+        assertThatThrownBy(() -> projectService.findAll(new ProjectFindAllRequest(
+                null, null, null, null, "RELEVANCE", 2, ProjectCursorCodec.encode(edaCursor))))
+                .isInstanceOf(InvalidProjectCursorException.class);
+        verify(projectRepository, never()).findAll(any(ProjectSearchCondition.class));
+        verifyNoInteractions(resourceSearchService);
+    }
+
+    @Test
+    @DisplayName("직접 검색인데 순위 목록이 없는 관련도순 커서를 보내면 이어 읽을 위치를 알 수 없어 400을 던진다.")
+    void rejectsUnrankedCursorForDirectSearch() {
+        when(projectRepository.findPublicProjectNames()).thenReturn(List.of());
+        when(resourceSearchService.search("eda", null, 20)).thenReturn(List.of());
+        when(projectRepository.findKeywordCandidates(new ProjectFilterCondition("eda", List.of(), List.of()), List.of()))
+                .thenReturn(List.of(new KeywordCandidate(1L, false, NOW)));
+        String unranked = ProjectCursorCodec.encode(ProjectCursor.relevance(NOW, 1L));
+
+        assertThatThrownBy(() -> projectService.findAll(
+                new ProjectFindAllRequest("eda", null, null, null, "RELEVANCE", 2, unranked)))
+                .isInstanceOf(InvalidProjectCursorException.class);
+        verify(projectRepository, never()).findAll(any(ProjectSearchCondition.class));
+    }
+
+    @Test
+    @DisplayName("자료 검색의 임베딩 호출이 실패하면 글자 일치 프로젝트만으로 직접 검색 결과를 만든다.")
+    void findsKeywordMatchesOnlyWhenEmbeddingFails(CapturedOutput output) {
+        when(projectRepository.findPublicProjectNames()).thenReturn(List.of());
+        when(resourceSearchService.search("eda", null, 20))
+                .thenThrow(new EmbeddingException(null, "TRANSPORT_ERROR", true));
+        when(projectRepository.findKeywordCandidates(new ProjectFilterCondition("eda", List.of(), List.of()), List.of()))
+                .thenReturn(List.of(new KeywordCandidate(2L, false, NOW)));
+        when(projectRepository.findAll(any(ProjectSearchCondition.class)))
+                .thenReturn(new ProjectPage(List.of(), false, 0));
+
+        projectService.findAll(new ProjectFindAllRequest("eda", null, null, null, null, null, null));
+
+        ArgumentCaptor<ProjectSearchCondition> conditionCaptor = ArgumentCaptor.forClass(ProjectSearchCondition.class);
+        verify(projectRepository).findAll(conditionCaptor.capture());
+        assertThat(conditionCaptor.getValue().projectIds()).containsExactly(2L);
+        assertThat(output).contains("resourceSearchFailed=true");
+    }
+
+    @Test
+    @DisplayName("검색어로 조회하면 검색 id를 응답에 담고, 같은 id로 해석 경로와 결과를 한 줄 로그로 남긴다.")
+    void logsKeywordSearchWithSearchId(CapturedOutput output) {
+        when(projectRepository.findPublicProjectNames()).thenReturn(List.of());
+        when(resourceSearchService.search("EDA", null, 20)).thenReturn(List.of(searchHit(10L)));
+        when(projectRepository.findKeywordCandidates(new ProjectFilterCondition("EDA", List.of(), List.of()), List.of(10L)))
+                .thenReturn(List.of(new KeywordCandidate(10L, false, NOW)));
+        when(projectRepository.findAll(any(ProjectSearchCondition.class)))
+                .thenReturn(new ProjectPage(List.of(summary(10L, 0L, NOW)), false, 1));
+
+        ProjectFindAllResponse response = projectService.findAll(
+                new ProjectFindAllRequest(" EDA ", null, null, null, "RELEVANCE", null, null));
+
+        assertThat(response.meta().searchId()).isNotBlank();
+        assertThat(response.items().getFirst().matchedResource())
+                .isEqualTo(new ProjectFindAllResponse.MatchedResource(1L, "github-pr", "제목"));
+        assertThat(output).contains(
+                "project_search searchId=" + response.meta().searchId(),
+                "keyword=\"eda\"",
+                "match=SEARCH",
+                "firstPage=true",
+                "totalCount=1",
+                "topProjectIds=[10]",
+                "resourceSearchFailed=false"
+        );
+    }
+
+    @Test
+    @DisplayName("검색어가 없으면 검색 id를 만들지 않고 검색 로그도 남기지 않는다.")
+    void doesNotLogWithoutKeyword(CapturedOutput output) {
+        when(projectRepository.findAll(any(ProjectSearchCondition.class)))
+                .thenReturn(new ProjectPage(List.of(), false, 0));
+
+        ProjectFindAllResponse response = projectService.findAll(
+                new ProjectFindAllRequest(null, null, null, null, null, null, null));
+
+        assertThat(response.meta().searchId()).isNull();
+        assertThat(output).doesNotContain("project_search");
+    }
+
+    @Test
+    @DisplayName("검색어가 기술 주제 별칭과 맞으면 검색어 대신 그 주제로 조회하고, 응답에 해석한 주제를 담는다.")
+    void findsTopicProjectsWhenKeywordMatchesTopicAlias() {
+        when(projectRepository.findPublicProjectNames()).thenReturn(List.of(new PublicProjectName(1L, "Rilog.", "https://github.com/woowacourse-teams/2026-p1")));
+        when(projectResourceQueryRepository.findTopic("concurrency")).thenReturn(Optional.of(
+                new ResourceTopic("concurrency", "동시성 제어/락", "backend", "동시성, 트랜잭션")));
+        when(projectRepository.findAll(any(ProjectSearchCondition.class)))
+                .thenReturn(new ProjectPage(List.of(), false, 0));
+
+        ProjectFindAllResponse response = projectService.findAll(
+                new ProjectFindAllRequest("동시성 문제", List.of(7), null, null, null, null, null));
+
+        ArgumentCaptor<ProjectSearchCondition> conditionCaptor = ArgumentCaptor.forClass(ProjectSearchCondition.class);
+        verify(projectRepository).findAll(conditionCaptor.capture());
+        assertThat(conditionCaptor.getValue()).isEqualTo(new ProjectSearchCondition(
+                null, List.of(7), List.of(), "concurrency", ProjectSort.LATEST, 8, null));
+        assertThat(response.meta().matchedTopic()).isEqualTo(
+                new ProjectFindAllResponse.MatchedTopic("concurrency", "동시성 제어/락", "backend"));
+    }
+
+    @Test
+    @DisplayName("검색어가 프로젝트 이름과 같으면 기술 주제 별칭과 맞아도 이름을 먼저 따르고 주제를 담지 않는다.")
+    void prefersProjectTitleOverTopicAlias() {
+        when(projectRepository.findPublicProjectNames()).thenReturn(List.of(new PublicProjectName(5L, "동시성", "https://github.com/woowacourse-teams/2026-p5")));
+        when(projectRepository.findAll(any(ProjectSearchCondition.class)))
+                .thenReturn(new ProjectPage(List.of(), false, 0));
+
+        ProjectFindAllResponse response = projectService.findAll(
+                new ProjectFindAllRequest("동시성", null, null, null, null, null, null));
+
+        ArgumentCaptor<ProjectSearchCondition> conditionCaptor = ArgumentCaptor.forClass(ProjectSearchCondition.class);
+        verify(projectRepository).findAll(conditionCaptor.capture());
+        assertThat(conditionCaptor.getValue().projectIds()).containsExactly(5L);
+        assertThat(response.meta().matchedTopic()).isNull();
+        verifyNoInteractions(projectResourceQueryRepository);
     }
 
     @Test
@@ -1925,5 +2184,10 @@ class ProjectServiceTest {
                 .deploymentUrl(project.getDeploymentUrl())
                 .thumbnailMediaId(project.getThumbnailMediaId())
                 .build();
+    }
+
+    private static SearchHit searchHit(Long projectId) {
+        return new SearchHit(1L, "key", projectId, "repo", "제목", "요약", "github-pr",
+                ResourceTrack.BE, "https://example.com", 0.5, List.of());
     }
 }

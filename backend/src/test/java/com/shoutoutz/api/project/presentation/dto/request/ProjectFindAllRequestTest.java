@@ -72,6 +72,15 @@ class ProjectFindAllRequestTest {
         assertThat(request.resolvedSort()).isEqualTo(ProjectSort.POPULAR);
     }
 
+    @Test
+    @DisplayName("RELEVANCE 정렬을 입력하면 관련도순으로 조회한다.")
+    void resolvesRelevanceSort() {
+        ProjectFindAllRequest request = new ProjectFindAllRequest(null, null, null, null, "RELEVANCE", null, null);
+
+        assertThat(violatedProperties(request)).isEmpty();
+        assertThat(request.resolvedSort()).isEqualTo(ProjectSort.RELEVANCE);
+    }
+
     @ParameterizedTest
     @ValueSource(strings = {"popular", "OLDEST"})
     @DisplayName("정의되지 않은 정렬 기준이면 검증에 실패한다.")

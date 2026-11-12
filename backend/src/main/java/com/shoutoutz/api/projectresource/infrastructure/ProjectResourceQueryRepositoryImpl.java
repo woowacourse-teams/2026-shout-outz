@@ -15,7 +15,6 @@ import java.sql.Array;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.OffsetDateTime;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -107,6 +106,7 @@ public class ProjectResourceQueryRepositoryImpl implements ProjectResourceQueryR
 
     /**
      * 카드 근거: 카드 출처 경험의 자료. 삭제된 경험과 자료, 받아들인 필요 없어요 제보 자료는 뺀다.
+     * 경험 행마다 문서가 나오므로 같은 문서가 여러 번 나올 수 있다. 중복은 findCareerCardSources 에서 거른다.
      */
     private static final String FIND_CAREER_CARD_SOURCES_SQL = "SELECT\n    card_source.card_id,\n" + CARD_COLUMNS
             + """
@@ -271,16 +271,21 @@ public class ProjectResourceQueryRepositoryImpl implements ProjectResourceQueryR
         if (cardIds.isEmpty()) {
             return Map.of();
         }
-        Map<Long, List<ResourceCard>> sourcesByCard = new LinkedHashMap<>();
+        // 근거는 경험 단위로 저장되어 한 문서의 경험 여러 개가 한 카드에 묶이면 같은 문서가 여러 번 읽힌다.
+        // 행이 source_order 순으로 오므로, 카드마다 처음 나온 문서만 남기면 그 문서의 가장 앞 경험 순서가 된다(#666).
+        Map<Long, Map<Long, ResourceCard>> sourcesByCard = new LinkedHashMap<>();
         jdbcTemplate.query(
                 FIND_CAREER_CARD_SOURCES_SQL,
                 new MapSqlParameterSource("cardIds", cardIds),
                 resultSet -> {
-                    sourcesByCard.computeIfAbsent(resultSet.getLong("card_id"), cardId -> new ArrayList<>())
-                            .add(toCard(resultSet));
+                    ResourceCard source = toCard(resultSet);
+                    sourcesByCard.computeIfAbsent(resultSet.getLong("card_id"), cardId -> new LinkedHashMap<>())
+                            .putIfAbsent(source.resourceId(), source);
                 }
         );
-        return sourcesByCard;
+        Map<Long, List<ResourceCard>> sources = new LinkedHashMap<>();
+        sourcesByCard.forEach((cardId, cards) -> sources.put(cardId, List.copyOf(cards.values())));
+        return sources;
     }
 
     private static List<String> textArray(ResultSet resultSet, String column) throws SQLException {

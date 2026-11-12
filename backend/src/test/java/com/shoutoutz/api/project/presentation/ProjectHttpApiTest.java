@@ -36,7 +36,6 @@ import com.shoutoutz.api.common.exception.custom.ConflictException;
 import com.shoutoutz.api.common.exception.custom.DuplicateEntityException;
 import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
 import com.shoutoutz.api.common.restdocs.RestDocsFields;
-import com.shoutoutz.api.common.response.SliceMetaResponse;
 import com.shoutoutz.api.project.application.ProjectService;
 import com.shoutoutz.api.project.domain.ApprovalStatus;
 import com.shoutoutz.api.project.domain.DeletedProject;
@@ -475,7 +474,8 @@ class ProjectHttpApiTest {
                                 new ProjectMemberProfileResponse(null, null, "Archived Crew", null, null, null,
                                         "https://avatars.githubusercontent.com/u/1", "https://github.com/archived-crew")
                         ))),
-                new SliceMetaResponse("UE9QVUxBUnwxODR8MjAyNi0wOC0wOVQwMjozMDowMFp8MTAw", true, 48L)
+                new ProjectFindAllResponse.Meta("UE9QVUxBUnwxODR8MjAyNi0wOC0wOVQwMjozMDowMFp8MTAw", true, 48L, null,
+                        "9f1c2a7e-5b3d-4c8a-9e21-7d4b6a0c1f35")
         ));
 
         mockMvc.perform(get("/api/v1/projects")
@@ -505,8 +505,16 @@ class ProjectHttpApiTest {
                                 .description(FIND_ALL_DESCRIPTION)
                                 .queryParameters(
                                         parameterWithName("keyword")
-                                                .description("프로젝트 이름, 한 줄 소개, 참여 크루 이름 검색어. "
-                                                        + "대소문자를 무시한 부분 일치이며 100자 이하")
+                                                .description("검색어. 100자 이하. topicId 없이 보내면 먼저 공개 프로젝트 이름과 비교해, "
+                                                        + "대소문자, 공백, 구두점을 빼고 이름이나 저장소 이름(기수 연도 접두사를 뗀 이름 포함, "
+                                                        + "예: 2025-hearit, hearit)과 같은 프로젝트가 있으면 그 프로젝트만 조회한다. "
+                                                        + "같은 이름이 없으면 기술 주제 별칭과 비교해, 가장 잘 맞는 주제가 하나면 "
+                                                        + "그 주제(topicId)로 조회하고 meta.matchedTopic에 담는다. "
+                                                        + "둘 다 아니면 직접 검색한다. 이름, 한 줄 소개, 참여 크루 이름, 저장소와 배포 주소에 "
+                                                        + "검색어가 든 프로젝트와 기술 자료 검색에 걸린 자료의 프로젝트를 모아, 이름이나 저장소 이름에 든 프로젝트, "
+                                                        + "자료 검색 순서, 나머지 순으로 최대 30개를 고른다. "
+                                                        + "topicId와 함께 보내면 해석하지 않고 그 주제 안에서 프로젝트 이름, 한 줄 소개, "
+                                                        + "참여 크루 이름의 대소문자를 무시한 부분 일치로 찾는다")
                                                 .optional(),
                                         parameterWithName("cohorts")
                                                 .description("기수 필터. 쉼표로 구분 (ex. 6,7). 선택한 기수 중 하나에 해당하면 조회")
@@ -519,7 +527,10 @@ class ProjectHttpApiTest {
                                                         + "그 주제의 팀 자료가 있는 프로젝트만 조회하며, 없는 id면 빈 목록. 40자 이하")
                                                 .optional(),
                                         parameterWithName("sort")
-                                                .description("정렬 기준 (LATEST, POPULAR). 기본값 LATEST")
+                                                .description("정렬 기준 (LATEST, POPULAR, RELEVANCE). 기본값 LATEST. "
+                                                        + "RELEVANCE는 직접 검색에서 고른 순서대로 주고, 다음 페이지도 첫 페이지에서 정한 순서를 이어 간다. "
+                                                        + "그 밖에는 LATEST와 같다. "
+                                                        + "검색어가 있으면 RELEVANCE를 보내야 직접 검색의 관련도가 반영된다")
                                                 .optional(),
                                         parameterWithName("size")
                                                 .description("한 번에 가져올 프로젝트 수. 기본값 8, 1~50")
@@ -583,13 +594,46 @@ class ProjectHttpApiTest {
                                         fieldWithPath("data[].members[].githubProfileUrl").type(STRING)
                                                 .description("GitHub 프로필 URL. 가입하지 않은 이관 팀원만 값이 있다.")
                                                 .optional(),
+                                        fieldWithPath("data[].matchedResource").type(OBJECT)
+                                                .description("직접 검색에서 이 프로젝트가 걸린 근거 자료 중 자료 검색 순위가 가장 높은 자료. "
+                                                        + "카드에 왜 이 프로젝트가 나왔는지 보여 주는 데 쓴다. "
+                                                        + "직접 검색이 아니거나, 이름, 소개 같은 글자 일치로만 걸린 프로젝트면 null")
+                                                .optional(),
+                                        fieldWithPath("data[].matchedResource.resourceId").type(NUMBER)
+                                                .description("자료 id. 자료 상세 조회에 쓴다")
+                                                .optional(),
+                                        fieldWithPath("data[].matchedResource.source").type(STRING)
+                                                .description("자료 원천. 기술 자료 검색의 source와 같은 값 "
+                                                        + "(blog-post, github-pr, github-teamdoc, github-wiki, github-discussion)")
+                                                .optional(),
+                                        fieldWithPath("data[].matchedResource.title").type(STRING)
+                                                .description("자료 제목")
+                                                .optional(),
                                         fieldWithPath("meta").type(OBJECT).description("페이지네이션 정보"),
                                         fieldWithPath("meta.nextCursor").type(STRING)
                                                 .description("다음 페이지 조회에 쓸 커서. 다음 페이지가 없으면 null")
                                                 .optional(),
                                         fieldWithPath("meta.hasNext").type(BOOLEAN).description("다음 페이지 존재 여부"),
                                         fieldWithPath("meta.totalCount").type(NUMBER)
-                                                .description("커서와 size를 제외한 검색어와 필터 조건을 만족하는 전체 프로젝트 수")
+                                                .description("커서와 size를 제외한 검색어와 필터 조건을 만족하는 전체 프로젝트 수"),
+                                        fieldWithPath("meta.matchedTopic").type(OBJECT)
+                                                .description("topicId 없이 보낸 검색어가 기술 주제 별칭과 맞아 그 주제로 조회했을 때의 주제. "
+                                                        + "이름이 같은 프로젝트가 있거나, 맞는 주제가 없거나 여럿이거나, topicId와 함께 보내면 null")
+                                                .optional(),
+                                        fieldWithPath("meta.matchedTopic.topicId").type(STRING)
+                                                .description("기술 주제 id. 기술 주제 목록 조회의 topicId와 같다")
+                                                .optional(),
+                                        fieldWithPath("meta.matchedTopic.name").type(STRING)
+                                                .description("기술 주제 이름")
+                                                .optional(),
+                                        fieldWithPath("meta.matchedTopic.side").type(STRING)
+                                                .description("기술 주제 직군 (backend, frontend, mobile, common)")
+                                                .optional(),
+                                        fieldWithPath("meta.searchId").type(STRING)
+                                                .description("검색어로 조회할 때마다 새로 만드는 검색 id. 서버 검색 로그와 화면의 결과 클릭 기록을 "
+                                                        + "잇는 데 쓴다. 다음 페이지 요청에도 새 id가 나오므로, 클릭 기록에는 첫 페이지의 id를 쓴다. "
+                                                        + "검색어가 없으면 null")
+                                                .optional()
                                 )
                                 .build())
                 ));
@@ -602,7 +646,7 @@ class ProjectHttpApiTest {
     @DisplayName("파라미터를 보내지 않으면 모두 입력하지 않은 값으로 조회한다.")
     void findsProjectsWithoutParameters() throws Exception {
         given(projectService.findAll(any(ProjectFindAllRequest.class))).willReturn(
-                new ProjectFindAllResponse(List.of(), new SliceMetaResponse(null, false, 0L)));
+                new ProjectFindAllResponse(List.of(), new ProjectFindAllResponse.Meta(null, false, 0L, null, null)));
 
         mockMvc.perform(get("/api/v1/projects"))
                 .andExpect(status().isOk())
@@ -610,6 +654,41 @@ class ProjectHttpApiTest {
                 .andExpect(jsonPath("$.meta.totalCount").value(0));
 
         verify(projectService).findAll(new ProjectFindAllRequest(null, null, null, null, null, null, null));
+    }
+
+    @Test
+    @DisplayName("직접 검색으로 걸린 프로젝트에는 근거 자료의 id, 원천, 제목을 담는다.")
+    void returnsMatchedResource() throws Exception {
+        given(projectService.findAll(any(ProjectFindAllRequest.class))).willReturn(new ProjectFindAllResponse(
+                List.of(new ProjectFindAllResponse.Item(
+                        "rilog", "Rilog.", "개발자를 위한 블로그 플랫폼", 8, null, null, null, 4L, 0L, 0L, false, false,
+                        List.of(), List.of(),
+                        new ProjectFindAllResponse.MatchedResource(3412L, "github-pr", "도메인 이벤트로 알림 발송 분리"))),
+                new ProjectFindAllResponse.Meta(null, false, 1L, null, "9f1c2a7e-5b3d-4c8a-9e21-7d4b6a0c1f35")
+        ));
+
+        mockMvc.perform(get("/api/v1/projects").queryParam("keyword", "eda").queryParam("sort", "RELEVANCE"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].matchedResource.resourceId").value(3412L))
+                .andExpect(jsonPath("$.data[0].matchedResource.source").value("github-pr"))
+                .andExpect(jsonPath("$.data[0].matchedResource.title").value("도메인 이벤트로 알림 발송 분리"));
+    }
+
+    @Test
+    @DisplayName("검색어를 기술 주제로 해석했으면 meta.matchedTopic에 주제 id, 이름, 직군을 담는다.")
+    void returnsMatchedTopic() throws Exception {
+        given(projectService.findAll(any(ProjectFindAllRequest.class))).willReturn(new ProjectFindAllResponse(
+                List.of(),
+                new ProjectFindAllResponse.Meta(null, false, 0L,
+                        new ProjectFindAllResponse.MatchedTopic("concurrency", "동시성 제어/락", "backend"),
+                        "9f1c2a7e-5b3d-4c8a-9e21-7d4b6a0c1f35")
+        ));
+
+        mockMvc.perform(get("/api/v1/projects").queryParam("keyword", "동시성"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.meta.matchedTopic.topicId").value("concurrency"))
+                .andExpect(jsonPath("$.meta.matchedTopic.name").value("동시성 제어/락"))
+                .andExpect(jsonPath("$.meta.matchedTopic.side").value("backend"));
     }
 
     @Test
@@ -660,7 +739,9 @@ class ProjectHttpApiTest {
                                 .description(FILTER_OPTIONS_DESCRIPTION)
                                 .queryParameters(
                                         parameterWithName("keyword")
-                                                .description("목록 조회에 적용 중인 검색어. 목록 조회의 keyword와 같은 조건으로 검색하며 100자 이하")
+                                                .description("목록 조회에 적용 중인 검색어. 100자 이하. 프로젝트 이름, 한 줄 소개, 참여 크루 이름의 "
+                                                        + "부분 일치로만 센다. 목록 조회의 검색어 해석(이름과 저장소 이름 일치, 기술 주제, 자료 검색)은 "
+                                                        + "반영하지 않는다")
                                                 .optional(),
                                         parameterWithName("cohorts")
                                                 .description("모달에서 고른 기수. 쉼표로 구분 (ex. 6,7)")
@@ -687,8 +768,9 @@ class ProjectHttpApiTest {
                                                 .description("현재 조건에 이 기술 스택을 추가로 골랐을 때의 프로젝트 수. "
                                                         + "이미 고른 기술 스택은 matchedProjectCount와 같다."),
                                         fieldWithPath("data.matchedProjectCount").type(NUMBER)
-                                                .description("검색어와 고른 필터를 모두 적용한 프로젝트 수. "
-                                                        + "같은 조건의 목록 조회 meta.totalCount와 같다.")
+                                                .description("검색어(이름, 소개, 크루 이름 부분 일치)와 고른 필터를 모두 적용한 프로젝트 수. "
+                                                        + "검색어가 없으면 같은 조건의 목록 조회 meta.totalCount와 같고, "
+                                                        + "검색어가 있으면 목록 조회의 검색어 해석을 반영하지 않아 다를 수 있다.")
                                 )
                                 .build())
                 ));

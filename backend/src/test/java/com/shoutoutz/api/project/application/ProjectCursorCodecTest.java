@@ -10,6 +10,9 @@ import com.shoutoutz.api.project.domain.exception.InvalidProjectCursorException;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Base64;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.LongStream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -37,6 +40,60 @@ class ProjectCursorCodecTest {
         String encoded = ProjectCursorCodec.encode(cursor);
 
         assertThat(ProjectCursorCodec.decode(encoded, ProjectSort.POPULAR)).isEqualTo(cursor);
+    }
+
+    @Test
+    @DisplayName("관련도순 커서는 관련도순으로 디코딩되고, 최신순 요청에 쓰면 400을 던진다.")
+    void encodesAndDecodesRelevanceCursor() {
+        ProjectCursor cursor = ProjectCursor.relevance(CREATED_AT, 100L);
+
+        String encoded = ProjectCursorCodec.encode(cursor);
+
+        assertThat(ProjectCursorCodec.decode(encoded, ProjectSort.RELEVANCE)).isEqualTo(cursor);
+        assertInvalidCursor(encoded, ProjectSort.LATEST);
+    }
+
+    @Test
+    @DisplayName("직접 검색 커서는 첫 페이지의 순위 목록과 읽은 위치를 그대로 되돌린다.")
+    void encodesAndDecodesRankedCursor() {
+        ProjectCursor cursor = ProjectCursor.ranked(List.of(4L, 3L, 1L, 5L), 2, "0a1b2c3d");
+
+        String encoded = ProjectCursorCodec.encode(cursor);
+
+        assertThat(ProjectCursorCodec.decode(encoded, ProjectSort.RELEVANCE)).isEqualTo(cursor);
+        assertInvalidCursor(encoded, ProjectSort.LATEST);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "RELEVANCE|RANKED|0|4,3|0a1b2c3d",
+            "RELEVANCE|RANKED|2|4,3|0a1b2c3d",
+            "RELEVANCE|RANKED|1|4,4|0a1b2c3d",
+            "RELEVANCE|RANKED|1|4,0|0a1b2c3d",
+            "RELEVANCE|RANKED|1|4,-3|0a1b2c3d",
+            "RELEVANCE|RANKED|1||0a1b2c3d",
+            "RELEVANCE|RANKED|x|4,3|0a1b2c3d",
+            "RELEVANCE|RANKED|1|4,3|XYZ",
+            "RELEVANCE|RANKED|1|4,3",
+            "RELEVANCE|OTHER|1|4,3|0a1b2c3d"
+    })
+    @DisplayName("직접 검색 커서의 위치가 범위를 벗어나거나, id가 중복되거나 양수가 아니거나, 검색어 지문이 형식에 맞지 않으면 400을 던진다.")
+    void rejectsInvalidRankedCursor(String payload) {
+        assertInvalidCursor(encode(payload), ProjectSort.RELEVANCE);
+    }
+
+    @Test
+    @DisplayName("직접 검색 커서에 담을 수 있는 id는 30개까지라, 더 많이 넣은 커서는 400을 던진다.")
+    void rejectsRankedCursorWithTooManyIds() {
+        String ids = LongStream.rangeClosed(1, 31).mapToObj(String::valueOf).collect(Collectors.joining(","));
+
+        assertInvalidCursor(encode("RELEVANCE|RANKED|1|" + ids + "|0a1b2c3d"), ProjectSort.RELEVANCE);
+    }
+
+    @Test
+    @DisplayName("지나치게 긴 커서는 해독하기 전에 400을 던진다.")
+    void rejectsTooLongCursor() {
+        assertInvalidCursor("a".repeat(1025), ProjectSort.RELEVANCE);
     }
 
     @Test
