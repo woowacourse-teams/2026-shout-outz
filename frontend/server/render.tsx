@@ -38,9 +38,6 @@ function ServerAssets({ buildAssets, preloadFiles }: ServerAssetsProps) {
   for (const file of preloadFiles.critical ?? []) {
     preload(file, { as: 'script' });
   }
-  for (const file of preloadFiles.lowPriority ?? []) {
-    preload(file, { as: 'script', fetchPriority: 'low' });
-  }
   return null;
 }
 

@@ -161,7 +161,7 @@ const config = {
     new MiniCssExtractPlugin({
       filename: isProduction ? '[name].[contenthash:8].css' : '[name].css',
     }),
-    new BuildAssetsPlugin({ importRequests: ['posthog-js'] }),
+    new BuildAssetsPlugin(),
   ],
   module: {
     rules: [
