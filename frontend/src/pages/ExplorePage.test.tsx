@@ -601,6 +601,83 @@ describe('ExplorePage 프로젝트 탭', () => {
     expect(screen.queryByRole('list', { name: '추천 검색어' })).not.toBeInTheDocument();
   });
 
+  describe('거른 프로젝트 카드', () => {
+    const projectList = (meta: object, item: object = {}) =>
+      http.get('/api/v1/projects', () =>
+        HttpResponse.json({
+          status: 'success',
+          data: [
+            {
+              slug: 'dropit',
+              title: 'Dropit',
+              tagline: '드롭 서비스',
+              cohort: 8,
+              thumbnailUrl: null,
+              likeCount: 3,
+              likedByMe: false,
+              commentCount: 0,
+              bookmarkCount: 0,
+              bookmarkedByMe: false,
+              techTags: [],
+              members: [],
+              ...item,
+            },
+          ],
+          meta: { nextCursor: null, hasNext: false, totalCount: 1, ...meta },
+        }),
+      );
+
+    it('거르지 않은 목록의 카드에는 거른 까닭을 붙이지 않는다', async () => {
+      renderRoute('/?tab=project');
+
+      const cards = await screen.findByRole('list', { name: '프로젝트' });
+      expect(within(cards).queryByText('주제를 다뤘어요')).not.toBeInTheDocument();
+    });
+
+    it('왼쪽 주제로 거르면 카드에 주제 배지를 단다', async () => {
+      renderRoute('/?tab=project&topic=트랜잭션/데드락');
+
+      const cards = await screen.findByRole('list', { name: '프로젝트' });
+      const [first] = within(cards).getAllByRole('link');
+      if (!first) throw new Error('프로젝트 카드가 없습니다.');
+      expect(within(first).getByText('#트랜잭션/데드락')).toBeInTheDocument();
+      expect(within(first).getByText('주제를 다뤘어요')).toBeInTheDocument();
+    });
+
+    it('검색어를 서버가 주제로 해석하면 그 주제 배지를 단다', async () => {
+      server.use(
+        projectList({ matchedTopic: { topicId: 'lock', name: '동시성', side: 'BACKEND' } }),
+      );
+      renderRoute('/?tab=project&q=락');
+
+      const card = await screen.findByRole('link', { name: /Dropit/ });
+      expect(within(card).getByText('#동시성')).toBeInTheDocument();
+    });
+
+    it('검색어로 찾으면 프로젝트가 걸린 근거 자료를 출처와 제목으로 보여 준다', async () => {
+      server.use(
+        projectList(
+          {},
+          {
+            matchedResource: {
+              resourceId: 7,
+              source: 'github-pr',
+              title: '레디스 분산 락으로 중복 드롭 막기',
+            },
+          },
+        ),
+      );
+      renderRoute('/?tab=project&q=분산 락');
+
+      const card = await screen.findByRole('link', { name: /Dropit/ });
+      const evidence = within(card).getByLabelText(
+        "'분산 락' 검색에 걸린 PR: 레디스 분산 락으로 중복 드롭 막기",
+      );
+      expect(within(evidence).getByText('PR')).toBeInTheDocument();
+      expect(within(evidence).getByText('레디스 분산 락으로 중복 드롭 막기')).toBeInTheDocument();
+    });
+  });
+
   it('좋아요순으로 바꾸면 좋아요가 많은 프로젝트부터 보여준다', async () => {
     const user = userEvent.setup();
     renderRoute('/?tab=project');

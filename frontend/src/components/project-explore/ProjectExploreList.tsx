@@ -6,8 +6,12 @@ import {
   projectTopicsQuery,
   type ExploreProjectFilter,
   type ProjectTopics,
+  type ExploreProject,
 } from '@/apis/project-explore';
-import { ExploreProjectCard } from '@/components/project-explore/ExploreProjectCard';
+import {
+  ExploreProjectCard,
+  type ExploreProjectMatch,
+} from '@/components/project-explore/ExploreProjectCard';
 import type { ProjectSort } from '@/types/project';
 import { cn } from '@/utils/cn';
 
@@ -53,9 +57,20 @@ function ProjectList({
     exploreProjectsQuery({ keyword: filter.keyword, topicId, sort: filter.sort }),
   );
   const projects = query.data.pages.flatMap((page) => page.projects);
-  const totalCount = query.data.pages[0]?.meta.totalCount ?? projects.length;
+  const firstMeta = query.data.pages[0]?.meta;
+  const totalCount = firstMeta?.totalCount ?? projects.length;
   // 검색어와 기술 주제는 함께 걸리지 않는다(routes/index.tsx).
-  const searchedBy = filter.topic ?? filter.keyword.trim();
+  const keyword = filter.keyword.trim();
+  const searchedBy = filter.topic ?? keyword;
+  // 왼쪽 주제로 거른 경우, 또는 서버가 검색어를 기술 주제로 해석해 그 주제로 찾은 경우
+  const matchedTopic = filter.topic ?? firstMeta?.matchedTopic?.name ?? null;
+  const matchOf = (project: ExploreProject): ExploreProjectMatch | null => {
+    if (matchedTopic) return { kind: 'topic', topic: matchedTopic };
+    if (keyword && project.matchedResource) {
+      return { kind: 'resource', keyword, resource: project.matchedResource };
+    }
+    return null;
+  };
 
   return (
     <div>
@@ -111,7 +126,7 @@ function ProjectList({
         >
           {projects.map((project) => (
             <li key={project.slug} className="min-w-0">
-              <ExploreProjectCard {...project} />
+              <ExploreProjectCard {...project} match={matchOf(project)} />
             </li>
           ))}
         </ul>

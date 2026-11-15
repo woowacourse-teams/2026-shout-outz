@@ -325,7 +325,18 @@ export const handlers = [
       .filter((project) => !topic || projectHasTopic(project.slug, topic));
     if (searchParams.get('sort') === 'POPULAR') list.sort((a, b) => b.likeCount - a.likeCount);
 
-    const page = list.slice(offset, offset + size);
+    const page = list.slice(offset, offset + size).map((project, index) => ({
+      ...project,
+      // 서버는 검색어로 찾으면 프로젝트마다 걸린 근거 자료를 준다. 목은 소개에 검색어가 있으면 근거 자료를 붙인다.
+      matchedResource:
+        keyword && project.tagline.toLowerCase().includes(keyword)
+          ? {
+              resourceId: 9000 + index,
+              source: index % 2 === 0 ? 'blog-post' : 'github-pr',
+              title: `${project.title}에서 ${keyword}를 다룬 기록`,
+            }
+          : null,
+    }));
     const hasNext = offset + size < list.length;
     return HttpResponse.json({
       status: 'success',
