@@ -21,9 +21,16 @@ interface ProjectDetailContentProps {
   slug: string;
   tab: ProjectDetailTab;
   onTabChange: (tab: ProjectDetailTab) => void;
+  /** 자료 탭에서 먼저 고를 기술 주제 이름 */
+  materialTopic?: string;
 }
 
-export function ProjectDetailContent({ slug, tab, onTabChange }: ProjectDetailContentProps) {
+export function ProjectDetailContent({
+  slug,
+  tab,
+  onTabChange,
+  materialTopic,
+}: ProjectDetailContentProps) {
   const { data: project } = useSuspenseQuery(projectDetailQueryOptions(slug));
 
   if (project.approvalStatus !== 'APPROVED') {
@@ -75,6 +82,7 @@ export function ProjectDetailContent({ slug, tab, onTabChange }: ProjectDetailCo
                 slug={slug}
                 projectName={project.title}
                 memberUserIds={memberUserIds}
+                initialTopic={materialTopic}
               />
             )}
           </AsyncBoundary>

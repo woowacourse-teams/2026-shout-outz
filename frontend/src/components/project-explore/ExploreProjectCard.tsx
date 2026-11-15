@@ -43,7 +43,10 @@ export function ExploreProjectCard({
 
   return (
     <Link
-      to="/projects/$slug"
+      // 주제로 거른 목록이면 그 주제를 고른 자료 탭으로 바로 연다.
+      {...(match?.kind === 'topic'
+        ? { to: '/projects/$slug/materials', search: { topic: match.topic } }
+        : { to: '/projects/$slug' })}
       params={{ slug: toProjectSlugParam(slug) }}
       className="focus-visible:outline-primary-600 group block rounded-xl focus-visible:outline-2 focus-visible:outline-offset-4"
       onClick={() => {
