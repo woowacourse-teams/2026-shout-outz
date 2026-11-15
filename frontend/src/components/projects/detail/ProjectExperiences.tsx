@@ -16,6 +16,7 @@ import {
 } from '@/components/explore/MaterialParts';
 import { ResourceReportModal } from '@/components/projects/detail/ResourceReportModal';
 import { useIsProjectMember } from '@/components/projects/detail/useIsProjectMember';
+import { useMyJobRole } from '@/components/projects/detail/useMyJobRole';
 import { useModal } from '@/hooks/useModal';
 import { cn } from '@/utils/cn';
 import { toProjectSlugParam } from '@/utils/project';
@@ -54,7 +55,11 @@ export function ProjectExperiences({
   const jobRoles = JOB_ROLES.filter(({ jobRole }) =>
     experiences.some((experience) => experience.jobRole === jobRole),
   );
-  const [selected, setSelected] = useState(jobRoles[0]?.jobRole);
+  const myJobRole = useMyJobRole();
+  // 직접 고르기 전에는 내 분야 탭을, 내 분야 경험이 없거나 비로그인이면 첫 탭을 보여 준다.
+  const [chosen, setSelected] = useState<string | null>(null);
+  const preferred = jobRoles.some(({ jobRole }) => jobRole === myJobRole) ? myJobRole : null;
+  const selected = chosen ?? preferred ?? jobRoles[0]?.jobRole;
 
   if (experiences.length === 0) {
     return <p className="py-16 text-center text-gray-500">아직 정리된 경험이 없어요.</p>;
