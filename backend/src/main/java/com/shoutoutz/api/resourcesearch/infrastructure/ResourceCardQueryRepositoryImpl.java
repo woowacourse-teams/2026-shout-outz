@@ -51,7 +51,8 @@ public class ResourceCardQueryRepositoryImpl implements ResourceCardQueryReposit
                 %s
                 WHERE d.id IN (:resourceIds)
                   AND d.deleted_at IS NULL
-                """.formatted(CARD_COLUMNS, VISIBLE_PROJECT_JOIN);
+                  %s
+                """.formatted(CARD_COLUMNS, VISIBLE_PROJECT_JOIN, JdbcResourceSearchRepository.NOT_REMOVED_BY_REPORT);
         List<ResourceCard> cards = jdbcTemplate.query(
                 sql,
                 new MapSqlParameterSource("resourceIds", resourceIds),
