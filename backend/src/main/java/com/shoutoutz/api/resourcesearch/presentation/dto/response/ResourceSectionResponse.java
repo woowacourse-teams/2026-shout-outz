@@ -1,5 +1,6 @@
 package com.shoutoutz.api.resourcesearch.presentation.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 
 /**
@@ -16,5 +17,10 @@ public record ResourceSectionResponse(
 
     public ResourceSectionResponse(List<ResourceCardResponse> items) {
         this(items, null);
+    }
+
+    @JsonProperty("hasNext")
+    public boolean hasNext() {
+        return nextCursor != null;
     }
 }

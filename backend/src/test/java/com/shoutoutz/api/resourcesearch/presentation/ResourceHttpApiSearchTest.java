@@ -7,6 +7,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.springframework.restdocs.payload.JsonFieldType.ARRAY;
+import static org.springframework.restdocs.payload.JsonFieldType.BOOLEAN;
 import static org.springframework.restdocs.payload.JsonFieldType.NUMBER;
 import static org.springframework.restdocs.payload.JsonFieldType.OBJECT;
 import static org.springframework.restdocs.payload.JsonFieldType.STRING;
@@ -133,7 +134,9 @@ class ResourceHttpApiSearchTest {
                 .andExpect(jsonPath("$.data.matchedProjects[0].name").value("Rilog."))
                 .andExpect(jsonPath("$.data.matchedProjects[0].projectSlug").value("rilog"))
                 .andExpect(jsonPath("$.data.blogs.items[0].resourceId").value(3490L))
+                .andExpect(jsonPath("$.data.blogs.hasNext").value(true))
                 .andExpect(jsonPath("$.data.blogs.nextCursor").value("eyJwdWJsaXNoZWRBdCI6bnVsbH0"))
+                .andExpect(jsonPath("$.data.documents.hasNext").value(false))
                 .andExpect(jsonPath("$.data.documents.nextCursor").isEmpty())
                 .andExpect(jsonPath("$.data.talks.items").isEmpty());
     }
@@ -212,6 +215,9 @@ class ResourceHttpApiSearchTest {
                 fieldWithPath("data.documents.items").type(ARRAY)
                         .description("PR과 팀 문서(github-pr, github-teamdoc, github-wiki, github-discussion), 최대 20건"),
                 fieldWithPath("data.talks.items").type(ARRAY).description("테코톡(youtube-tekotalk), 최대 6건"),
+                fieldWithPath("data.blogs.hasNext").type(BOOLEAN).description("블로그를 이어 읽을 자료가 있는지. nextCursor가 있을 때만 true"),
+                fieldWithPath("data.documents.hasNext").type(BOOLEAN).description("PR과 팀 문서를 이어 읽을 자료가 있는지. nextCursor가 있을 때만 true"),
+                fieldWithPath("data.talks.hasNext").type(BOOLEAN).description("항상 false"),
                 fieldWithPath("data.blogs.nextCursor").type(STRING)
                         .description("블로그를 이어 읽을 커서. 프로젝트 이름 검색에서 그 프로젝트의 블로그가 20건을 넘을 때만 있고, 그 밖에는 null")
                         .optional(),
