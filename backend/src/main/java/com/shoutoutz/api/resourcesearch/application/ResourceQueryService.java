@@ -8,7 +8,6 @@ import com.shoutoutz.api.resourcesearch.application.dto.SearchHit;
 import com.shoutoutz.api.resourcesearch.application.dto.SectionedSearchHits;
 import com.shoutoutz.api.resourcesearch.domain.ResourceSearchErrorCode;
 import com.shoutoutz.api.resourcesearch.domain.ResourceSection;
-import com.shoutoutz.api.resourcesearch.domain.ResourceTrack;
 import com.shoutoutz.api.resourcesearch.domain.SearchKeyword;
 import com.shoutoutz.api.resourcesearch.presentation.dto.request.ResourceRecentRequest;
 import com.shoutoutz.api.resourcesearch.presentation.dto.request.ResourceSearchRequest;
@@ -51,20 +50,21 @@ public class ResourceQueryService {
     private final SearchKeywordService searchKeywordService;
     private final ResourceCardImageResolver resourceCardImageResolver;
     private final ProjectNameFinder projectNameFinder;
+    private final TechTopicNames techTopicNames;
 
     public ResourceSearchResponse search(ResourceSearchRequest request, VisitorKey visitorKey) {
         recordKeyword(SearchKeyword.from(request.keyword()), visitorKey);
         List<MatchedProject> matchedProjects = projectNameFinder.findNamed(request.keyword());
         if (!matchedProjects.isEmpty()) {
-            return resourcesOf(matchedProjects, request.track());
+            return resourcesOf(matchedProjects, request);
         }
         SectionedSearchHits hits = sectionedResourceSearchService.search(request.keyword(), request.track());
         Map<Long, ResourceCard> cards = cardsOf(hits);
         ResourceCardImages images = resourceCardImageResolver.resolve(cards.values());
         return new ResourceSearchResponse(
-                sectionOf(hits, ResourceSection.BLOG, cards, images),
-                sectionOf(hits, ResourceSection.DOCUMENT, cards, images),
-                sectionOf(hits, ResourceSection.TALK, cards, images),
+                sectionOf(relevantCards(hits, ResourceSection.BLOG, cards), images),
+                sectionOf(relevantCards(hits, ResourceSection.DOCUMENT, cards), images),
+                sectionOf(relevantCards(hits, ResourceSection.TALK, cards), images),
                 List.of()
         );
     }
@@ -92,26 +92,48 @@ public class ResourceQueryService {
 
     /**
      * 프로젝트 이름에는 뜻이 없어 연관도 검색을 하면 이름과 글자가 비슷한 다른 주제의 자료가 섞인다.
-     * 그래서 이름으로 가리킨 프로젝트의 자료를 최신순으로 준다. 테코톡은 팀이 없어 비운다.
+     * 그래서 이름으로 가리킨 프로젝트의 자료를 최신순으로 먼저 준다.
+     * 이름이 기술 주제 이름과도 같으면 기술 자료를 찾는 검색일 수 있어, 그 프로젝트가 아닌 자료의 연관도 검색 결과를 뒤에 잇는다.
      */
-    private ResourceSearchResponse resourcesOf(List<MatchedProject> matchedProjects, ResourceTrack track) {
+    private ResourceSearchResponse resourcesOf(List<MatchedProject> matchedProjects, ResourceSearchRequest request) {
         List<Long> projectIds = matchedProjects.stream()
                 .map(MatchedProject::projectId)
                 .toList();
-        List<ResourceCard> blogs = resourceCardQueryRepository.findLatestByProjects(
-                projectIds, ResourceSection.BLOG, track);
-        List<ResourceCard> documents = resourceCardQueryRepository.findLatestByProjects(
-                projectIds, ResourceSection.DOCUMENT, track);
-        ResourceCardImages images = resourceCardImageResolver.resolve(
-                Stream.concat(blogs.stream(), documents.stream()).toList());
+        SectionedSearchHits otherHits = hitsOfOthers(request, projectIds);
+        Map<Long, ResourceCard> otherCards = cardsOf(otherHits);
+        List<ResourceCard> blogs = concat(
+                resourceCardQueryRepository.findLatestByProjects(projectIds, ResourceSection.BLOG, request.track()),
+                relevantCards(otherHits, ResourceSection.BLOG, otherCards)
+        );
+        List<ResourceCard> documents = concat(
+                resourceCardQueryRepository.findLatestByProjects(projectIds, ResourceSection.DOCUMENT, request.track()),
+                relevantCards(otherHits, ResourceSection.DOCUMENT, otherCards)
+        );
+        List<ResourceCard> talks = relevantCards(otherHits, ResourceSection.TALK, otherCards);
+        ResourceCardImages images = resourceCardImageResolver.resolve(concat(concat(blogs, documents), talks));
         return new ResourceSearchResponse(
                 sectionOf(blogs, images),
                 sectionOf(documents, images),
-                new ResourceSectionResponse(List.of()),
+                sectionOf(talks, images),
                 matchedProjects.stream()
                         .map(MatchedProjectResponse::from)
                         .toList()
         );
+    }
+
+    private SectionedSearchHits hitsOfOthers(ResourceSearchRequest request, List<Long> projectIds) {
+        if (!techTopicNames.contains(request.keyword())) {
+            return SectionedSearchHits.from(List.of());
+        }
+        SectionedSearchHits hits = sectionedResourceSearchService.search(request.keyword(), request.track());
+        return SectionedSearchHits.from(Arrays.stream(ResourceSection.values())
+                .flatMap(section -> hits.hits(section).stream())
+                .filter(hit -> !projectIds.contains(hit.projectId()))
+                .toList());
+    }
+
+    private List<ResourceCard> concat(List<ResourceCard> first, List<ResourceCard> second) {
+        return Stream.concat(first.stream(), second.stream()).toList();
     }
 
     private void recordKeyword(SearchKeyword keyword, VisitorKey visitorKey) {
@@ -131,17 +153,15 @@ public class ResourceQueryService {
                 .collect(Collectors.toMap(ResourceCard::resourceId, Function.identity()));
     }
 
-    private ResourceSectionResponse sectionOf(
+    private List<ResourceCard> relevantCards(
             SectionedSearchHits hits,
             ResourceSection section,
-            Map<Long, ResourceCard> cards,
-            ResourceCardImages images
+            Map<Long, ResourceCard> cards
     ) {
-        return new ResourceSectionResponse(hits.hits(section).stream()
+        return hits.hits(section).stream()
                 .map(hit -> cards.get(hit.documentId()))
                 .filter(Objects::nonNull)
-                .map(card -> ResourceCardResponse.from(card, images))
-                .toList());
+                .toList();
     }
 
     private ResourceSectionResponse sectionOf(List<ResourceCard> cards, ResourceCardImages images) {

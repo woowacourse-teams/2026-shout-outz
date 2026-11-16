@@ -49,6 +49,9 @@ class ResourceQueryServiceSearchTest {
     private ProjectNameFinder projectNameFinder;
 
     @Mock
+    private TechTopicNames techTopicNames;
+
+    @Mock
     private ResourceCardImageResolver resourceCardImageResolver;
 
     @InjectMocks
@@ -131,6 +134,28 @@ class ResourceQueryServiceSearchTest {
     }
 
     @Test
+    @DisplayName("프로젝트 이름이 기술 주제 이름과도 같으면 프로젝트 자료 뒤에 다른 자료의 연관도 검색 결과를 잇는다")
+    void appendsRelevantResourcesWhenNameIsAlsoTechTopic() {
+        given(projectNameFinder.findNamed("동시성")).willReturn(List.of(new MatchedProject(7L, "동시성", "concurrency")));
+        given(techTopicNames.contains("동시성")).willReturn(true);
+        given(resourceCardQueryRepository.findLatestByProjects(List.of(7L), ResourceSection.BLOG, null))
+                .willReturn(List.of(card(3, "blog-post")));
+        given(resourceCardQueryRepository.findLatestByProjects(List.of(7L), ResourceSection.DOCUMENT, null))
+                .willReturn(List.of());
+        given(sectionedResourceSearchService.search("동시성", null)).willReturn(SectionedSearchHits.from(List.of(
+                hit(10, "blog-post"), hitOfProject(11, "blog-post", 7L), hit(12, "github-pr"), hit(13, "youtube-tekotalk"))));
+        given(resourceCardQueryRepository.findByIds(List.of(10L, 12L, 13L)))
+                .willReturn(List.of(card(10, "blog-post"), card(12, "github-pr"), card(13, "youtube-tekotalk")));
+
+        ResourceSearchResponse response = resourceQueryService.search(new ResourceSearchRequest("동시성", null), VISITOR);
+
+        assertThat(response.matchedProjects()).containsExactly(new MatchedProjectResponse("동시성", "concurrency"));
+        assertThat(ids(response.blogs().items())).containsExactly(3L, 10L);
+        assertThat(ids(response.documents().items())).containsExactly(12L);
+        assertThat(ids(response.talks().items())).containsExactly(13L);
+    }
+
+    @Test
     @DisplayName("프로젝트 이름과 일치하는 검색어도 기록한다")
     void recordsKeywordNamingProject() {
         given(projectNameFinder.findNamed("Rilog")).willReturn(List.of(new MatchedProject(7L, "Rilog.", "rilog")));
@@ -156,6 +181,11 @@ class ResourceQueryServiceSearchTest {
 
     private SearchHit hit(long id, String source) {
         return new SearchHit(id, "key-" + id, null, null, "제목", "소개", source, ResourceTrack.BE,
+                "https://example.com/" + id, 0.9, List.of(new MatchedChunk(id * 10, "intro", "조각", 0.9)));
+    }
+
+    private SearchHit hitOfProject(long id, String source, long projectId) {
+        return new SearchHit(id, "key-" + id, projectId, null, "제목", "소개", source, ResourceTrack.BE,
                 "https://example.com/" + id, 0.9, List.of(new MatchedChunk(id * 10, "intro", "조각", 0.9)));
     }
 
