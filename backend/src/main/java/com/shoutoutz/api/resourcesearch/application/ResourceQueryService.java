@@ -6,6 +6,7 @@ import com.shoutoutz.api.resourcesearch.application.dto.ProjectResourceCursor;
 import com.shoutoutz.api.resourcesearch.application.dto.ProjectResourceSlice;
 import com.shoutoutz.api.resourcesearch.application.dto.ResourceCard;
 import com.shoutoutz.api.resourcesearch.application.dto.ResourceCardImages;
+import com.shoutoutz.api.resourcesearch.application.dto.ResourceSearchCursor;
 import com.shoutoutz.api.resourcesearch.application.dto.SearchHit;
 import com.shoutoutz.api.resourcesearch.application.dto.SectionedSearchHits;
 import com.shoutoutz.api.resourcesearch.domain.ResourceSearchErrorCode;
@@ -56,7 +57,7 @@ public class ResourceQueryService {
     private final ResourceCardImageResolver resourceCardImageResolver;
     private final ProjectNameFinder projectNameFinder;
     private final TechTopicNames techTopicNames;
-    private final ProjectResourceCursorCodec projectResourceCursorCodec;
+    private final ResourceSearchCursorCodec resourceSearchCursorCodec;
 
     public ResourceSearchResponse search(ResourceSearchRequest request, VisitorKey visitorKey) {
         recordKeyword(SearchKeyword.from(request.keyword()), visitorKey);
@@ -68,19 +69,30 @@ public class ResourceQueryService {
         Map<Long, ResourceCard> cards = cardsOf(hits);
         ResourceCardImages images = resourceCardImageResolver.resolve(cards.values());
         return new ResourceSearchResponse(
-                sectionOf(relevantCards(hits, ResourceSection.BLOG, cards), images),
-                sectionOf(relevantCards(hits, ResourceSection.DOCUMENT, cards), images),
-                sectionOf(relevantCards(hits, ResourceSection.TALK, cards), images),
+                sectionOf(relevantCards(hits, ResourceSection.BLOG, cards), rankedCursorOf(hits, ResourceSection.BLOG), images),
+                sectionOf(
+                        relevantCards(hits, ResourceSection.DOCUMENT, cards),
+                        rankedCursorOf(hits, ResourceSection.DOCUMENT),
+                        images
+                ),
+                sectionOf(relevantCards(hits, ResourceSection.TALK, cards), rankedCursorOf(hits, ResourceSection.TALK), images),
                 List.of()
         );
     }
 
     /**
-     * 프로젝트 이름 검색에서 섹션 상한을 넘은 그 프로젝트의 자료를 이어서 준다.
-     * 스크롤로 이어 읽는 요청이라 검색어를 다시 기록하지 않는다.
+     * 검색 응답의 한 섹션에서 상한을 넘은 자료를 그 섹션의 커서로 이어서 준다.
+     * 이어 읽는 요청이라 검색어를 다시 기록하지 않는다.
      */
     public ResourceSearchMoreResponse searchMore(ResourceSearchMoreRequest request) {
-        ProjectResourceCursor cursor = projectResourceCursorCodec.decode(request.cursor());
+        ResourceSearchCursor searchCursor = resourceSearchCursorCodec.decode(request.cursor());
+        if (searchCursor != null && searchCursor.isRanked()) {
+            return moreOfRanked(request.section(), searchCursor);
+        }
+        ProjectResourceCursor cursor = null;
+        if (searchCursor != null) {
+            cursor = searchCursor.project();
+        }
         List<Long> projectIds = projectNameFinder.findNamed(request.keyword()).stream()
                 .map(MatchedProject::projectId)
                 .toList();
@@ -98,7 +110,7 @@ public class ResourceQueryService {
                 slice.cards().stream()
                         .map(card -> ResourceCardResponse.from(card, images))
                         .toList(),
-                projectResourceCursorCodec.encode(slice.nextCursor()),
+                resourceSearchCursorCodec.encode(ResourceSearchCursor.ofProject(slice.nextCursor())),
                 resourceCardQueryRepository.countByProjects(projectIds, section, request.track())
         );
     }
@@ -139,8 +151,8 @@ public class ResourceQueryService {
         if (!techTopicNames.contains(request.keyword())) {
             ResourceCardImages images = resourceCardImageResolver.resolve(concat(blogs.cards(), documents.cards()));
             return new ResourceSearchResponse(
-                    sectionOf(blogs.cards(), projectResourceCursorCodec.encode(blogs.nextCursor()), images),
-                    sectionOf(documents.cards(), projectResourceCursorCodec.encode(documents.nextCursor()), images),
+                    sectionOf(blogs.cards(), resourceSearchCursorCodec.encode(ResourceSearchCursor.ofProject(blogs.nextCursor())), images),
+                    sectionOf(documents.cards(), resourceSearchCursorCodec.encode(ResourceSearchCursor.ofProject(documents.nextCursor())), images),
                     new ResourceSectionResponse(List.of()),
                     matchedProjectsOf(matchedProjects)
             );
@@ -185,6 +197,45 @@ public class ResourceQueryService {
 
     private List<ResourceCard> concat(List<ResourceCard> first, List<ResourceCard> second) {
         return Stream.concat(first.stream(), second.stream()).toList();
+    }
+
+    /**
+     * 연관도 검색은 첫 검색에서 정한 순위를 커서에 담아 두고 그 순서대로 이어 준다.
+     * 다시 검색하지 않으므로 페이지 사이에 순위가 바뀌지 않고 벡터 조회 비용도 들지 않는다.
+     * 커서는 요청자가 바꿔 보낼 수 있어, 요청한 섹션의 자료만 남긴다.
+     */
+    private ResourceSearchMoreResponse moreOfRanked(ResourceSection section, ResourceSearchCursor cursor) {
+        List<Long> pageIds = cursor.rankedIds().stream()
+                .limit(section.limit())
+                .toList();
+        List<Long> restIds = cursor.rankedIds().stream()
+                .skip(section.limit())
+                .toList();
+        List<ResourceCard> cards = resourceCardQueryRepository.findByIds(pageIds).stream()
+                .filter(card -> section.sources().contains(card.source()))
+                .toList();
+        ResourceCardImages images = resourceCardImageResolver.resolve(cards);
+        return new ResourceSearchMoreResponse(
+                cards.stream()
+                        .map(card -> ResourceCardResponse.from(card, images))
+                        .toList(),
+                rankedCursorOf(restIds, cursor.rankedTotal()),
+                cursor.rankedTotal()
+        );
+    }
+
+    private String rankedCursorOf(SectionedSearchHits hits, ResourceSection section) {
+        List<Long> restIds = hits.rest(section).stream()
+                .map(SearchHit::documentId)
+                .toList();
+        return rankedCursorOf(restIds, hits.hits(section).size() + restIds.size());
+    }
+
+    private String rankedCursorOf(List<Long> restIds, int total) {
+        if (restIds.isEmpty()) {
+            return null;
+        }
+        return resourceSearchCursorCodec.encode(ResourceSearchCursor.ofRanked(restIds, total));
     }
 
     private void recordKeyword(SearchKeyword keyword, VisitorKey visitorKey) {

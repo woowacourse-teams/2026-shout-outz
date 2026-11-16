@@ -20,7 +20,7 @@ public record ResourceSearchMoreRequest(
         @NotNull(message = "section은 BLOG 또는 DOCUMENT여야 합니다.")
         ResourceSection section,
 
-        @Size(max = 200, message = "cursor는 200자 이하여야 합니다.")
+        @Size(max = 1000, message = "cursor는 1000자 이하여야 합니다.")
         String cursor
 ) {
 

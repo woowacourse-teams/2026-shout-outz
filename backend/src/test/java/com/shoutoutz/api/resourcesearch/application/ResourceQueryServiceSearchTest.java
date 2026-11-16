@@ -11,6 +11,7 @@ import com.shoutoutz.api.resourcesearch.application.dto.MatchedChunk;
 import com.shoutoutz.api.resourcesearch.application.dto.MatchedProject;
 import com.shoutoutz.api.resourcesearch.application.dto.ProjectResourceCursor;
 import com.shoutoutz.api.resourcesearch.application.dto.ResourceCard;
+import com.shoutoutz.api.resourcesearch.application.dto.ResourceSearchCursor;
 import com.shoutoutz.api.resourcesearch.application.dto.ResourceCardImages;
 import com.shoutoutz.api.resourcesearch.application.dto.SearchHit;
 import com.shoutoutz.api.resourcesearch.application.dto.SectionedSearchHits;
@@ -25,6 +26,7 @@ import com.shoutoutz.api.visitor.domain.VisitorKey;
 import java.time.Instant;
 import java.util.List;
 import java.util.stream.LongStream;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -58,8 +60,8 @@ class ResourceQueryServiceSearchTest {
     private TechTopicNames techTopicNames;
 
     @Spy
-    private ProjectResourceCursorCodec projectResourceCursorCodec =
-            new ProjectResourceCursorCodec(JsonMapper.builder().build());
+    private ResourceSearchCursorCodec resourceSearchCursorCodec =
+            new ResourceSearchCursorCodec(JsonMapper.builder().build());
 
     @Mock
     private ResourceCardImageResolver resourceCardImageResolver;
@@ -166,6 +168,28 @@ class ResourceQueryServiceSearchTest {
     }
 
     @Test
+    @DisplayName("연관도 검색에서 섹션 상한을 넘은 순위의 자료는 다음 커서에 순위대로 담고, 넘지 않은 섹션은 커서가 없다")
+    void givesRankedCursorForHitsBeyondLimit() {
+        int limit = ResourceSection.BLOG.limit();
+        List<SearchHit> blogHits = LongStream.rangeClosed(1, limit + 5).mapToObj(id -> hit(id, "blog-post")).toList();
+        given(sectionedResourceSearchService.search("동시성", null)).willReturn(SectionedSearchHits.from(
+                Stream.concat(blogHits.stream(), Stream.of(hit(900, "github-pr"))).toList()));
+        List<Long> firstPageIds = Stream.concat(
+                LongStream.rangeClosed(1, limit).boxed(), Stream.of(900L)).toList();
+        given(resourceCardQueryRepository.findByIds(firstPageIds)).willReturn(Stream.concat(
+                LongStream.rangeClosed(1, limit).mapToObj(id -> card(id, "blog-post")),
+                Stream.of(card(900, "github-pr"))).toList());
+
+        ResourceSearchResponse response = resourceQueryService.search(new ResourceSearchRequest("동시성", null), VISITOR);
+
+        assertThat(response.blogs().items()).hasSize(limit);
+        assertThat(resourceSearchCursorCodec.decode(response.blogs().nextCursor())).isEqualTo(ResourceSearchCursor.ofRanked(
+                LongStream.rangeClosed(limit + 1, limit + 5).boxed().toList(), limit + 5));
+        assertThat(response.documents().nextCursor()).isNull();
+        assertThat(response.talks().nextCursor()).isNull();
+    }
+
+    @Test
     @DisplayName("프로젝트 자료가 섹션 상한보다 많으면 상한까지만 주고 마지막 자료의 위치를 다음 커서로 준다")
     void givesNextCursorWhenProjectHasMoreResources() {
         int limit = ResourceSection.DOCUMENT.limit();
@@ -179,8 +203,8 @@ class ResourceQueryServiceSearchTest {
 
         assertThat(response.blogs().nextCursor()).isNull();
         assertThat(response.documents().items()).hasSize(limit);
-        assertThat(projectResourceCursorCodec.decode(response.documents().nextCursor()))
-                .isEqualTo(new ProjectResourceCursor(PUBLISHED_AT, 100L - limit));
+        assertThat(resourceSearchCursorCodec.decode(response.documents().nextCursor()))
+                .isEqualTo(ResourceSearchCursor.ofProject(new ProjectResourceCursor(PUBLISHED_AT, 100L - limit)));
     }
 
     @Test

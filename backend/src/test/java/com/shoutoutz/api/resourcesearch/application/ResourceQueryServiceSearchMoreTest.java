@@ -10,6 +10,7 @@ import com.shoutoutz.api.common.exception.custom.BadRequestException;
 import com.shoutoutz.api.resourcesearch.application.dto.MatchedProject;
 import com.shoutoutz.api.resourcesearch.application.dto.ProjectResourceCursor;
 import com.shoutoutz.api.resourcesearch.application.dto.ResourceCard;
+import com.shoutoutz.api.resourcesearch.application.dto.ResourceSearchCursor;
 import com.shoutoutz.api.resourcesearch.application.dto.ResourceCardImages;
 import com.shoutoutz.api.resourcesearch.domain.ResourceSection;
 import com.shoutoutz.api.resourcesearch.domain.ResourceTrack;
@@ -50,8 +51,8 @@ class ResourceQueryServiceSearchMoreTest {
     private ProjectNameFinder projectNameFinder;
 
     @Spy
-    private ProjectResourceCursorCodec projectResourceCursorCodec =
-            new ProjectResourceCursorCodec(JsonMapper.builder().build());
+    private ResourceSearchCursorCodec resourceSearchCursorCodec =
+            new ResourceSearchCursorCodec(JsonMapper.builder().build());
 
     @InjectMocks
     private ResourceQueryService resourceQueryService;
@@ -69,14 +70,14 @@ class ResourceQueryServiceSearchMoreTest {
         given(resourceCardImageResolver.resolve(any())).willReturn(ResourceCardImages.NONE);
 
         ResourceSearchMoreResponse response = resourceQueryService.searchMore(new ResourceSearchMoreRequest(
-                "Rilog", ResourceTrack.BE, ResourceSection.DOCUMENT, projectResourceCursorCodec.encode(cursor)));
+                "Rilog", ResourceTrack.BE, ResourceSection.DOCUMENT, resourceSearchCursorCodec.encode(ResourceSearchCursor.ofProject(cursor))));
 
         assertThat(response.items()).extracting(ResourceCardResponse::resourceId)
                 .hasSize(LIMIT)
                 .startsWith(99L)
                 .endsWith(100L - LIMIT);
-        assertThat(projectResourceCursorCodec.decode(response.nextCursor()))
-                .isEqualTo(new ProjectResourceCursor(PUBLISHED_AT, 100L - LIMIT));
+        assertThat(resourceSearchCursorCodec.decode(response.nextCursor()))
+                .isEqualTo(ResourceSearchCursor.ofProject(new ProjectResourceCursor(PUBLISHED_AT, 100L - LIMIT)));
         assertThat(response.totalCount()).isEqualTo(84L);
         verifyNoInteractions(searchKeywordService, sectionedResourceSearchService);
     }
@@ -95,6 +96,42 @@ class ResourceQueryServiceSearchMoreTest {
 
         assertThat(response.items()).extracting(ResourceCardResponse::resourceId).containsExactly(3L, 2L);
         assertThat(response.nextCursor()).isNull();
+    }
+
+    @Test
+    @DisplayName("순위 커서면 다시 검색하지 않고 커서의 순위대로 섹션 상한만큼 주고, 남은 순위를 다음 커서로 준다")
+    void continuesRankedHitsWithoutSearching() {
+        List<Long> remaining = LongStream.rangeClosed(21, 45).boxed().toList();
+        List<Long> page = remaining.subList(0, LIMIT);
+        given(resourceCardQueryRepository.findByIds(page)).willReturn(page.stream().map(this::card).toList());
+        given(resourceCardImageResolver.resolve(any())).willReturn(ResourceCardImages.NONE);
+
+        ResourceSearchMoreResponse response = resourceQueryService.searchMore(new ResourceSearchMoreRequest(
+                "동시성", null, ResourceSection.DOCUMENT,
+                resourceSearchCursorCodec.encode(ResourceSearchCursor.ofRanked(remaining, 45))));
+
+        assertThat(response.items()).extracting(ResourceCardResponse::resourceId).containsExactlyElementsOf(page);
+        assertThat(resourceSearchCursorCodec.decode(response.nextCursor()))
+                .isEqualTo(ResourceSearchCursor.ofRanked(remaining.subList(LIMIT, remaining.size()), 45));
+        assertThat(response.totalCount()).isEqualTo(45L);
+        verifyNoInteractions(projectNameFinder, sectionedResourceSearchService, searchKeywordService);
+    }
+
+    @Test
+    @DisplayName("순위 커서의 마지막 페이지면 다음 커서가 없고, 요청한 섹션이 아닌 자료는 주지 않는다")
+    void endsRankedHitsAndSkipsOtherSections() {
+        given(resourceCardQueryRepository.findByIds(List.of(31L, 32L)))
+                .willReturn(List.of(card(31), new ResourceCard(32L, "blog-post", "제목", "https://example.com/32", "소개",
+                        PUBLISHED_AT, null, null)));
+        given(resourceCardImageResolver.resolve(any())).willReturn(ResourceCardImages.NONE);
+
+        ResourceSearchMoreResponse response = resourceQueryService.searchMore(new ResourceSearchMoreRequest(
+                "동시성", null, ResourceSection.DOCUMENT,
+                resourceSearchCursorCodec.encode(ResourceSearchCursor.ofRanked(List.of(31L, 32L), 22))));
+
+        assertThat(response.items()).extracting(ResourceCardResponse::resourceId).containsExactly(31L);
+        assertThat(response.nextCursor()).isNull();
+        assertThat(response.totalCount()).isEqualTo(22L);
     }
 
     @Test

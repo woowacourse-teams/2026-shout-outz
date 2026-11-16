@@ -80,10 +80,11 @@ class ResourceHttpApiSearchMoreTest {
                         "resource-search-more",
                         resource(ResourceSnippetParameters.builder()
                                 .tag("Resource")
-                                .summary("프로젝트 이름 검색 결과 이어 읽기")
+                                .summary("기술 자료 검색 결과 이어 읽기")
                                 .description("""
-                                        기술 자료 검색에서 검색어가 프로젝트 이름과 일치해 섹션에 nextCursor가 온 경우, 그 프로젝트의 나머지 자료를 최신순으로 20건씩 이어 준다. 로그인 없이 볼 수 있다.
-                                        keyword, track은 검색 때와 같은 값을 보낸다. 검색어가 프로젝트 이름이 아니면 빈 목록을 준다.
+                                        기술 자료 검색 응답에서 섹션의 hasNext가 true일 때, 그 섹션의 nextCursor로 나머지 자료를 20건씩 이어 준다. 로그인 없이 볼 수 있다.
+                                        연관도 순 검색 결과는 첫 검색에서 정한 순위를 그대로 이어 주며, 섹션마다 첫 화면을 포함해 최대 60건까지다. 프로젝트 이름 검색 결과는 그 프로젝트의 자료를 최신순으로 끝까지 준다.
+                                        keyword, track은 검색 때와 같은 값을 보낸다. 커서 없이 요청하면 검색어가 가리키는 프로젝트의 자료를 처음부터 주고, 검색어가 프로젝트 이름이 아니면 빈 목록을 준다.
                                         이어 읽기는 인기 검색어 집계에 기록하지 않는다.
                                         keyword가 없거나 50자를 넘거나, track이 BE, FE, AN이 아니거나, section이 BLOG, DOCUMENT가 아니면 400(VALIDATION_FAILED), 커서를 풀 수 없으면 400(RESOURCE_SEARCH_CURSOR_INVALID)으로 응답한다.""")
                                 .queryParameters(
@@ -95,13 +96,13 @@ class ResourceHttpApiSearchMoreTest {
                                                 .description("검색 때 보낸 직군(BE, FE, AN)")
                                                 .optional(),
                                         parameterWithName("cursor").type(SimpleType.STRING)
-                                                .description("검색 응답의 섹션이나 앞 페이지의 meta에서 받은 nextCursor. 없으면 처음부터 준다")
+                                                .description("검색 응답의 섹션이나 앞 페이지의 meta에서 받은 nextCursor(1000자 이하). 받은 값을 그대로 보낸다")
                                                 .optional()
                                 )
                                 .responseSchema(Schema.schema("ResourceSearchMoreSuccessResponse"))
                                 .responseFields(
                                         fieldWithPath("status").type(STRING).description("응답 상태"),
-                                        fieldWithPath("data").type(ARRAY).description("그 프로젝트의 자료 카드, 최신순 최대 20건"),
+                                        fieldWithPath("data").type(ARRAY).description("이어지는 자료 카드, 최대 20건"),
                                         fieldWithPath("data[].resourceId").type(NUMBER).description("자료 ID. 자료 상세 조회에 쓴다"),
                                         fieldWithPath("data[].source").type(STRING).description("자료 원천"),
                                         fieldWithPath("data[].title").type(STRING).description("자료 제목"),
@@ -110,15 +111,15 @@ class ResourceHttpApiSearchMoreTest {
                                         fieldWithPath("data[].publishedAt").type(STRING).description("원문 게시 시각(UTC)").optional(),
                                         fieldWithPath("data[].platform").type(STRING).description("블로그 플랫폼. 블로그가 아니면 null").optional(),
                                         fieldWithPath("data[].faviconUrl").type(STRING).description("원문 사이트 아이콘 주소. 기술 자료 검색의 카드와 같다").optional(),
-                                        fieldWithPath("data[].team").type(OBJECT).description("자료를 만든 팀. 검색어가 가리킨 프로젝트다").optional(),
-                                        fieldWithPath("data[].team.name").type(STRING).description("프로젝트 이름").optional(),
-                                        fieldWithPath("data[].team.projectSlug").type(STRING).description("프로젝트 slug").optional(),
+                                        fieldWithPath("data[].team").type(OBJECT).description("자료를 만든 팀. 기술 자료 검색의 카드와 같다").optional(),
+                                        fieldWithPath("data[].team.name").type(STRING).description("팀 이름").optional(),
+                                        fieldWithPath("data[].team.projectSlug").type(STRING).description("등록된 프로젝트 slug. 등록 전 팀이면 null").optional(),
                                         fieldWithPath("data[].team.logoMediaId").type(NUMBER).description("프로젝트 로고 미디어 ID. 없으면 null").optional(),
                                         fieldWithPath("data[].team.logoUrl").type(STRING).description("팀 로고 이미지 주소(작은 크기). 없으면 null").optional(),
                                         fieldWithPath("meta").type(OBJECT).description("이어 읽기 정보"),
                                         fieldWithPath("meta.nextCursor").type(STRING).description("다음 페이지 커서. 마지막 페이지면 없다").optional(),
                                         fieldWithPath("meta.hasNext").type(BOOLEAN).description("다음 페이지가 있는지"),
-                                        fieldWithPath("meta.totalCount").type(NUMBER).description("이 섹션에서 그 프로젝트 자료의 전체 수")
+                                        fieldWithPath("meta.totalCount").type(NUMBER).description("이 섹션에서 이어 읽기까지 볼 수 있는 자료 전체 수. 연관도 순 검색은 최대 60, 프로젝트 이름 검색은 그 프로젝트 자료의 전체 수")
                                 )
                                 .build())
                 ));

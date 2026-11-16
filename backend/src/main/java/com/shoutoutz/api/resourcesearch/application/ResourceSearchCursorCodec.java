@@ -2,7 +2,7 @@ package com.shoutoutz.api.resourcesearch.application;
 
 import com.shoutoutz.api.common.exception.custom.BadRequestException;
 import com.shoutoutz.api.common.exception.custom.InternalServerErrorException;
-import com.shoutoutz.api.resourcesearch.application.dto.ProjectResourceCursor;
+import com.shoutoutz.api.resourcesearch.application.dto.ResourceSearchCursor;
 import com.shoutoutz.api.resourcesearch.domain.ResourceSearchErrorCode;
 import java.util.Base64;
 import lombok.RequiredArgsConstructor;
@@ -15,11 +15,11 @@ import tools.jackson.databind.ObjectMapper;
  */
 @Component
 @RequiredArgsConstructor
-public class ProjectResourceCursorCodec {
+public class ResourceSearchCursorCodec {
 
     private final ObjectMapper objectMapper;
 
-    public String encode(ProjectResourceCursor cursor) {
+    public String encode(ResourceSearchCursor cursor) {
         if (cursor == null) {
             return null;
         }
@@ -33,16 +33,16 @@ public class ProjectResourceCursorCodec {
         }
     }
 
-    public ProjectResourceCursor decode(String encodedCursor) {
+    public ResourceSearchCursor decode(String encodedCursor) {
         if (encodedCursor == null) {
             return null;
         }
         try {
-            ProjectResourceCursor cursor = objectMapper.readValue(
+            ResourceSearchCursor cursor = objectMapper.readValue(
                     Base64.getUrlDecoder().decode(encodedCursor),
-                    ProjectResourceCursor.class
+                    ResourceSearchCursor.class
             );
-            if (cursor == null || cursor.resourceId() <= 0) {
+            if (cursor == null) {
                 throw new BadRequestException(ResourceSearchErrorCode.RESOURCE_SEARCH_CURSOR_INVALID);
             }
             return cursor;

@@ -95,7 +95,8 @@ class ResourceHttpApiSearchTest {
                                 .description("""
                                         검색어로 블로그, PR과 팀 문서, 테코톡을 찾아 섹션별로 연관도가 높은 순으로 준다. 로그인 없이 볼 수 있다.
                                         blogs, documents는 최대 20건, talks는 최대 6건이며, 관련성이 약한 자료로 억지로 채우지 않아 더 적거나 비어 있을 수 있다.
-                                        검색어가 프로젝트 이름이나 저장소 이름과 같으면(대소문자와 기호는 무시) matchedProjects에 그 프로젝트를 담고, blogs와 documents에는 연관도 순 결과 대신 그 프로젝트의 자료를 최신순으로 준다. 이때 talks는 비어 있다. 그 프로젝트의 자료가 20건을 넘는 섹션은 nextCursor를 주고, 프로젝트 이름 검색 결과 이어 읽기 API로 나머지를 읽는다.
+                                        blogs, documents에 20건을 넘는 순위의 자료가 있으면 섹션의 hasNext가 true이고, 기술 자료 검색 결과 이어 읽기 API에 nextCursor를 보내 섹션마다 최대 60건까지 이어 읽는다.
+                                        검색어가 프로젝트 이름이나 저장소 이름과 같으면(대소문자와 기호는 무시) matchedProjects에 그 프로젝트를 담고, blogs와 documents에는 연관도 순 결과 대신 그 프로젝트의 자료를 최신순으로 준다. 이때 talks는 비어 있다. 그 프로젝트의 자료가 20건을 넘는 섹션은 nextCursor를 주고, 기술 자료 검색 결과 이어 읽기 API로 나머지를 끝까지 읽는다.
                                         그 이름이 기술 주제의 이름이나 별칭과도 같으면 프로젝트 자료 뒤에 그 프로젝트가 아닌 자료의 연관도 순 결과를 이어 준다. 이때 blogs와 documents는 최대 40건이고 talks도 채우며, nextCursor는 주지 않는다.
                                         검색어는 인기 검색어 집계에 방문자별로 하루 한 번 기록한다(VISITOR_ID 쿠키를 함께 보낸다).
                                         keyword가 없거나 50자를 넘거나, track이 BE, FE, AN이 아니면 400(VALIDATION_FAILED)으로 응답한다.""")
@@ -219,10 +220,10 @@ class ResourceHttpApiSearchTest {
                 fieldWithPath("data.documents.hasNext").type(BOOLEAN).description("PR과 팀 문서를 이어 읽을 자료가 있는지. nextCursor가 있을 때만 true"),
                 fieldWithPath("data.talks.hasNext").type(BOOLEAN).description("항상 false"),
                 fieldWithPath("data.blogs.nextCursor").type(STRING)
-                        .description("블로그를 이어 읽을 커서. 프로젝트 이름 검색에서 그 프로젝트의 블로그가 20건을 넘을 때만 있고, 그 밖에는 null")
+                        .description("블로그를 이어 읽을 커서. 이어 읽을 블로그가 없으면 null")
                         .optional(),
                 fieldWithPath("data.documents.nextCursor").type(STRING)
-                        .description("PR과 팀 문서를 이어 읽을 커서. 프로젝트 이름 검색에서 그 프로젝트의 문서가 20건을 넘을 때만 있고, 그 밖에는 null")
+                        .description("PR과 팀 문서를 이어 읽을 커서. 이어 읽을 문서가 없으면 null")
                         .optional(),
                 fieldWithPath("data.talks.nextCursor").type(STRING).description("항상 null").optional(),
                 fieldWithPath("data.matchedProjects").type(ARRAY)
