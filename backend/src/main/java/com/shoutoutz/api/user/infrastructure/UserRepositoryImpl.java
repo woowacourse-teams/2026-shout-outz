@@ -6,6 +6,8 @@ import com.shoutoutz.api.user.domain.account.UserErrorCode;
 import com.shoutoutz.api.user.domain.account.UserRepository;
 import com.shoutoutz.api.user.infrastructure.jpa.UserJpaRepository;
 import com.shoutoutz.api.user.infrastructure.mapper.UserMapper;
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -38,6 +40,16 @@ public class UserRepositoryImpl implements UserRepository {
     public Optional<User> findById(long id) {
         return userJpaRepository.findById(id)
                 .map(UserMapper::toDomain);
+    }
+
+    @Override
+    public List<User> findAllByIds(Collection<Long> ids) {
+        if (ids.isEmpty()) {
+            return List.of();
+        }
+        return userJpaRepository.findAllById(ids).stream()
+                .map(UserMapper::toDomain)
+                .toList();
     }
 
     @Override

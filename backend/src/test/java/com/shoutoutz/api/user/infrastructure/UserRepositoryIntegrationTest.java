@@ -2,6 +2,7 @@ package com.shoutoutz.api.user.infrastructure;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.tuple;
 
 import com.shoutoutz.api.common.exception.custom.DuplicateEntityException;
 import com.shoutoutz.api.user.domain.account.UserErrorCode;
@@ -11,6 +12,7 @@ import com.shoutoutz.api.user.domain.account.UserRepository;
 import com.shoutoutz.api.user.domain.account.UserRole;
 import com.shoutoutz.api.user.domain.account.UserStatus;
 import com.shoutoutz.api.user.infrastructure.jpa.UserJpaRepository;
+import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -50,6 +52,21 @@ class UserRepositoryIntegrationTest {
     @DisplayName("존재하지 않는 사용자 ID를 조회하면 빈 결과를 반환한다")
     void returnsEmptyWhenUserDoesNotExist() {
         assertThat(userRepository.findById(Long.MAX_VALUE)).isEmpty();
+    }
+
+    @Test
+    @DisplayName("여러 사용자를 ID로 한 번에 조회하고, 없는 ID는 빼고 반환한다")
+    void findsUsersByIds() {
+        User first = userRepository.save(User.initialize("@bulk-user-1"));
+        User second = userRepository.save(User.initialize("@bulk-user-2"));
+
+        assertThat(userRepository.findAllByIds(List.of(first.getId(), second.getId(), Long.MAX_VALUE)))
+                .extracting(User::getId, User::getHandle)
+                .containsExactlyInAnyOrder(
+                        tuple(first.getId(), new Handle("@bulk-user-1")),
+                        tuple(second.getId(), new Handle("@bulk-user-2"))
+                );
+        assertThat(userRepository.findAllByIds(List.of())).isEmpty();
     }
 
     @Test

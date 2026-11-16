@@ -4,6 +4,8 @@ import com.shoutoutz.api.user.domain.profile.UserProfile;
 import com.shoutoutz.api.user.domain.profile.UserProfileRepository;
 import com.shoutoutz.api.user.infrastructure.jpa.UserProfileJpaRepository;
 import com.shoutoutz.api.user.infrastructure.mapper.UserProfileMapper;
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
@@ -26,5 +28,15 @@ public class UserProfileRepositoryImpl implements UserProfileRepository {
     public Optional<UserProfile> findByUserId(long userId) {
         return userProfileJpaRepository.findById(userId)
                 .map(UserProfileMapper::toDomain);
+    }
+
+    @Override
+    public List<UserProfile> findAllByUserIds(Collection<Long> userIds) {
+        if (userIds.isEmpty()) {
+            return List.of();
+        }
+        return userProfileJpaRepository.findAllById(userIds).stream()
+                .map(UserProfileMapper::toDomain)
+                .toList();
     }
 }
