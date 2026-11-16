@@ -50,6 +50,10 @@ dependencies {
     implementation 'net.ttddyy:datasource-proxy:1.11.0'
     // 누가 요청해도 답이 같은 조회 결과를 앱 서버 메모리에 보관해 DB로 가는 요청을 줄인다 (local-cache)
     implementation 'com.github.ben-manes.caffeine:caffeine'
+    // 기술 자료 본문을 한국어 형태소로 나눠 색인하고 BM25로 순위를 매긴다 (렉시컬 검색)
+    implementation 'org.apache.lucene:lucene-core:10.5.2'
+    implementation 'org.apache.lucene:lucene-analysis-common:10.5.2'
+    implementation 'org.apache.lucene:lucene-analysis-nori:10.5.2'
 
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
