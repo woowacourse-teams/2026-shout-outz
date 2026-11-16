@@ -1,15 +1,18 @@
 package com.shoutoutz.api.resourcesearch.application;
 
 import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
+import com.shoutoutz.api.resourcesearch.application.dto.MatchedProject;
 import com.shoutoutz.api.resourcesearch.application.dto.ResourceCard;
 import com.shoutoutz.api.resourcesearch.application.dto.ResourceCardImages;
 import com.shoutoutz.api.resourcesearch.application.dto.SearchHit;
 import com.shoutoutz.api.resourcesearch.application.dto.SectionedSearchHits;
 import com.shoutoutz.api.resourcesearch.domain.ResourceSearchErrorCode;
 import com.shoutoutz.api.resourcesearch.domain.ResourceSection;
+import com.shoutoutz.api.resourcesearch.domain.ResourceTrack;
 import com.shoutoutz.api.resourcesearch.domain.SearchKeyword;
 import com.shoutoutz.api.resourcesearch.presentation.dto.request.ResourceRecentRequest;
 import com.shoutoutz.api.resourcesearch.presentation.dto.request.ResourceSearchRequest;
+import com.shoutoutz.api.resourcesearch.presentation.dto.response.MatchedProjectResponse;
 import com.shoutoutz.api.resourcesearch.presentation.dto.response.PopularKeywordResponse;
 import com.shoutoutz.api.resourcesearch.presentation.dto.response.ResourceCardResponse;
 import com.shoutoutz.api.resourcesearch.presentation.dto.response.ResourceDetailResponse;
@@ -22,6 +25,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -46,16 +50,22 @@ public class ResourceQueryService {
     private final ResourceDetailQueryRepository resourceDetailQueryRepository;
     private final SearchKeywordService searchKeywordService;
     private final ResourceCardImageResolver resourceCardImageResolver;
+    private final ProjectNameFinder projectNameFinder;
 
     public ResourceSearchResponse search(ResourceSearchRequest request, VisitorKey visitorKey) {
         recordKeyword(SearchKeyword.from(request.keyword()), visitorKey);
+        List<MatchedProject> matchedProjects = projectNameFinder.findNamed(request.keyword());
+        if (!matchedProjects.isEmpty()) {
+            return resourcesOf(matchedProjects, request.track());
+        }
         SectionedSearchHits hits = sectionedResourceSearchService.search(request.keyword(), request.track());
         Map<Long, ResourceCard> cards = cardsOf(hits);
         ResourceCardImages images = resourceCardImageResolver.resolve(cards.values());
         return new ResourceSearchResponse(
                 sectionOf(hits, ResourceSection.BLOG, cards, images),
                 sectionOf(hits, ResourceSection.DOCUMENT, cards, images),
-                sectionOf(hits, ResourceSection.TALK, cards, images)
+                sectionOf(hits, ResourceSection.TALK, cards, images),
+                List.of()
         );
     }
 
@@ -78,6 +88,30 @@ public class ResourceQueryService {
 
     public List<PopularKeywordResponse> findPopularKeywords() {
         return POPULAR_KEYWORDS;
+    }
+
+    /**
+     * 프로젝트 이름에는 뜻이 없어 연관도 검색을 하면 이름과 글자가 비슷한 다른 주제의 자료가 섞인다.
+     * 그래서 이름으로 가리킨 프로젝트의 자료를 최신순으로 준다. 테코톡은 팀이 없어 비운다.
+     */
+    private ResourceSearchResponse resourcesOf(List<MatchedProject> matchedProjects, ResourceTrack track) {
+        List<Long> projectIds = matchedProjects.stream()
+                .map(MatchedProject::projectId)
+                .toList();
+        List<ResourceCard> blogs = resourceCardQueryRepository.findLatestByProjects(
+                projectIds, ResourceSection.BLOG, track);
+        List<ResourceCard> documents = resourceCardQueryRepository.findLatestByProjects(
+                projectIds, ResourceSection.DOCUMENT, track);
+        ResourceCardImages images = resourceCardImageResolver.resolve(
+                Stream.concat(blogs.stream(), documents.stream()).toList());
+        return new ResourceSearchResponse(
+                sectionOf(blogs, images),
+                sectionOf(documents, images),
+                new ResourceSectionResponse(List.of()),
+                matchedProjects.stream()
+                        .map(MatchedProjectResponse::from)
+                        .toList()
+        );
     }
 
     private void recordKeyword(SearchKeyword keyword, VisitorKey visitorKey) {
@@ -106,6 +140,12 @@ public class ResourceQueryService {
         return new ResourceSectionResponse(hits.hits(section).stream()
                 .map(hit -> cards.get(hit.documentId()))
                 .filter(Objects::nonNull)
+                .map(card -> ResourceCardResponse.from(card, images))
+                .toList());
+    }
+
+    private ResourceSectionResponse sectionOf(List<ResourceCard> cards, ResourceCardImages images) {
+        return new ResourceSectionResponse(cards.stream()
                 .map(card -> ResourceCardResponse.from(card, images))
                 .toList());
     }

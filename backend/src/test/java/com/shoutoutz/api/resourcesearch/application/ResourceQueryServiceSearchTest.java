@@ -5,15 +5,19 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.shoutoutz.api.resourcesearch.application.dto.MatchedChunk;
+import com.shoutoutz.api.resourcesearch.application.dto.MatchedProject;
 import com.shoutoutz.api.resourcesearch.application.dto.ResourceCard;
 import com.shoutoutz.api.resourcesearch.application.dto.ResourceCardImages;
 import com.shoutoutz.api.resourcesearch.application.dto.SearchHit;
 import com.shoutoutz.api.resourcesearch.application.dto.SectionedSearchHits;
+import com.shoutoutz.api.resourcesearch.domain.ResourceSection;
 import com.shoutoutz.api.resourcesearch.domain.ResourceTrack;
 import com.shoutoutz.api.resourcesearch.domain.SearchKeyword;
 import com.shoutoutz.api.resourcesearch.presentation.dto.request.ResourceSearchRequest;
+import com.shoutoutz.api.resourcesearch.presentation.dto.response.MatchedProjectResponse;
 import com.shoutoutz.api.resourcesearch.presentation.dto.response.ResourceCardResponse;
 import com.shoutoutz.api.resourcesearch.presentation.dto.response.ResourceSearchResponse;
 import com.shoutoutz.api.visitor.domain.VisitorKey;
@@ -40,6 +44,9 @@ class ResourceQueryServiceSearchTest {
 
     @Mock
     private SearchKeywordService searchKeywordService;
+
+    @Mock
+    private ProjectNameFinder projectNameFinder;
 
     @Mock
     private ResourceCardImageResolver resourceCardImageResolver;
@@ -100,6 +107,50 @@ class ResourceQueryServiceSearchTest {
 
         ResourceSearchResponse response = resourceQueryService.search(new ResourceSearchRequest("동시성", null), VISITOR);
 
+        assertThat(ids(response.blogs().items())).containsExactly(1L);
+    }
+
+    @Test
+    @DisplayName("검색어가 프로젝트 이름과 일치하면 연관도 검색 없이 그 프로젝트의 블로그와 문서를 주고 테코톡은 비운다")
+    void returnsResourcesOfNamedProjects() {
+        given(projectNameFinder.findNamed("Rilog")).willReturn(List.of(
+                new MatchedProject(7L, "Rilog.", "rilog"), new MatchedProject(9L, "리로그", "rilog-2025")));
+        given(resourceCardQueryRepository.findLatestByProjects(List.of(7L, 9L), ResourceSection.BLOG, ResourceTrack.BE))
+                .willReturn(List.of(card(3, "blog-post"), card(2, "blog-post")));
+        given(resourceCardQueryRepository.findLatestByProjects(List.of(7L, 9L), ResourceSection.DOCUMENT, ResourceTrack.BE))
+                .willReturn(List.of(card(1, "github-pr")));
+
+        ResourceSearchResponse response = resourceQueryService.search(new ResourceSearchRequest("Rilog", ResourceTrack.BE), VISITOR);
+
+        assertThat(response.matchedProjects()).containsExactly(
+                new MatchedProjectResponse("Rilog.", "rilog"), new MatchedProjectResponse("리로그", "rilog-2025"));
+        assertThat(ids(response.blogs().items())).containsExactly(3L, 2L);
+        assertThat(ids(response.documents().items())).containsExactly(1L);
+        assertThat(response.talks().items()).isEmpty();
+        verifyNoInteractions(sectionedResourceSearchService);
+    }
+
+    @Test
+    @DisplayName("프로젝트 이름과 일치하는 검색어도 기록한다")
+    void recordsKeywordNamingProject() {
+        given(projectNameFinder.findNamed("Rilog")).willReturn(List.of(new MatchedProject(7L, "Rilog.", "rilog")));
+
+        resourceQueryService.search(new ResourceSearchRequest("Rilog", null), VISITOR);
+
+        verify(searchKeywordService).record(SearchKeyword.from("rilog"), VISITOR);
+    }
+
+    @Test
+    @DisplayName("검색어가 프로젝트 이름과 일치하지 않으면 연관도 검색 결과를 주고 일치한 프로젝트는 비운다")
+    void searchesByRelevanceWithoutNamedProject() {
+        given(projectNameFinder.findNamed("동시성")).willReturn(List.of());
+        given(sectionedResourceSearchService.search("동시성", null)).willReturn(SectionedSearchHits.from(List.of(
+                hit(1, "blog-post"))));
+        given(resourceCardQueryRepository.findByIds(List.of(1L))).willReturn(List.of(card(1, "blog-post")));
+
+        ResourceSearchResponse response = resourceQueryService.search(new ResourceSearchRequest("동시성", null), VISITOR);
+
+        assertThat(response.matchedProjects()).isEmpty();
         assertThat(ids(response.blogs().items())).containsExactly(1L);
     }
 

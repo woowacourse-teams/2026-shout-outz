@@ -21,6 +21,7 @@ import com.epages.restdocs.apispec.Schema;
 import com.epages.restdocs.apispec.SimpleType;
 import com.shoutoutz.api.resourcesearch.application.ResourceQueryService;
 import com.shoutoutz.api.resourcesearch.presentation.dto.request.ResourceSearchRequest;
+import com.shoutoutz.api.resourcesearch.presentation.dto.response.MatchedProjectResponse;
 import com.shoutoutz.api.resourcesearch.presentation.dto.response.ResourceCardResponse;
 import com.shoutoutz.api.resourcesearch.presentation.dto.response.ResourceSearchResponse;
 import com.shoutoutz.api.resourcesearch.presentation.dto.response.ResourceSectionResponse;
@@ -71,7 +72,8 @@ class ResourceHttpApiSearchTest {
                         new ResourceSectionResponse(List.of(new ResourceCardResponse(
                                 2301L, "youtube-tekotalk", "[10분 테코톡] 벨로의 Race Condition 이해하기",
                                 "https://www.youtube.com/watch?v=At4Gyezw8WA", "동시 요청에서 데이터 오류가 생기는 원리를 이해해요.",
-                                Instant.parse("2025-09-05T09:00:00Z"), null, null, null)))
+                                Instant.parse("2025-09-05T09:00:00Z"), null, null, null))),
+                        List.of()
                 ));
 
         mockMvc.perform(get("/api/v1/resources/search")
@@ -83,6 +85,7 @@ class ResourceHttpApiSearchTest {
                 .andExpect(jsonPath("$.data.blogs.items[0].team.projectSlug").value("festabook"))
                 .andExpect(jsonPath("$.data.documents.items[0].team").isEmpty())
                 .andExpect(jsonPath("$.data.talks.items[0].team").isEmpty())
+                .andExpect(jsonPath("$.data.matchedProjects").isEmpty())
                 .andDo(document(
                         "resource-search",
                         resource(ResourceSnippetParameters.builder()
@@ -91,6 +94,7 @@ class ResourceHttpApiSearchTest {
                                 .description("""
                                         검색어로 블로그, PR과 팀 문서, 테코톡을 찾아 섹션별로 연관도가 높은 순으로 준다. 로그인 없이 볼 수 있다.
                                         blogs, documents는 최대 20건, talks는 최대 6건이며, 관련성이 약한 자료로 억지로 채우지 않아 더 적거나 비어 있을 수 있다.
+                                        검색어가 프로젝트 이름이나 저장소 이름과 같으면(대소문자와 기호는 무시) matchedProjects에 그 프로젝트를 담고, blogs와 documents에는 연관도 순 결과 대신 그 프로젝트의 자료를 최신순으로 준다. 이때 talks는 비어 있다.
                                         검색어는 인기 검색어 집계에 방문자별로 하루 한 번 기록한다(VISITOR_ID 쿠키를 함께 보낸다).
                                         keyword가 없거나 50자를 넘거나, track이 BE, FE, AN이 아니면 400(VALIDATION_FAILED)으로 응답한다.""")
                                 .queryParameters(
@@ -104,6 +108,31 @@ class ResourceHttpApiSearchTest {
                                 .responseFields(searchResponseFields())
                                 .build())
                 ));
+    }
+
+    @Test
+    @DisplayName("검색어가 프로젝트 이름과 일치하면 일치한 프로젝트와 그 프로젝트의 자료를 준다")
+    void searchesResourcesOfNamedProject() throws Exception {
+        given(resourceQueryService.search(any(ResourceSearchRequest.class), any(VisitorKey.class)))
+                .willReturn(new ResourceSearchResponse(
+                        new ResourceSectionResponse(List.of(new ResourceCardResponse(
+                                3490L, "blog-post", "Rilog. 만의 강점은 무엇인가요?",
+                                "https://rilog.kr/@official/posts/185", "Rilog의 기능을 소개해요.",
+                                Instant.parse("2026-09-01T03:00:00Z"), "rilog", "https://rilog.kr/favicon.ico",
+                                new ResourceCardResponse.Team("Rilog.", "rilog", null, null)))),
+                        new ResourceSectionResponse(List.of()),
+                        new ResourceSectionResponse(List.of()),
+                        List.of(new MatchedProjectResponse("Rilog.", "rilog"))
+                ));
+
+        mockMvc.perform(get("/api/v1/resources/search")
+                        .queryParam("keyword", "Rilog")
+                        .requestAttr(VISITOR_KEY_ATTRIBUTE, VISITOR_KEY))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.matchedProjects[0].name").value("Rilog."))
+                .andExpect(jsonPath("$.data.matchedProjects[0].projectSlug").value("rilog"))
+                .andExpect(jsonPath("$.data.blogs.items[0].resourceId").value(3490L))
+                .andExpect(jsonPath("$.data.talks.items").isEmpty());
     }
 
     @Test
@@ -148,7 +177,8 @@ class ResourceHttpApiSearchTest {
                 .willReturn(new ResourceSearchResponse(
                         new ResourceSectionResponse(List.of()),
                         new ResourceSectionResponse(List.of()),
-                        new ResourceSectionResponse(List.of())
+                        new ResourceSectionResponse(List.of()),
+                        List.of()
                 ));
 
         mockMvc.perform(get("/api/v1/resources/search")
@@ -178,7 +208,11 @@ class ResourceHttpApiSearchTest {
                 fieldWithPath("data.blogs.items").type(ARRAY).description("블로그(blog-post), 최대 20건"),
                 fieldWithPath("data.documents.items").type(ARRAY)
                         .description("PR과 팀 문서(github-pr, github-teamdoc, github-wiki, github-discussion), 최대 20건"),
-                fieldWithPath("data.talks.items").type(ARRAY).description("테코톡(youtube-tekotalk), 최대 6건")
+                fieldWithPath("data.talks.items").type(ARRAY).description("테코톡(youtube-tekotalk), 최대 6건"),
+                fieldWithPath("data.matchedProjects").type(ARRAY)
+                        .description("검색어가 이름으로 가리킨 프로젝트. 없으면 빈 배열이고, 이름이 같은 프로젝트가 여럿이면 모두 담는다"),
+                fieldWithPath("data.matchedProjects[].name").type(STRING).description("프로젝트 이름").optional(),
+                fieldWithPath("data.matchedProjects[].projectSlug").type(STRING).description("프로젝트 slug").optional()
         ));
         fields.addAll(applyPathPrefix("data.blogs.items[].", cardFields()));
         fields.addAll(applyPathPrefix("data.documents.items[].", cardFields()));
