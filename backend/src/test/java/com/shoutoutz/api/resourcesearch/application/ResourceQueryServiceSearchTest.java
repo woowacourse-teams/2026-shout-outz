@@ -9,6 +9,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.shoutoutz.api.resourcesearch.application.dto.MatchedChunk;
 import com.shoutoutz.api.resourcesearch.application.dto.MatchedProject;
+import com.shoutoutz.api.resourcesearch.application.dto.ProjectResourceCursor;
 import com.shoutoutz.api.resourcesearch.application.dto.ResourceCard;
 import com.shoutoutz.api.resourcesearch.application.dto.ResourceCardImages;
 import com.shoutoutz.api.resourcesearch.application.dto.SearchHit;
@@ -21,20 +22,25 @@ import com.shoutoutz.api.resourcesearch.presentation.dto.response.MatchedProject
 import com.shoutoutz.api.resourcesearch.presentation.dto.response.ResourceCardResponse;
 import com.shoutoutz.api.resourcesearch.presentation.dto.response.ResourceSearchResponse;
 import com.shoutoutz.api.visitor.domain.VisitorKey;
+import java.time.Instant;
 import java.util.List;
+import java.util.stream.LongStream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataAccessResourceFailureException;
+import tools.jackson.databind.json.JsonMapper;
 
 @ExtendWith(MockitoExtension.class)
 class ResourceQueryServiceSearchTest {
 
     private static final VisitorKey VISITOR = new VisitorKey("a".repeat(64));
+    private static final Instant PUBLISHED_AT = Instant.parse("2026-10-20T01:00:00Z");
 
     @Mock
     private SectionedResourceSearchService sectionedResourceSearchService;
@@ -50,6 +56,10 @@ class ResourceQueryServiceSearchTest {
 
     @Mock
     private TechTopicNames techTopicNames;
+
+    @Spy
+    private ProjectResourceCursorCodec projectResourceCursorCodec =
+            new ProjectResourceCursorCodec(JsonMapper.builder().build());
 
     @Mock
     private ResourceCardImageResolver resourceCardImageResolver;
@@ -118,9 +128,9 @@ class ResourceQueryServiceSearchTest {
     void returnsResourcesOfNamedProjects() {
         given(projectNameFinder.findNamed("Rilog")).willReturn(List.of(
                 new MatchedProject(7L, "Rilog.", "rilog"), new MatchedProject(9L, "리로그", "rilog-2025")));
-        given(resourceCardQueryRepository.findLatestByProjects(List.of(7L, 9L), ResourceSection.BLOG, ResourceTrack.BE, null, ResourceSection.BLOG.limit()))
+        given(resourceCardQueryRepository.findLatestByProjects(List.of(7L, 9L), ResourceSection.BLOG, ResourceTrack.BE, null, ResourceSection.BLOG.limit() + 1))
                 .willReturn(List.of(card(3, "blog-post"), card(2, "blog-post")));
-        given(resourceCardQueryRepository.findLatestByProjects(List.of(7L, 9L), ResourceSection.DOCUMENT, ResourceTrack.BE, null, ResourceSection.DOCUMENT.limit()))
+        given(resourceCardQueryRepository.findLatestByProjects(List.of(7L, 9L), ResourceSection.DOCUMENT, ResourceTrack.BE, null, ResourceSection.DOCUMENT.limit() + 1))
                 .willReturn(List.of(card(1, "github-pr")));
 
         ResourceSearchResponse response = resourceQueryService.search(new ResourceSearchRequest("Rilog", ResourceTrack.BE), VISITOR);
@@ -138,9 +148,9 @@ class ResourceQueryServiceSearchTest {
     void appendsRelevantResourcesWhenNameIsAlsoTechTopic() {
         given(projectNameFinder.findNamed("동시성")).willReturn(List.of(new MatchedProject(7L, "동시성", "concurrency")));
         given(techTopicNames.contains("동시성")).willReturn(true);
-        given(resourceCardQueryRepository.findLatestByProjects(List.of(7L), ResourceSection.BLOG, null, null, ResourceSection.BLOG.limit()))
+        given(resourceCardQueryRepository.findLatestByProjects(List.of(7L), ResourceSection.BLOG, null, null, ResourceSection.BLOG.limit() + 1))
                 .willReturn(List.of(card(3, "blog-post")));
-        given(resourceCardQueryRepository.findLatestByProjects(List.of(7L), ResourceSection.DOCUMENT, null, null, ResourceSection.DOCUMENT.limit()))
+        given(resourceCardQueryRepository.findLatestByProjects(List.of(7L), ResourceSection.DOCUMENT, null, null, ResourceSection.DOCUMENT.limit() + 1))
                 .willReturn(List.of());
         given(sectionedResourceSearchService.search("동시성", null)).willReturn(SectionedSearchHits.from(List.of(
                 hit(10, "blog-post"), hitOfProject(11, "blog-post", 7L), hit(12, "github-pr"), hit(13, "youtube-tekotalk"))));
@@ -153,6 +163,43 @@ class ResourceQueryServiceSearchTest {
         assertThat(ids(response.blogs().items())).containsExactly(3L, 10L);
         assertThat(ids(response.documents().items())).containsExactly(12L);
         assertThat(ids(response.talks().items())).containsExactly(13L);
+    }
+
+    @Test
+    @DisplayName("프로젝트 자료가 섹션 상한보다 많으면 상한까지만 주고 마지막 자료의 위치를 다음 커서로 준다")
+    void givesNextCursorWhenProjectHasMoreResources() {
+        int limit = ResourceSection.DOCUMENT.limit();
+        given(projectNameFinder.findNamed("Rilog")).willReturn(List.of(new MatchedProject(7L, "Rilog.", "rilog")));
+        given(resourceCardQueryRepository.findLatestByProjects(List.of(7L), ResourceSection.BLOG, null, null, ResourceSection.BLOG.limit() + 1))
+                .willReturn(List.of(card(900, "blog-post")));
+        given(resourceCardQueryRepository.findLatestByProjects(List.of(7L), ResourceSection.DOCUMENT, null, null, limit + 1))
+                .willReturn(LongStream.rangeClosed(1, limit + 1).map(id -> 100 - id).mapToObj(id -> card(id, "github-pr")).toList());
+
+        ResourceSearchResponse response = resourceQueryService.search(new ResourceSearchRequest("Rilog", null), VISITOR);
+
+        assertThat(response.blogs().nextCursor()).isNull();
+        assertThat(response.documents().items()).hasSize(limit);
+        assertThat(projectResourceCursorCodec.decode(response.documents().nextCursor()))
+                .isEqualTo(new ProjectResourceCursor(PUBLISHED_AT, 100L - limit));
+    }
+
+    @Test
+    @DisplayName("프로젝트 자료 뒤에 연관도 검색 결과를 이으면 다음 커서를 주지 않는다")
+    void givesNoCursorWhenRelevantResourcesFollow() {
+        int limit = ResourceSection.BLOG.limit();
+        given(projectNameFinder.findNamed("동시성")).willReturn(List.of(new MatchedProject(7L, "동시성", "concurrency")));
+        given(techTopicNames.contains("동시성")).willReturn(true);
+        given(resourceCardQueryRepository.findLatestByProjects(List.of(7L), ResourceSection.BLOG, null, null, limit + 1))
+                .willReturn(LongStream.rangeClosed(1, limit + 1).map(id -> 100 - id).mapToObj(id -> card(id, "blog-post")).toList());
+        given(sectionedResourceSearchService.search("동시성", null)).willReturn(SectionedSearchHits.from(List.of(
+                hit(500, "blog-post"))));
+        given(resourceCardQueryRepository.findByIds(List.of(500L))).willReturn(List.of(card(500, "blog-post")));
+
+        ResourceSearchResponse response = resourceQueryService.search(new ResourceSearchRequest("동시성", null), VISITOR);
+
+        assertThat(response.blogs().items()).hasSize(limit + 1);
+        assertThat(ids(response.blogs().items())).endsWith(100L - limit, 500L);
+        assertThat(response.blogs().nextCursor()).isNull();
     }
 
     @Test
@@ -190,7 +237,7 @@ class ResourceQueryServiceSearchTest {
     }
 
     private ResourceCard card(long id, String source) {
-        return new ResourceCard(id, source, "제목", "https://example.com/" + id, "소개", null, null, null);
+        return new ResourceCard(id, source, "제목", "https://example.com/" + id, "소개", PUBLISHED_AT, null, null);
     }
 
     private List<Long> ids(List<ResourceCardResponse> items) {
