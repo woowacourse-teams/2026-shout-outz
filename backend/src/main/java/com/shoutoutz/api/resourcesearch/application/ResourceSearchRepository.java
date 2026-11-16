@@ -9,5 +9,7 @@ public interface ResourceSearchRepository {
 
     List<ResourceSearchCandidate> findNearest(float[] queryVector, String modelId, ResourceTrack track, int candidateLimit);
 
+    List<ResourceSearchCandidate> findByChunkIds(List<Long> chunkIds, float[] queryVector, String modelId);
+
     List<LexicalChunk> findLexicalChunks(String modelId);
 }

@@ -5,6 +5,8 @@ import com.shoutoutz.api.resourcesearch.application.dto.LexicalChunk;
 import com.shoutoutz.api.resourcesearch.application.dto.MatchedChunk;
 import com.shoutoutz.api.resourcesearch.application.dto.ResourceSearchCandidate;
 import com.shoutoutz.api.resourcesearch.domain.ResourceTrack;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -64,27 +66,37 @@ public class JdbcResourceSearchRepository implements ResourceSearchRepository {
         }
         sql += " ORDER BY similarity_score DESC, c.id LIMIT :candidateLimit";
 
-        return jdbcTemplate.query(
-                sql,
-                parameters,
-                (resultSet, rowNumber) -> new ResourceSearchCandidate(
-                        resultSet.getLong("document_id"),
-                        resultSet.getString("external_key"),
-                        resultSet.getObject("project_id", Long.class),
-                        resultSet.getString("repo"),
-                        resultSet.getString("title"),
-                        resultSet.getString("summary"),
-                        resultSet.getString("source"),
-                        ResourceTrack.from(resultSet.getString("track")),
-                        resultSet.getString("url"),
-                        new MatchedChunk(
-                                resultSet.getLong("chunk_id"),
-                                resultSet.getString("chunk_kind"),
-                                resultSet.getString("chunk_text"),
-                                resultSet.getDouble("similarity_score")
-                        )
-                )
-        );
+        return jdbcTemplate.query(sql, parameters, (resultSet, rowNumber) -> toCandidate(resultSet));
+    }
+
+    /**
+     * 렉시컬 검색으로 찾은 조각의 문서 정보와, 질문 벡터와의 코사인 유사도를 읽는다.
+     * 색인을 만든 뒤 지워졌거나 제보로 빠진 자료가 응답에 섞이지 않도록 벡터 검색과 같은 조건을 다시 건다.
+     */
+    @Override
+    public List<ResourceSearchCandidate> findByChunkIds(List<Long> chunkIds, float[] queryVector, String modelId) {
+        validateVector(queryVector);
+        if (chunkIds.isEmpty()) {
+            return List.of();
+        }
+        String sql = """
+                SELECT d.id AS document_id, d.external_key, d.project_id, d.repo,
+                       d.title, d.summary, d.source, d.track, d.url,
+                       c.id AS chunk_id, c.chunk_kind, c.chunk_text,
+                       1 - (c.embedding <=> CAST(:queryVector AS vector)) AS similarity_score
+                FROM resource_chunks c
+                JOIN resource_documents d ON d.id = c.document_id
+                WHERE c.id IN (:chunkIds)
+                  AND c.deleted_at IS NULL
+                  AND d.deleted_at IS NULL
+                  AND c.embedding_model = :modelId
+                """ + NOT_REMOVED_BY_REPORT + " ORDER BY c.id";
+        MapSqlParameterSource parameters = new MapSqlParameterSource()
+                .addValue("chunkIds", chunkIds)
+                .addValue("queryVector", Arrays.toString(queryVector))
+                .addValue("modelId", modelId);
+
+        return jdbcTemplate.query(sql, parameters, (resultSet, rowNumber) -> toCandidate(resultSet));
     }
 
     /**
@@ -110,6 +122,26 @@ public class JdbcResourceSearchRepository implements ResourceSearchRepository {
                         resultSet.getLong("chunk_id"),
                         resultSet.getString("chunk_text"),
                         ResourceTrack.from(resultSet.getString("track"))
+                )
+        );
+    }
+
+    private static ResourceSearchCandidate toCandidate(ResultSet resultSet) throws SQLException {
+        return new ResourceSearchCandidate(
+                resultSet.getLong("document_id"),
+                resultSet.getString("external_key"),
+                resultSet.getObject("project_id", Long.class),
+                resultSet.getString("repo"),
+                resultSet.getString("title"),
+                resultSet.getString("summary"),
+                resultSet.getString("source"),
+                ResourceTrack.from(resultSet.getString("track")),
+                resultSet.getString("url"),
+                new MatchedChunk(
+                        resultSet.getLong("chunk_id"),
+                        resultSet.getString("chunk_kind"),
+                        resultSet.getString("chunk_text"),
+                        resultSet.getDouble("similarity_score")
                 )
         );
     }

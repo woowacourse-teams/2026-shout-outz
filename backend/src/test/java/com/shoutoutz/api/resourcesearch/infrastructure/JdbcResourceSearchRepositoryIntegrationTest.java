@@ -197,6 +197,74 @@ class JdbcResourceSearchRepositoryIntegrationTest {
     }
 
     @Test
+    void 조각_ID로_문서_정보와_질문과의_코사인_유사도를_조각_ID순으로_읽는다() {
+        long partialDocument = fixture.document(ResourceTrack.BE);
+        long partial = fixture.chunk(partialDocument, 0, "intro", "캐시 무효화", vector(0.8f, 0.6f), MODEL);
+        long exactDocument = fixture.document(ResourceTrack.FE);
+        long exact = fixture.chunk(exactDocument, 0, "intro", "캐시 적재", vector(1, 0), MODEL);
+        fixture.intro(fixture.document(ResourceTrack.BE), vector(1, 0));
+
+        List<ResourceSearchCandidate> result = resourceSearchRepository.findByChunkIds(
+                List.of(exact, partial), vector(1, 0), MODEL
+        );
+
+        assertThat(result).extracting(candidate -> candidate.chunk().chunkId()).containsExactly(partial, exact);
+        assertThat(result).extracting(ResourceSearchCandidate::documentId).containsExactly(partialDocument, exactDocument);
+        assertThat(result.getFirst().chunk().text()).isEqualTo("캐시 무효화");
+        assertThat(result.getFirst().chunk().similarityScore()).isCloseTo(0.8, within(0.000001));
+        assertThat(result.getLast().chunk().similarityScore()).isCloseTo(1, within(0.000001));
+        assertThat(result).extracting(ResourceSearchCandidate::track).containsExactly(ResourceTrack.BE, ResourceTrack.FE);
+    }
+
+    @Test
+    void 조각_ID로_읽을_때_삭제된_문서와_조각_및_다른_모델을_제외한다() {
+        long deletedDocument = fixture.document(ResourceTrack.BE);
+        long chunkOfDeletedDocument = fixture.intro(deletedDocument, vector(1, 0));
+        jdbcTemplate.update("UPDATE resource_documents SET deleted_at = now() WHERE id = ?", deletedDocument);
+        long deletedChunk = fixture.intro(fixture.document(ResourceTrack.BE), vector(1, 0));
+        jdbcTemplate.update("UPDATE resource_chunks SET deleted_at = now() WHERE id = ?", deletedChunk);
+        long otherModel = fixture.chunk(fixture.document(ResourceTrack.BE), 0, "intro", "다른 모델", vector(1, 0), "other@1024");
+        long available = fixture.intro(fixture.document(ResourceTrack.BE), vector(0, 1));
+
+        List<ResourceSearchCandidate> result = resourceSearchRepository.findByChunkIds(
+                List.of(chunkOfDeletedDocument, deletedChunk, otherModel, available), vector(1, 0), MODEL
+        );
+
+        assertThat(result).extracting(candidate -> candidate.chunk().chunkId()).containsExactly(available);
+    }
+
+    @Test
+    void 조각_ID로_읽을_때_제보로_삭제가_승인된_자료를_제외한다() {
+        long accepted = fixture.document(ResourceTrack.BE);
+        long acceptedChunk = fixture.intro(accepted, vector(1, 0));
+        documents.removalReport(accepted, "ACCEPTED");
+        long openChunk = fixture.intro(fixture.document(ResourceTrack.BE), vector(1, 0));
+
+        List<ResourceSearchCandidate> result = resourceSearchRepository.findByChunkIds(
+                List.of(acceptedChunk, openChunk), vector(1, 0), MODEL
+        );
+
+        assertThat(result).extracting(candidate -> candidate.chunk().chunkId()).containsExactly(openChunk);
+    }
+
+    @Test
+    void 읽을_조각_ID가_없으면_빈_목록을_반환한다() {
+        fixture.intro(fixture.document(ResourceTrack.BE), vector(1, 0));
+
+        assertThat(resourceSearchRepository.findByChunkIds(List.of(), vector(1, 0), MODEL)).isEmpty();
+    }
+
+    @Test
+    void 조각_ID로_읽을_때도_잘못된_검색_벡터를_거부한다() {
+        long chunkId = fixture.intro(fixture.document(ResourceTrack.BE), vector(1, 0));
+
+        assertThatThrownBy(() -> resourceSearchRepository.findByChunkIds(List.of(chunkId), new float[2], MODEL))
+                .isInstanceOf(InvalidDataAccessApiUsageException.class)
+                .hasCauseInstanceOf(IllegalArgumentException.class)
+                .hasRootCauseMessage("검색 벡터는 1024차원이어야 합니다.");
+    }
+
+    @Test
     void 해당_모델의_후보가_없으면_빈_목록을_반환한다() {
         assertThat(search(null, 10)).isEmpty();
     }
