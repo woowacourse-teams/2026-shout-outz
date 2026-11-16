@@ -42,6 +42,14 @@ class ResourceSectionTest {
     }
 
     @Test
+    @DisplayName("블로그와 문서는 이어 읽기까지 60건, 테코톡은 첫 화면의 6건까지만 내보낸다")
+    void limitsDepthBySection() {
+        assertThat(ResourceSection.BLOG.depth()).isEqualTo(60);
+        assertThat(ResourceSection.DOCUMENT.depth()).isEqualTo(60);
+        assertThat(ResourceSection.TALK.depth()).isEqualTo(6);
+    }
+
+    @Test
     @DisplayName("섹션은 자기 원천 목록을 바꿀 수 없게 돌려준다")
     void exposesSourcesAsImmutableSet() {
         assertThat(ResourceSection.TALK.sources()).containsExactly("youtube-tekotalk");

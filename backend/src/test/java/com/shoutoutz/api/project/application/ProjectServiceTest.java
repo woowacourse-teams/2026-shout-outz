@@ -788,9 +788,9 @@ class ProjectServiceTest {
     @DisplayName("검색어가 공개 프로젝트 이름과 대소문자, 공백, 구두점을 빼고 같으면 검색어 대신 그 프로젝트들만 조회한다.")
     void findsOnlyProjectsWhoseTitleEqualsKeyword() {
         when(projectRepository.findPublicProjectNames()).thenReturn(List.of(
-                new PublicProjectName(1L, "Rilog.", "https://github.com/woowacourse-teams/2026-p1"),
-                new PublicProjectName(2L, "Rilog 블로그", "https://github.com/woowacourse-teams/2026-p2"),
-                new PublicProjectName(3L, "rilog", "https://github.com/woowacourse-teams/2026-p3")
+                new PublicProjectName(1L, "Rilog.", "p1", "https://github.com/woowacourse-teams/2026-p1"),
+                new PublicProjectName(2L, "Rilog 블로그", "p2", "https://github.com/woowacourse-teams/2026-p2"),
+                new PublicProjectName(3L, "rilog", "p3", "https://github.com/woowacourse-teams/2026-p3")
         ));
         when(projectRepository.findAll(any(ProjectSearchCondition.class)))
                 .thenReturn(new ProjectPage(List.of(), false, 0));
@@ -807,8 +807,8 @@ class ProjectServiceTest {
     @DisplayName("검색어가 연도 접두사를 뗀 저장소 이름과 같으면 그 프로젝트만 조회한다.")
     void findsOnlyProjectWhoseRepositoryNameEqualsKeyword() {
         when(projectRepository.findPublicProjectNames()).thenReturn(List.of(
-                new PublicProjectName(13L, "히어릿", "https://github.com/woowacourse-teams/2025-hearit"),
-                new PublicProjectName(14L, "히어로", "https://github.com/woowacourse-teams/2025-hero")
+                new PublicProjectName(13L, "히어릿", "hearit", "https://github.com/woowacourse-teams/2025-hearit"),
+                new PublicProjectName(14L, "히어로", "hero", "https://github.com/woowacourse-teams/2025-hero")
         ));
         when(projectRepository.findAll(any(ProjectSearchCondition.class)))
                 .thenReturn(new ProjectPage(List.of(), false, 0));
@@ -824,7 +824,7 @@ class ProjectServiceTest {
     @Test
     @DisplayName("이름도 기술 주제도 아니면 이름에 든 프로젝트, 자료 검색 순서의 프로젝트, 나머지 글자 일치 프로젝트 순으로 골라 조회한다.")
     void findsDirectSearchProjectsWhenKeywordIsNeitherTitleNorTopic() {
-        when(projectRepository.findPublicProjectNames()).thenReturn(List.of(new PublicProjectName(1L, "Rilog.", "https://github.com/woowacourse-teams/2026-p1")));
+        when(projectRepository.findPublicProjectNames()).thenReturn(List.of(new PublicProjectName(1L, "Rilog.", "p1", "https://github.com/woowacourse-teams/2026-p1")));
         when(resourceSearchService.search("eda", null, 20))
                 .thenReturn(List.of(searchHit(3L), searchHit(null), searchHit(1L), searchHit(3L)));
         when(projectRepository.findKeywordCandidates(
@@ -979,7 +979,7 @@ class ProjectServiceTest {
     @Test
     @DisplayName("검색어가 기술 주제 별칭과 맞으면 검색어 대신 그 주제로 조회하고, 응답에 해석한 주제를 담는다.")
     void findsTopicProjectsWhenKeywordMatchesTopicAlias() {
-        when(projectRepository.findPublicProjectNames()).thenReturn(List.of(new PublicProjectName(1L, "Rilog.", "https://github.com/woowacourse-teams/2026-p1")));
+        when(projectRepository.findPublicProjectNames()).thenReturn(List.of(new PublicProjectName(1L, "Rilog.", "p1", "https://github.com/woowacourse-teams/2026-p1")));
         when(projectResourceQueryRepository.findTopic("concurrency")).thenReturn(Optional.of(
                 new ResourceTopic("concurrency", "동시성 제어/락", "backend", "동시성, 트랜잭션")));
         when(projectRepository.findAll(any(ProjectSearchCondition.class)))
@@ -999,7 +999,7 @@ class ProjectServiceTest {
     @Test
     @DisplayName("검색어가 프로젝트 이름과 같으면 기술 주제 별칭과 맞아도 이름을 먼저 따르고 주제를 담지 않는다.")
     void prefersProjectTitleOverTopicAlias() {
-        when(projectRepository.findPublicProjectNames()).thenReturn(List.of(new PublicProjectName(5L, "동시성", "https://github.com/woowacourse-teams/2026-p5")));
+        when(projectRepository.findPublicProjectNames()).thenReturn(List.of(new PublicProjectName(5L, "동시성", "p5", "https://github.com/woowacourse-teams/2026-p5")));
         when(projectRepository.findAll(any(ProjectSearchCondition.class)))
                 .thenReturn(new ProjectPage(List.of(), false, 0));
 

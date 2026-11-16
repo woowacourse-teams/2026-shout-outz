@@ -9,7 +9,7 @@ import org.junit.jupiter.api.DisplayName;
 class PublicProjectNameTest {
 
     private static final PublicProjectName HEARIT = new PublicProjectName(
-            13L, "히어릿", "https://github.com/woowacourse-teams/2025-hearit");
+            13L, "히어릿", "hearit", "https://github.com/woowacourse-teams/2025-hearit");
 
     @ParameterizedTest
     @ValueSource(strings = {"히어릿", "hearit", "HEARIT", "2025-hearit"})

@@ -97,6 +97,7 @@ public class ResourceDocumentFixture {
         private Instant publishedAt = Instant.parse("2026-10-20T01:00:00Z");
         private Long projectId;
         private String repo;
+        private String track;
         private String extra = "{}";
         private String contentType;
         private String topic;
@@ -130,6 +131,11 @@ public class ResourceDocumentFixture {
 
         public DocumentBuilder repo(String repo) {
             this.repo = repo;
+            return this;
+        }
+
+        public DocumentBuilder track(String track) {
+            this.track = track;
             return this;
         }
 
@@ -168,13 +174,13 @@ public class ResourceDocumentFixture {
             return jdbcTemplate.queryForObject(
                     """
                             INSERT INTO resource_documents (
-                                source, external_key, version, title, url, summary, project_id, repo, published_at,
+                                source, external_key, version, title, url, summary, project_id, repo, track, published_at,
                                 content_type, topic, key_points, tech_tags, prompt_version, extra, updated_at, deleted_at
-                            ) VALUES (?, ?, 1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'test-v1', CAST(? AS jsonb), now(), ?)
+                            ) VALUES (?, ?, 1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'test-v1', CAST(? AS jsonb), now(), ?)
                             RETURNING id
                             """,
                     Long.class,
-                    source, externalKey, title, "https://example.com/" + externalKey, summary, projectId, repo,
+                    source, externalKey, title, "https://example.com/" + externalKey, summary, projectId, repo, track,
                     publishedAt == null ? null : Timestamp.from(publishedAt),
                     contentType, topic, keyPoints, techTags, extra,
                     deleted ? Timestamp.from(Instant.now()) : null

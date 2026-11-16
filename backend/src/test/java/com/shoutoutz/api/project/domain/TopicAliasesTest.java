@@ -25,6 +25,20 @@ class TopicAliasesTest {
     private final TopicAliases topicAliases = TopicAliases.of(ALIASES, ALIASES.keySet());
 
     @ParameterizedTest
+    @ValueSource(strings = {"동시성", "REDIS", "spring-security", "캐시 (Redis 등)"})
+    @DisplayName("표기만 다르고 별칭과 정확히 같은 검색어는 별칭이다.")
+    void isAliasWhenExactlySame(String keyword) {
+        assertThat(topicAliases.isAlias(NormalizedKeyword.of(keyword))).isTrue();
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"동시", "동시성 문제 해결", "relock", "Rilog", "?"})
+    @DisplayName("별칭의 일부이거나 별칭을 포함하기만 하는 검색어는 별칭이 아니다.")
+    void isNotAliasWhenPartiallySame(String keyword) {
+        assertThat(topicAliases.isAlias(NormalizedKeyword.of(keyword))).isFalse();
+    }
+
+    @ParameterizedTest
     @CsvSource({
             "동시성, concurrency",
             "'SPRING  security', auth",
