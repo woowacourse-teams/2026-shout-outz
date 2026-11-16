@@ -11,6 +11,7 @@ import com.shoutoutz.api.resourcesearch.application.dto.ResourceSearchCandidate;
 import com.shoutoutz.api.resourcesearch.domain.ResourceTrack;
 import com.shoutoutz.api.resourcesearch.support.ResourceDocumentFixture;
 import com.shoutoutz.api.resourcesearch.support.ResourceSearchFixture;
+import java.util.Comparator;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -148,6 +149,36 @@ class JdbcResourceSearchRepositoryIntegrationTest {
                 .getFirst().chunk().similarityScore()).isCloseTo(1, within(0.000001));
     }
 
+    /**
+     * 질문과 가까운 50개는 FE, 그 바깥 50개는 BE 다. HNSW 인덱스가 처음 읽는 후보(ef_search 40개)가 모두 걸러져도 BE 후보를 채워야 한다.
+     * 두 무리가 끊기면 그래프에서 BE 로 건너가지 못하므로 0.5도 간격의 이어진 호 위에 둔다.
+     */
+    @Test
+    void 가까운_조각이_트랙_필터에_걸러져도_후보_수를_채운다() {
+        for (int i = 0; i < 50; i++) {
+            fixture.intro(fixture.document(ResourceTrack.FE), arc(i * 0.5));
+            fixture.intro(fixture.document(ResourceTrack.BE), arc(25 + i * 0.5));
+        }
+
+        List<ResourceSearchCandidate> result = search(ResourceTrack.BE, 45);
+
+        assertThat(result).hasSize(45)
+                .allMatch(candidate -> candidate.track() == ResourceTrack.BE)
+                .extracting(candidate -> candidate.chunk().similarityScore())
+                .isSortedAccordingTo(Comparator.reverseOrder());
+    }
+
+    @Test
+    void 검색이_끝나면_같은_트랜잭션의_플래너_설정을_되돌린다() {
+        fixture.intro(fixture.document(ResourceTrack.BE), vector(1, 0));
+
+        search(null, 10);
+
+        assertThat(jdbcTemplate.queryForObject("SELECT current_setting('enable_sort')", String.class)).isEqualTo("on");
+        assertThat(jdbcTemplate.queryForObject("SELECT current_setting('hnsw.iterative_scan')", String.class))
+                .isEqualTo("off");
+    }
+
     @Test
     void 해당_모델의_후보가_없으면_빈_목록을_반환한다() {
         assertThat(search(null, 10)).isEmpty();
@@ -184,5 +215,10 @@ class JdbcResourceSearchRepositoryIntegrationTest {
 
     private List<ResourceSearchCandidate> search(ResourceTrack track, int limit) {
         return resourceSearchRepository.findNearest(vector(1, 0), MODEL, track, limit);
+    }
+
+    private static float[] arc(double degrees) {
+        double radians = Math.toRadians(degrees);
+        return vector((float) Math.cos(radians), (float) Math.sin(radians));
     }
 }
