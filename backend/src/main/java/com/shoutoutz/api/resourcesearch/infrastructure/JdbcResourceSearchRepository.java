@@ -1,6 +1,7 @@
 package com.shoutoutz.api.resourcesearch.infrastructure;
 
 import com.shoutoutz.api.resourcesearch.application.ResourceSearchRepository;
+import com.shoutoutz.api.resourcesearch.application.dto.LexicalChunk;
 import com.shoutoutz.api.resourcesearch.application.dto.MatchedChunk;
 import com.shoutoutz.api.resourcesearch.application.dto.ResourceSearchCandidate;
 import com.shoutoutz.api.resourcesearch.domain.ResourceTrack;
@@ -82,6 +83,33 @@ public class JdbcResourceSearchRepository implements ResourceSearchRepository {
                                 resultSet.getString("chunk_text"),
                                 resultSet.getDouble("similarity_score")
                         )
+                )
+        );
+    }
+
+    /**
+     * 렉시컬 색인에 넣을 조각을 읽는다. 벡터 검색과 같은 자료가 검색되도록 삭제, 모델, 제보 조건을 똑같이 건다.
+     * 본문이 공백뿐인 조각은 찾을 단어가 없어 뺀다.
+     */
+    @Override
+    public List<LexicalChunk> findLexicalChunks(String modelId) {
+        String sql = """
+                SELECT c.id AS chunk_id, c.chunk_text, c.track
+                FROM resource_chunks c
+                JOIN resource_documents d ON d.id = c.document_id
+                WHERE c.deleted_at IS NULL
+                  AND d.deleted_at IS NULL
+                  AND c.embedding_model = :modelId
+                  AND btrim(c.chunk_text) <> ''
+                """ + NOT_REMOVED_BY_REPORT + " ORDER BY c.id";
+
+        return jdbcTemplate.query(
+                sql,
+                new MapSqlParameterSource("modelId", modelId),
+                (resultSet, rowNumber) -> new LexicalChunk(
+                        resultSet.getLong("chunk_id"),
+                        resultSet.getString("chunk_text"),
+                        ResourceTrack.from(resultSet.getString("track"))
                 )
         );
     }
