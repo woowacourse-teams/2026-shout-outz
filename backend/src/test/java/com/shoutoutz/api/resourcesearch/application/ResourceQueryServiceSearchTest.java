@@ -118,9 +118,9 @@ class ResourceQueryServiceSearchTest {
     void returnsResourcesOfNamedProjects() {
         given(projectNameFinder.findNamed("Rilog")).willReturn(List.of(
                 new MatchedProject(7L, "Rilog.", "rilog"), new MatchedProject(9L, "리로그", "rilog-2025")));
-        given(resourceCardQueryRepository.findLatestByProjects(List.of(7L, 9L), ResourceSection.BLOG, ResourceTrack.BE))
+        given(resourceCardQueryRepository.findLatestByProjects(List.of(7L, 9L), ResourceSection.BLOG, ResourceTrack.BE, null, ResourceSection.BLOG.limit()))
                 .willReturn(List.of(card(3, "blog-post"), card(2, "blog-post")));
-        given(resourceCardQueryRepository.findLatestByProjects(List.of(7L, 9L), ResourceSection.DOCUMENT, ResourceTrack.BE))
+        given(resourceCardQueryRepository.findLatestByProjects(List.of(7L, 9L), ResourceSection.DOCUMENT, ResourceTrack.BE, null, ResourceSection.DOCUMENT.limit()))
                 .willReturn(List.of(card(1, "github-pr")));
 
         ResourceSearchResponse response = resourceQueryService.search(new ResourceSearchRequest("Rilog", ResourceTrack.BE), VISITOR);
@@ -138,9 +138,9 @@ class ResourceQueryServiceSearchTest {
     void appendsRelevantResourcesWhenNameIsAlsoTechTopic() {
         given(projectNameFinder.findNamed("동시성")).willReturn(List.of(new MatchedProject(7L, "동시성", "concurrency")));
         given(techTopicNames.contains("동시성")).willReturn(true);
-        given(resourceCardQueryRepository.findLatestByProjects(List.of(7L), ResourceSection.BLOG, null))
+        given(resourceCardQueryRepository.findLatestByProjects(List.of(7L), ResourceSection.BLOG, null, null, ResourceSection.BLOG.limit()))
                 .willReturn(List.of(card(3, "blog-post")));
-        given(resourceCardQueryRepository.findLatestByProjects(List.of(7L), ResourceSection.DOCUMENT, null))
+        given(resourceCardQueryRepository.findLatestByProjects(List.of(7L), ResourceSection.DOCUMENT, null, null, ResourceSection.DOCUMENT.limit()))
                 .willReturn(List.of());
         given(sectionedResourceSearchService.search("동시성", null)).willReturn(SectionedSearchHits.from(List.of(
                 hit(10, "blog-post"), hitOfProject(11, "blog-post", 7L), hit(12, "github-pr"), hit(13, "youtube-tekotalk"))));

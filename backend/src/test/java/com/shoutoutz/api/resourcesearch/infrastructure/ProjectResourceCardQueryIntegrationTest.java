@@ -3,11 +3,13 @@ package com.shoutoutz.api.resourcesearch.infrastructure;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.shoutoutz.api.resourcesearch.application.ResourceCardQueryRepository;
+import com.shoutoutz.api.resourcesearch.application.dto.ProjectResourceCursor;
 import com.shoutoutz.api.resourcesearch.application.dto.ResourceCard;
 import com.shoutoutz.api.resourcesearch.domain.ResourceSection;
 import com.shoutoutz.api.resourcesearch.domain.ResourceTrack;
 import com.shoutoutz.api.resourcesearch.support.ResourceDocumentFixture;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -52,7 +54,7 @@ class ProjectResourceCardQueryIntegrationTest {
         fixture.document("blog-post").title("팀 없는 로깅 글").save();
 
         List<ResourceCard> cards = resourceCardQueryRepository.findLatestByProjects(
-                List.of(rilog), ResourceSection.BLOG, null);
+                List.of(rilog), ResourceSection.BLOG, null, null, ResourceSection.BLOG.limit());
 
         assertThat(cards).extracting(ResourceCard::resourceId).containsExactly(latest, old, undated);
         assertThat(cards).extracting(card -> card.team().projectSlug()).containsOnly("rilog");
@@ -66,7 +68,7 @@ class ProjectResourceCardQueryIntegrationTest {
         long second = fixture.document("github-teamdoc").projectId(another).publishedAt(BASE_TIME.minusSeconds(60)).save();
 
         List<ResourceCard> cards = resourceCardQueryRepository.findLatestByProjects(
-                List.of(rilog, another), ResourceSection.DOCUMENT, null);
+                List.of(rilog, another), ResourceSection.DOCUMENT, null, null, ResourceSection.DOCUMENT.limit());
 
         assertThat(cards).extracting(ResourceCard::resourceId).containsExactly(first, second);
     }
@@ -79,7 +81,7 @@ class ProjectResourceCardQueryIntegrationTest {
         }
 
         List<ResourceCard> cards = resourceCardQueryRepository.findLatestByProjects(
-                List.of(rilog), ResourceSection.BLOG, null);
+                List.of(rilog), ResourceSection.BLOG, null, null, ResourceSection.BLOG.limit());
 
         assertThat(cards).hasSize(ResourceSection.BLOG.limit());
     }
@@ -95,7 +97,7 @@ class ProjectResourceCardQueryIntegrationTest {
         fixture.removalReport(removed, "ACCEPTED");
 
         List<ResourceCard> cards = resourceCardQueryRepository.findLatestByProjects(
-                List.of(rilog), ResourceSection.BLOG, null);
+                List.of(rilog), ResourceSection.BLOG, null, null, ResourceSection.BLOG.limit());
 
         assertThat(cards).extracting(ResourceCard::resourceId).containsExactlyInAnyOrder(alive, reportedOnly);
     }
@@ -109,7 +111,7 @@ class ProjectResourceCardQueryIntegrationTest {
         fixture.document("blog-post").projectId(deleted).save();
 
         List<ResourceCard> cards = resourceCardQueryRepository.findLatestByProjects(
-                List.of(pending, deleted), ResourceSection.BLOG, null);
+                List.of(pending, deleted), ResourceSection.BLOG, null, null, ResourceSection.BLOG.limit());
 
         assertThat(cards).isEmpty();
     }
@@ -123,10 +125,65 @@ class ProjectResourceCardQueryIntegrationTest {
         fixture.document("github-pr").projectId(rilog).track("FE").save();
 
         List<ResourceCard> cards = resourceCardQueryRepository.findLatestByProjects(
-                List.of(rilog), ResourceSection.DOCUMENT, ResourceTrack.BE);
+                List.of(rilog), ResourceSection.DOCUMENT, ResourceTrack.BE, null, ResourceSection.DOCUMENT.limit());
 
         assertThat(cards).extracting(ResourceCard::resourceId)
                 .containsExactlyInAnyOrder(backend, common, unclassified);
+    }
+
+    @Test
+    @DisplayName("요청한 개수만큼만 준다")
+    void limitsToRequestedSize() {
+        fixture.document("blog-post").projectId(rilog).publishedAt(BASE_TIME).save();
+        long latest = fixture.document("blog-post").projectId(rilog).publishedAt(BASE_TIME.plusSeconds(60)).save();
+
+        List<ResourceCard> cards = resourceCardQueryRepository.findLatestByProjects(
+                List.of(rilog), ResourceSection.BLOG, null, null, 1);
+
+        assertThat(cards).extracting(ResourceCard::resourceId).containsExactly(latest);
+    }
+
+    @Test
+    @DisplayName("커서를 주면 그 자료 다음부터 이어서 주고, 발행 시각이 같은 자료와 없는 자료도 빠뜨리거나 겹치지 않는다")
+    void continuesAfterCursor() {
+        long undatedLow = fixture.document("github-pr").projectId(rilog).publishedAt(null).save();
+        long undatedHigh = fixture.document("github-pr").projectId(rilog).publishedAt(null).save();
+        long old = fixture.document("github-pr").projectId(rilog).publishedAt(BASE_TIME.minusSeconds(60)).save();
+        long sameTimeLow = fixture.document("github-pr").projectId(rilog).publishedAt(BASE_TIME).save();
+        long sameTimeHigh = fixture.document("github-teamdoc").projectId(rilog).publishedAt(BASE_TIME).save();
+        List<Long> expectedOrder = List.of(sameTimeHigh, sameTimeLow, old, undatedHigh, undatedLow);
+
+        List<Long> readByOne = new ArrayList<>();
+        ProjectResourceCursor cursor = null;
+        for (int page = 0; page < expectedOrder.size(); page++) {
+            ResourceCard card = resourceCardQueryRepository.findLatestByProjects(
+                    List.of(rilog), ResourceSection.DOCUMENT, null, cursor, 1).getFirst();
+            readByOne.add(card.resourceId());
+            cursor = ProjectResourceCursor.after(card);
+        }
+
+        assertThat(readByOne).isEqualTo(expectedOrder);
+        assertThat(resourceCardQueryRepository.findLatestByProjects(
+                List.of(rilog), ResourceSection.DOCUMENT, null, cursor, 1)).isEmpty();
+    }
+
+    @Test
+    @DisplayName("조회와 같은 조건으로 프로젝트의 섹션 자료 수를 센다")
+    void countsSectionResourcesOfProjects() {
+        long other = fixture.approvedProject("harustudy", "하루스터디");
+        fixture.document("github-pr").projectId(rilog).track("BE").save();
+        fixture.document("github-teamdoc").projectId(rilog).save();
+        fixture.document("github-pr").projectId(rilog).track("FE").save();
+        fixture.document("github-pr").projectId(rilog).deleted().save();
+        fixture.document("blog-post").projectId(rilog).save();
+        fixture.document("github-pr").projectId(other).save();
+        fixture.removalReport(fixture.document("github-pr").projectId(rilog).save(), "ACCEPTED");
+
+        assertThat(resourceCardQueryRepository.countByProjects(List.of(rilog), ResourceSection.DOCUMENT, null))
+                .isEqualTo(3);
+        assertThat(resourceCardQueryRepository.countByProjects(List.of(rilog), ResourceSection.DOCUMENT, ResourceTrack.BE))
+                .isEqualTo(2);
+        assertThat(resourceCardQueryRepository.countByProjects(List.of(), ResourceSection.DOCUMENT, null)).isZero();
     }
 
     @Test
@@ -134,6 +191,7 @@ class ProjectResourceCardQueryIntegrationTest {
     void returnsEmptyWithoutProjects() {
         fixture.document("blog-post").projectId(rilog).save();
 
-        assertThat(resourceCardQueryRepository.findLatestByProjects(List.of(), ResourceSection.BLOG, null)).isEmpty();
+        assertThat(resourceCardQueryRepository.findLatestByProjects(
+                List.of(), ResourceSection.BLOG, null, null, ResourceSection.BLOG.limit())).isEmpty();
     }
 }

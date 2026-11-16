@@ -102,11 +102,13 @@ public class ResourceQueryService {
         SectionedSearchHits otherHits = hitsOfOthers(request, projectIds);
         Map<Long, ResourceCard> otherCards = cardsOf(otherHits);
         List<ResourceCard> blogs = concat(
-                resourceCardQueryRepository.findLatestByProjects(projectIds, ResourceSection.BLOG, request.track()),
+                resourceCardQueryRepository.findLatestByProjects(
+                        projectIds, ResourceSection.BLOG, request.track(), null, ResourceSection.BLOG.limit()),
                 relevantCards(otherHits, ResourceSection.BLOG, otherCards)
         );
         List<ResourceCard> documents = concat(
-                resourceCardQueryRepository.findLatestByProjects(projectIds, ResourceSection.DOCUMENT, request.track()),
+                resourceCardQueryRepository.findLatestByProjects(
+                        projectIds, ResourceSection.DOCUMENT, request.track(), null, ResourceSection.DOCUMENT.limit()),
                 relevantCards(otherHits, ResourceSection.DOCUMENT, otherCards)
         );
         List<ResourceCard> talks = relevantCards(otherHits, ResourceSection.TALK, otherCards);
