@@ -208,6 +208,30 @@ class ResourceQueryServiceSearchTest {
     }
 
     @Test
+    @DisplayName("연관도 순위의 첫 화면이 모두 그 프로젝트 자료여도, 그 뒤 순위에 있는 다른 자료를 찾아 잇는다")
+    void appendsOthersRankedBehindProjectResources() {
+        int limit = ResourceSection.BLOG.limit();
+        given(projectNameFinder.findNamed("동시성")).willReturn(List.of(new MatchedProject(7L, "동시성", "concurrency")));
+        given(techTopicNames.contains("동시성")).willReturn(true);
+        given(resourceCardQueryRepository.findLatestByProjects(List.of(7L), ResourceSection.BLOG, null, null, limit + 1))
+                .willReturn(List.of(card(1, "blog-post")));
+        given(resourceCardQueryRepository.findLatestByProjects(
+                List.of(7L), ResourceSection.DOCUMENT, null, null, ResourceSection.DOCUMENT.limit() + 1))
+                .willReturn(List.of());
+        List<SearchHit> rankedHits = Stream.concat(
+                LongStream.rangeClosed(1, limit).mapToObj(id -> hitOfProject(id, "blog-post", 7L)),
+                LongStream.rangeClosed(limit + 1, limit + 5).mapToObj(id -> hit(id, "blog-post"))).toList();
+        given(sectionedResourceSearchService.search("동시성", null)).willReturn(SectionedSearchHits.from(rankedHits));
+        List<Long> otherIds = LongStream.rangeClosed(limit + 1, limit + 5).boxed().toList();
+        given(resourceCardQueryRepository.findByIds(otherIds))
+                .willReturn(otherIds.stream().map(id -> card(id, "blog-post")).toList());
+
+        ResourceSearchResponse response = resourceQueryService.search(new ResourceSearchRequest("동시성", null), VISITOR);
+
+        assertThat(ids(response.blogs().items())).containsExactly(1L, 21L, 22L, 23L, 24L, 25L);
+    }
+
+    @Test
     @DisplayName("프로젝트 자료 뒤에 연관도 검색 결과를 이으면 다음 커서를 주지 않는다")
     void givesNoCursorWhenRelevantResourcesFollow() {
         int limit = ResourceSection.BLOG.limit();

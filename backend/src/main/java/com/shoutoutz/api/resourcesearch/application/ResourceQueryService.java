@@ -181,10 +181,14 @@ public class ResourceQueryService {
         );
     }
 
+    /**
+     * 첫 화면만 보고 그 프로젝트의 자료를 빼면, 상위가 모두 그 프로젝트 자료일 때 뒤 순위의 다른 자료를 놓친다.
+     * 그래서 보관한 순위 전체에서 뺀 뒤 다시 섹션으로 나눈다.
+     */
     private SectionedSearchHits hitsOfOthers(ResourceSearchRequest request, List<Long> projectIds) {
         SectionedSearchHits hits = sectionedResourceSearchService.search(request.keyword(), request.track());
         return SectionedSearchHits.from(Arrays.stream(ResourceSection.values())
-                .flatMap(section -> hits.hits(section).stream())
+                .flatMap(section -> Stream.concat(hits.hits(section).stream(), hits.rest(section).stream()))
                 .filter(hit -> !projectIds.contains(hit.projectId()))
                 .toList());
     }
