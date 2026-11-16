@@ -2,6 +2,7 @@ package com.shoutoutz.api.resourcesearch.application;
 
 import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
 import com.shoutoutz.api.resourcesearch.application.dto.MatchedProject;
+import com.shoutoutz.api.resourcesearch.application.dto.ProjectResourceCursor;
 import com.shoutoutz.api.resourcesearch.application.dto.ProjectResourceSlice;
 import com.shoutoutz.api.resourcesearch.application.dto.ResourceCard;
 import com.shoutoutz.api.resourcesearch.application.dto.ResourceCardImages;
@@ -12,11 +13,13 @@ import com.shoutoutz.api.resourcesearch.domain.ResourceSection;
 import com.shoutoutz.api.resourcesearch.domain.ResourceTrack;
 import com.shoutoutz.api.resourcesearch.domain.SearchKeyword;
 import com.shoutoutz.api.resourcesearch.presentation.dto.request.ResourceRecentRequest;
+import com.shoutoutz.api.resourcesearch.presentation.dto.request.ResourceSearchMoreRequest;
 import com.shoutoutz.api.resourcesearch.presentation.dto.request.ResourceSearchRequest;
 import com.shoutoutz.api.resourcesearch.presentation.dto.response.MatchedProjectResponse;
 import com.shoutoutz.api.resourcesearch.presentation.dto.response.PopularKeywordResponse;
 import com.shoutoutz.api.resourcesearch.presentation.dto.response.ResourceCardResponse;
 import com.shoutoutz.api.resourcesearch.presentation.dto.response.ResourceDetailResponse;
+import com.shoutoutz.api.resourcesearch.presentation.dto.response.ResourceSearchMoreResponse;
 import com.shoutoutz.api.resourcesearch.presentation.dto.response.ResourceSearchResponse;
 import com.shoutoutz.api.resourcesearch.presentation.dto.response.ResourceSectionResponse;
 import com.shoutoutz.api.visitor.domain.VisitorKey;
@@ -69,6 +72,34 @@ public class ResourceQueryService {
                 sectionOf(relevantCards(hits, ResourceSection.DOCUMENT, cards), images),
                 sectionOf(relevantCards(hits, ResourceSection.TALK, cards), images),
                 List.of()
+        );
+    }
+
+    /**
+     * 프로젝트 이름 검색에서 섹션 상한을 넘은 그 프로젝트의 자료를 이어서 준다.
+     * 스크롤로 이어 읽는 요청이라 검색어를 다시 기록하지 않는다.
+     */
+    public ResourceSearchMoreResponse searchMore(ResourceSearchMoreRequest request) {
+        ProjectResourceCursor cursor = projectResourceCursorCodec.decode(request.cursor());
+        List<Long> projectIds = projectNameFinder.findNamed(request.keyword()).stream()
+                .map(MatchedProject::projectId)
+                .toList();
+        if (projectIds.isEmpty()) {
+            return new ResourceSearchMoreResponse(List.of(), null, 0);
+        }
+        ResourceSection section = request.section();
+        ProjectResourceSlice slice = ProjectResourceSlice.of(
+                resourceCardQueryRepository.findLatestByProjects(
+                        projectIds, section, request.track(), cursor, section.limit() + 1),
+                section.limit()
+        );
+        ResourceCardImages images = resourceCardImageResolver.resolve(slice.cards());
+        return new ResourceSearchMoreResponse(
+                slice.cards().stream()
+                        .map(card -> ResourceCardResponse.from(card, images))
+                        .toList(),
+                projectResourceCursorCodec.encode(slice.nextCursor()),
+                resourceCardQueryRepository.countByProjects(projectIds, section, request.track())
         );
     }
 
