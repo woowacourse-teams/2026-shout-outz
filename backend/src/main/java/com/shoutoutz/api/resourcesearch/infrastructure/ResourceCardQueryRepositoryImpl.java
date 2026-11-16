@@ -3,6 +3,7 @@ package com.shoutoutz.api.resourcesearch.infrastructure;
 import com.shoutoutz.api.resourcesearch.application.ResourceCardQueryRepository;
 import com.shoutoutz.api.resourcesearch.application.dto.ResourceCard;
 import com.shoutoutz.api.resourcesearch.domain.ResourceSection;
+import com.shoutoutz.api.resourcesearch.domain.ResourceTrack;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
@@ -88,6 +89,34 @@ public class ResourceCardQueryRepositoryImpl implements ResourceCardQueryReposit
                         .addValue("size", size),
                 (resultSet, rowNumber) -> mapCard(resultSet)
         );
+    }
+
+    @Override
+    public List<ResourceCard> findLatestByProjects(List<Long> projectIds, ResourceSection section, ResourceTrack track) {
+        if (projectIds.isEmpty()) {
+            return List.of();
+        }
+        String sql = """
+                SELECT %s
+                FROM resource_documents d
+                %s
+                WHERE d.project_id IN (:projectIds)
+                  AND p.id IS NOT NULL
+                  AND d.source IN (:sources)
+                  AND d.deleted_at IS NULL
+                  %s
+                """.formatted(CARD_COLUMNS, VISIBLE_PROJECT_JOIN, JdbcResourceSearchRepository.NOT_REMOVED_BY_REPORT);
+        MapSqlParameterSource parameters = new MapSqlParameterSource()
+                .addValue("projectIds", projectIds)
+                .addValue("sources", section.sources())
+                .addValue("limit", section.limit());
+        if (track != null && track != ResourceTrack.ALL) {
+            sql += " AND (d.track = :track OR d.track = :commonTrack OR d.track IS NULL)";
+            parameters.addValue("track", track.name())
+                    .addValue("commonTrack", ResourceTrack.ALL.name());
+        }
+        sql += " ORDER BY d.published_at DESC NULLS LAST, d.id DESC LIMIT :limit";
+        return jdbcTemplate.query(sql, parameters, (resultSet, rowNumber) -> mapCard(resultSet));
     }
 
     private String onePerAuthorKey(ResourceSection kind) {
