@@ -291,7 +291,7 @@ public class ProjectListJdbcRepository implements UserProjectQueryRepository {
     public List<PublicProjectName> findPublicProjectNames() {
         return jdbcTemplate.query(
                 """
-                        SELECT id, title, github_repository_url
+                        SELECT id, title, slug, github_repository_url
                         FROM projects
                         WHERE approval_status = 'APPROVED'
                           AND deleted_at IS NULL
@@ -299,6 +299,7 @@ public class ProjectListJdbcRepository implements UserProjectQueryRepository {
                 (resultSet, rowNumber) -> new PublicProjectName(
                         resultSet.getLong("id"),
                         resultSet.getString("title"),
+                        resultSet.getString("slug"),
                         resultSet.getString("github_repository_url")
                 )
         );
