@@ -10,8 +10,8 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.shoutoutz.api.common.embedding.EmbeddingClient;
+import com.shoutoutz.api.resourcesearch.application.dto.HybridRanking;
 import com.shoutoutz.api.resourcesearch.application.dto.MatchedChunk;
-import com.shoutoutz.api.resourcesearch.application.dto.ResourceSearchCandidate;
 import com.shoutoutz.api.resourcesearch.application.dto.SearchHit;
 import com.shoutoutz.api.resourcesearch.application.dto.SectionedSearchHits;
 import com.shoutoutz.api.resourcesearch.domain.ResourceSection;
@@ -39,13 +39,13 @@ class SectionedResourceSearchServiceTest {
     private EmbeddingClient embeddingClient;
 
     @Mock
-    private ResourceSearchRepository resourceSearchRepository;
+    private HybridResourceRanker hybridResourceRanker;
 
     @InjectMocks
     private SectionedResourceSearchService service;
 
     private float[] vector;
-    private List<ResourceSearchCandidate> pool;
+    private List<SearchHit> pool;
     private long nextId;
 
     @BeforeEach
@@ -57,13 +57,13 @@ class SectionedResourceSearchServiceTest {
     }
 
     @Test
-    @DisplayName("검색 결과를 원천에 따라 블로그, 문서, 테코톡 섹션으로 나누고 연관도 순서를 지킨다")
-    void splitsHitsIntoSectionsInScoreOrder() {
+    @DisplayName("검색 결과를 원천에 따라 블로그, 문서, 테코톡 섹션으로 나누고 결합 순위를 지킨다")
+    void splitsHitsIntoSectionsInRankOrder() {
         long blog = add("blog-post", 0.95);
         long pr = add("github-pr", 0.9);
         long talk = add("youtube-tekotalk", 0.85);
         long wiki = add("github-wiki", 0.8);
-        givenRepositoryReturnsTopOfPool();
+        givenRankerReturnsTopOfPool();
 
         SectionedSearchHits result = service.search(QUERY, null);
 
@@ -73,12 +73,24 @@ class SectionedResourceSearchServiceTest {
     }
 
     @Test
+    @DisplayName("유사도가 낮아도 결합 순위가 앞선 자료를 먼저 둔다")
+    void keepsFusedOrderEvenWhenSimilarityIsLower() {
+        long foundByBoth = add("blog-post", 0.6);
+        long foundBySemanticOnly = add("blog-post", 0.9);
+        givenRankerReturnsTopOfPool();
+
+        SectionedSearchHits result = service.search(QUERY, null);
+
+        assertThat(ids(result, ResourceSection.BLOG)).containsExactly(foundByBoth, foundBySemanticOnly);
+    }
+
+    @Test
     @DisplayName("섹션마다 상한까지만 담는다")
     void capsEachSection() {
         addMany("blog-post", 25, 0.9);
         addMany("github-pr", 25, 0.8);
         addMany("youtube-tekotalk", 10, 0.7);
-        givenRepositoryReturnsTopOfPool();
+        givenRankerReturnsTopOfPool();
 
         SectionedSearchHits result = service.search(QUERY, null);
 
@@ -92,14 +104,14 @@ class SectionedResourceSearchServiceTest {
     void expandsCandidatesUntilBlogSectionIsFull() {
         addMany("github-pr", 100, 0.9);
         addMany("blog-post", 20, 0.5);
-        givenRepositoryReturnsTopOfPool();
+        givenRankerReturnsTopOfPool();
 
         SectionedSearchHits result = service.search(QUERY, null);
 
         assertThat(result.hits(ResourceSection.BLOG)).hasSize(20);
         verify(embeddingClient, times(1)).embed(QUERY);
-        verify(resourceSearchRepository).findNearest(vector, MODEL, null, 60);
-        verify(resourceSearchRepository).findNearest(vector, MODEL, null, 120);
+        verify(hybridResourceRanker).rank(QUERY, vector, MODEL, null, 60);
+        verify(hybridResourceRanker).rank(QUERY, vector, MODEL, null, 120);
     }
 
     @Test
@@ -107,24 +119,24 @@ class SectionedResourceSearchServiceTest {
     void stopsWhenCandidatesAreExhausted() {
         addMany("blog-post", 3, 0.9);
         addMany("github-pr", 10, 0.8);
-        givenRepositoryReturnsTopOfPool();
+        givenRankerReturnsTopOfPool();
 
         SectionedSearchHits result = service.search(QUERY, null);
 
         assertThat(result.hits(ResourceSection.BLOG)).hasSize(3);
-        verify(resourceSearchRepository, times(1)).findNearest(eq(vector), eq(MODEL), eq(null), anyInt());
+        verify(hybridResourceRanker, times(1)).rank(eq(QUERY), eq(vector), eq(MODEL), eq(null), anyInt());
     }
 
     @Test
     @DisplayName("후보 확대는 400개에서 멈춘다")
     void stopsExpandingAtMaximumCandidates() {
         addMany("github-pr", 500, 0.9);
-        givenRepositoryReturnsTopOfPool();
+        givenRankerReturnsTopOfPool();
 
         service.search(QUERY, null);
 
-        verify(resourceSearchRepository).findNearest(vector, MODEL, null, 400);
-        verify(resourceSearchRepository, times(4)).findNearest(eq(vector), eq(MODEL), eq(null), anyInt());
+        verify(hybridResourceRanker).rank(QUERY, vector, MODEL, null, 400);
+        verify(hybridResourceRanker, times(4)).rank(eq(QUERY), eq(vector), eq(MODEL), eq(null), anyInt());
     }
 
     @Test
@@ -132,7 +144,7 @@ class SectionedResourceSearchServiceTest {
     void excludesUnknownSources() {
         add("unknown-source", 0.99);
         long blog = add("blog-post", 0.9);
-        givenRepositoryReturnsTopOfPool();
+        givenRankerReturnsTopOfPool();
 
         SectionedSearchHits result = service.search(QUERY, null);
 
@@ -144,7 +156,7 @@ class SectionedResourceSearchServiceTest {
     @Test
     @DisplayName("검색 결과가 없으면 모든 섹션이 빈 목록이다")
     void returnsEmptySectionsWhenNothingMatches() {
-        givenRepositoryReturnsTopOfPool();
+        givenRankerReturnsTopOfPool();
 
         SectionedSearchHits result = service.search(QUERY, null);
 
@@ -157,11 +169,12 @@ class SectionedResourceSearchServiceTest {
     @DisplayName("직군을 그대로 조회에 전달한다")
     void passesTrackToRepository() {
         givenEmbedding();
-        when(resourceSearchRepository.findNearest(vector, MODEL, ResourceTrack.BE, 60)).thenReturn(List.of());
+        when(hybridResourceRanker.rank(QUERY, vector, MODEL, ResourceTrack.BE, 60))
+                .thenReturn(new HybridRanking(List.of(), true));
 
         service.search(QUERY, ResourceTrack.BE);
 
-        verify(resourceSearchRepository).findNearest(vector, MODEL, ResourceTrack.BE, 60);
+        verify(hybridResourceRanker).rank(QUERY, vector, MODEL, ResourceTrack.BE, 60);
     }
 
     @ParameterizedTest
@@ -172,14 +185,14 @@ class SectionedResourceSearchServiceTest {
         assertThatThrownBy(() -> service.search(query, null))
                 .isInstanceOf(IllegalArgumentException.class);
 
-        verifyNoInteractions(embeddingClient, resourceSearchRepository);
+        verifyNoInteractions(embeddingClient, hybridResourceRanker);
     }
 
     @Test
     @DisplayName("섹션별 결과 목록은 밖에서 바꿀 수 없다")
     void exposesUnmodifiableSectionHits() {
         add("blog-post", 0.9);
-        givenRepositoryReturnsTopOfPool();
+        givenRankerReturnsTopOfPool();
 
         SectionedSearchHits result = service.search(QUERY, null);
 
@@ -192,21 +205,20 @@ class SectionedResourceSearchServiceTest {
         when(embeddingClient.modelId()).thenReturn(MODEL);
     }
 
-    private void givenRepositoryReturnsTopOfPool() {
+    private void givenRankerReturnsTopOfPool() {
         givenEmbedding();
-        when(resourceSearchRepository.findNearest(eq(vector), eq(MODEL), eq(null), anyInt()))
+        when(hybridResourceRanker.rank(eq(QUERY), eq(vector), eq(MODEL), eq(null), anyInt()))
                 .thenAnswer(invocation -> {
-                    int limit = invocation.getArgument(3);
-                    return List.copyOf(pool.subList(0, Math.min(limit, pool.size())));
+                    int limit = invocation.getArgument(4);
+                    return new HybridRanking(pool.subList(0, Math.min(limit, pool.size())), pool.size() < limit);
                 });
     }
 
     private long add(String source, double score) {
         long id = nextId++;
-        pool.add(new ResourceSearchCandidate(
+        pool.add(new SearchHit(
                 id, "key-" + id, null, null, "제목 " + id, "소개", source, ResourceTrack.BE,
-                "https://example.com/" + id, new MatchedChunk(id * 10, "intro", "조각", score)));
-        pool.sort((left, right) -> Double.compare(right.chunk().similarityScore(), left.chunk().similarityScore()));
+                "https://example.com/" + id, score, List.of(new MatchedChunk(id * 10, "intro", "조각", score))));
         return id;
     }
 
