@@ -13,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 @Repository
 @RequiredArgsConstructor
@@ -34,9 +35,37 @@ public class JdbcResourceSearchRepository implements ResourceSearchRepository {
 
     private static final int VECTOR_DIMENSIONS = 1024;
 
+    /**
+     * 벡터 조회가 HNSW 인덱스(resource_chunks_embedding_idx)를 쓰게 하는 설정이다. 트랜잭션 안에서만 적용된다.
+     * <ul>
+     *     <li>ef_search 400: 평가 검색어 8개에서 후보 20개와 60개가 전체 비교와 같아진 값이다. 기본값 40은 약 91~94%만 같았다.</li>
+     *     <li>iterative_scan: 트랙, 삭제, 제보 조건에 걸러진 만큼 인덱스를 더 읽어 후보 수를 채운다.
+     *     relaxed_order 는 strict_order 보다 놓치는 조각이 적고, 어긋난 순서는 바깥 쿼리에서 다시 정렬한다.</li>
+     *     <li>enable_sort off: 끄지 않으면 플래너가 조각 전체를 읽고 정렬하는 계획을 고른다.</li>
+     * </ul>
+     */
+    private static final String USE_VECTOR_INDEX = """
+            SET LOCAL hnsw.ef_search = 400;
+            SET LOCAL hnsw.iterative_scan = relaxed_order;
+            SET LOCAL enable_sort = off
+            """;
+
+    /**
+     * 호출한 쪽의 트랜잭션에 참여했을 때 뒤따르는 쿼리의 실행 계획이 바뀌지 않도록 되돌린다.
+     */
+    private static final String RESTORE_SETTINGS = """
+            SET LOCAL hnsw.ef_search TO DEFAULT;
+            SET LOCAL hnsw.iterative_scan TO DEFAULT;
+            SET LOCAL enable_sort TO DEFAULT
+            """;
+
     private final NamedParameterJdbcTemplate jdbcTemplate;
 
+    /**
+     * HNSW 인덱스는 거리 연산자의 오름차순 정렬에만 쓰인다. 유사도(1 - 거리)의 내림차순으로 정렬하면 조각 전체를 읽는다.
+     */
     @Override
+    @Transactional(readOnly = true)
     public List<ResourceSearchCandidate> findNearest(
             float[] queryVector,
             String modelId,
@@ -45,15 +74,16 @@ public class JdbcResourceSearchRepository implements ResourceSearchRepository {
     ) {
         validateVector(queryVector);
         String sql = """
-                SELECT d.id AS document_id, d.external_key, d.project_id, d.repo,
-                       d.title, d.summary, d.source, d.track, d.url,
-                       c.id AS chunk_id, c.chunk_kind, c.chunk_text,
-                       1 - (c.embedding <=> CAST(:queryVector AS vector)) AS similarity_score
-                FROM resource_chunks c
-                JOIN resource_documents d ON d.id = c.document_id
-                WHERE c.deleted_at IS NULL
-                  AND d.deleted_at IS NULL
-                  AND c.embedding_model = :modelId
+                WITH nearest AS MATERIALIZED (
+                    SELECT d.id AS document_id, d.external_key, d.project_id, d.repo,
+                           d.title, d.summary, d.source, d.track, d.url,
+                           c.id AS chunk_id, c.chunk_kind, c.chunk_text,
+                           c.embedding <=> CAST(:queryVector AS vector) AS distance
+                    FROM resource_chunks c
+                    JOIN resource_documents d ON d.id = c.document_id
+                    WHERE c.deleted_at IS NULL
+                      AND d.deleted_at IS NULL
+                      AND c.embedding_model = :modelId
                 """ + NOT_REMOVED_BY_REPORT;
         MapSqlParameterSource parameters = new MapSqlParameterSource()
                 .addValue("queryVector", Arrays.toString(queryVector))
@@ -64,9 +94,24 @@ public class JdbcResourceSearchRepository implements ResourceSearchRepository {
             parameters.addValue("track", track.name())
                     .addValue("commonTrack", ResourceTrack.ALL.name());
         }
-        sql += " ORDER BY similarity_score DESC, c.id LIMIT :candidateLimit";
+        sql += """
+                    ORDER BY distance
+                    LIMIT :candidateLimit
+                )
+                SELECT nearest.*, 1 - distance AS similarity_score
+                FROM nearest
+                ORDER BY distance, chunk_id
+                """;
 
-        return jdbcTemplate.query(sql, parameters, (resultSet, rowNumber) -> toCandidate(resultSet));
+        jdbcTemplate.getJdbcTemplate().execute(USE_VECTOR_INDEX);
+        List<ResourceSearchCandidate> candidates = jdbcTemplate.query(
+                sql,
+                parameters,
+                (resultSet, rowNumber) -> toCandidate(resultSet)
+        );
+        jdbcTemplate.getJdbcTemplate().execute(RESTORE_SETTINGS);
+
+        return candidates;
     }
 
     /**

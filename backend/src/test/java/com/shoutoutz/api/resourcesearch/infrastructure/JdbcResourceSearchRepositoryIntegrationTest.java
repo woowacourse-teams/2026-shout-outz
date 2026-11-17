@@ -12,6 +12,7 @@ import com.shoutoutz.api.resourcesearch.application.dto.ResourceSearchCandidate;
 import com.shoutoutz.api.resourcesearch.domain.ResourceTrack;
 import com.shoutoutz.api.resourcesearch.support.ResourceDocumentFixture;
 import com.shoutoutz.api.resourcesearch.support.ResourceSearchFixture;
+import java.util.Comparator;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -147,6 +148,50 @@ class JdbcResourceSearchRepositoryIntegrationTest {
 
         assertThat(resourceSearchRepository.findNearest(vector(2, 0), MODEL, null, 1)
                 .getFirst().chunk().similarityScore()).isCloseTo(1, within(0.000001));
+    }
+
+    @Test
+    void 가까운_조각을_HNSW_인덱스로_찾는다() {
+        fixture.intro(fixture.document(ResourceTrack.BE), vector(1, 0));
+
+        search(null, 10);
+
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT pg_stat_get_xact_numscans('resource_chunks_embedding_idx'::regclass)",
+                Long.class
+        )).isPositive();
+    }
+
+    /**
+     * 질문과 가까운 450개는 FE, 그 바깥 50개는 BE 다. 인덱스가 처음 읽는 후보(ef_search 개)가 모두 트랙 조건에 걸러져도
+     * 더 읽어서 BE 후보를 채워야 한다. 두 무리 사이가 끊기면 그래프에서 건너가지 못하므로 같은 간격으로 이어 둔다.
+     */
+    @Test
+    void 가까운_조각이_트랙_조건에_모두_걸러져도_후보를_채운다() {
+        for (int i = 0; i < 450; i++) {
+            fixture.intro(fixture.document(ResourceTrack.FE), direction(i * 0.1));
+        }
+        for (int i = 0; i < 50; i++) {
+            fixture.intro(fixture.document(ResourceTrack.BE), direction(45 + i * 0.1));
+        }
+
+        List<ResourceSearchCandidate> result = search(ResourceTrack.BE, 40);
+
+        assertThat(result).hasSize(40)
+                .allMatch(candidate -> candidate.track() == ResourceTrack.BE)
+                .extracting(candidate -> candidate.chunk().similarityScore())
+                .isSortedAccordingTo(Comparator.reverseOrder());
+    }
+
+    @Test
+    void 검색을_마치면_같은_트랜잭션의_탐색_설정을_되돌린다() {
+        fixture.intro(fixture.document(ResourceTrack.BE), vector(1, 0));
+
+        search(null, 10);
+
+        assertThat(setting("hnsw.ef_search")).isEqualTo("40");
+        assertThat(setting("hnsw.iterative_scan")).isEqualTo("off");
+        assertThat(setting("enable_sort")).isEqualTo("on");
     }
 
     @Test
@@ -300,5 +345,14 @@ class JdbcResourceSearchRepositoryIntegrationTest {
 
     private List<ResourceSearchCandidate> search(ResourceTrack track, int limit) {
         return resourceSearchRepository.findNearest(vector(1, 0), MODEL, track, limit);
+    }
+
+    private String setting(String name) {
+        return jdbcTemplate.queryForObject("SELECT current_setting(?)", String.class, name);
+    }
+
+    private static float[] direction(double degrees) {
+        double radians = Math.toRadians(degrees);
+        return vector((float) Math.cos(radians), (float) Math.sin(radians));
     }
 }
