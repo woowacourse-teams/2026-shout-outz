@@ -13,7 +13,7 @@ import org.springframework.stereotype.Component;
 
 /**
  * 렉시컬 색인을 메모리에 들고 있다가 자료가 바뀌면 통째로 다시 만들어 바꿔 끼운다.
- * 자료는 데이터 파이프라인이 넣으므로 서버는 변경 시점을 모른다. 그래서 주기적으로 전체를 다시 읽는다.
+ * 자료는 데이터 파이프라인이 넣으므로 서버는 변경 시점을 모른다. 그래서 정해진 시각에 전체를 다시 읽는다.
  */
 @Slf4j
 @Component
@@ -31,15 +31,17 @@ public class ReloadingLexicalChunkSearch implements LexicalChunkSearch {
      */
     @PostConstruct
     public void load() {
+        long startedAt = System.nanoTime();
         index = build();
-        log.info("렉시컬 색인을 만들었습니다. chunks={}", index.size());
+        log.info("렉시컬 색인을 만들었습니다. chunks={}, elapsedMs={}", index.size(), elapsedMillis(startedAt));
     }
 
     public void reload() {
         try {
             // 교체 전 색인을 닫지 않는다. 진행 중인 검색이 읽고 있을 수 있고, 메모리 색인이라 참조가 사라지면 회수된다.
+            long startedAt = System.nanoTime();
             index = build();
-            log.info("렉시컬 색인을 다시 만들었습니다. chunks={}", index.size());
+            log.info("렉시컬 색인을 다시 만들었습니다. chunks={}, elapsedMs={}", index.size(), elapsedMillis(startedAt));
         } catch (RuntimeException exception) {
             log.error("렉시컬 색인을 다시 만들지 못했습니다. 기존 색인으로 계속 응답합니다.", exception);
         }
@@ -48,6 +50,10 @@ public class ReloadingLexicalChunkSearch implements LexicalChunkSearch {
     @Override
     public List<LexicalMatch> search(String query, ResourceTrack track, int limit) {
         return index.search(query, track, limit);
+    }
+
+    private static long elapsedMillis(long startedAt) {
+        return (System.nanoTime() - startedAt) / 1_000_000;
     }
 
     private LuceneChunkIndex build() {
