@@ -9,8 +9,7 @@ import { httpClient, type ApiSuccessBody } from '@/utils/client';
 
 // 서버의 사용자 채용공고 API(/api/v1/job-postings)와 같은 모양이다. 타입은 서버 명세에서 생성한 schema.ts를 쓴다.
 //
-// TODO(채용공고 후속 PR): 프로토타입 카드·상세에 있는 회사 로고(companyLogoUrl)와 해시태그(tags)는 서버 응답에 없어
-// 화면에서 뺐다. 서버가 필드를 주면 schema.ts를 다시 생성하고, 따로 PR을 올려 목록 카드와 상세 머리에 다시 넣는다.
+// TODO(채용공고 후속 PR): 프로토타입 카드에 있는 해시태그(tags)는 서버 응답에 없어 화면에서 뺐다.
 
 type GeneratedListItem = JobPostingFindAllSuccessResponse['data'][number];
 
@@ -23,11 +22,16 @@ export type JobRole = GeneratedListItem['jobRole'];
  */
 export interface JobPostingListItem extends Omit<GeneratedListItem, 'requirementNames'> {
   requirementNames: string[];
+  /** 회사 로고 주소. 서버(JobPostingFindAllResponse.Item)는 주지만 생성된 schema.ts에 아직 없어 여기서 더한다. */
+  companyLogoUrl?: string | null;
 }
 
 export type JobPostingListMeta = JobPostingFindAllSuccessResponse['meta'];
 
-export type JobPostingDetail = JobPostingDetailSuccessResponse['data'];
+/** 회사 로고 주소는 서버(JobPostingDetailResponse)는 주지만 생성된 schema.ts에 아직 없어 여기서 더한다. */
+export type JobPostingDetail = JobPostingDetailSuccessResponse['data'] & {
+  companyLogoUrl?: string | null;
+};
 
 export type JobRequirement = JobPostingDetail['requirements'][number];
 
@@ -46,12 +50,20 @@ export interface JobRequirementRecommendation extends Omit<GeneratedRecommendati
 
 const PAGE_SIZE = 20;
 
+/**
+ * 목록 정렬. 서버는 최신 등록순(LATEST)만 있다.
+ * MOCK-API: 마감 임박순(DEADLINE)은 서버에 아직 없어 임의로 정했다. 서버가 같은 이름으로 열기 전에는 이 값을 보내면 400이 난다.
+ */
+export type JobPostingSort = 'LATEST' | 'DEADLINE';
+
 export async function fetchJobPostings(
-  { keyword, cursor }: { keyword: string; cursor?: string | null },
+  { keyword, sort, cursor }: { keyword: string; sort: JobPostingSort; cursor?: string | null },
   signal?: AbortSignal,
 ) {
   const searchParams: Record<string, string | number> = { size: PAGE_SIZE };
   if (keyword) searchParams.keyword = keyword;
+  // 최신 등록순은 서버 기본값이라 보내지 않는다.
+  if (sort !== 'LATEST') searchParams.sort = sort;
   if (cursor) searchParams.cursor = cursor;
 
   const response = await httpClient<ApiSuccessBody<JobPostingListItem[], JobPostingListMeta>>(
@@ -84,10 +96,11 @@ export async function fetchRequirementRecommendations(
   return response.data;
 }
 
-export function jobPostingsQuery(keyword: string) {
+export function jobPostingsQuery(keyword: string, sort: JobPostingSort = 'LATEST') {
   return infiniteQueryOptions({
-    queryKey: ['job-postings', { keyword }],
-    queryFn: ({ pageParam, signal }) => fetchJobPostings({ keyword, cursor: pageParam }, signal),
+    queryKey: ['job-postings', { keyword, sort }],
+    queryFn: ({ pageParam, signal }) =>
+      fetchJobPostings({ keyword, sort, cursor: pageParam }, signal),
     initialPageParam: null as string | null,
     getNextPageParam: (lastPage) => (lastPage.meta?.hasNext ? lastPage.meta.nextCursor : null),
   });

@@ -473,9 +473,88 @@ describe('ExplorePage 채용공고 탭', () => {
     expect(within(cards).getAllByText('상시')).toHaveLength(2);
     expect(within(cards).getByText('D-3')).toBeVisible();
     expect(within(cards).getByText('D-day')).toBeVisible();
-    // 회사 로고와 해시태그는 서버 응답에 없어 아직 보여 주지 않는다.
-    expect(within(cards).queryByRole('img', { name: /로고$/ })).not.toBeInTheDocument();
     expect(screen.getByRole('searchbox', { name: '채용공고 검색' })).toBeVisible();
+    expect(screen.getByRole('heading', { level: 2, name: '채용공고 5' })).toBeVisible();
+    expect(screen.getByText('추천 키워드')).toBeVisible();
+  });
+
+  it('회사 로고가 있으면 카드에 로고 이미지를, 없으면 회색 자리를 둔다', async () => {
+    server.use(
+      http.get('/api/v1/job-postings', () =>
+        HttpResponse.json({
+          status: 'success',
+          data: [
+            {
+              jobPostingId: 1,
+              companyName: '토스뱅크',
+              companyLogoUrl: 'https://cdn.example.com/toss.png',
+              jobRole: 'BACKEND',
+              title: 'Server Developer',
+              requirementCount: 3,
+              requirementNames: [],
+            },
+            {
+              jobPostingId: 2,
+              companyName: '토스증권',
+              companyLogoUrl: null,
+              jobRole: 'FRONTEND',
+              title: 'Frontend Developer',
+              requirementCount: 2,
+              requirementNames: [],
+            },
+          ],
+          meta: { nextCursor: null, hasNext: false, totalCount: 2, jobRoleCounts: [], allCount: 2 },
+        }),
+      ),
+    );
+    renderRoute('/?tab=job');
+
+    const withLogo = await screen.findByRole('link', { name: /Server Developer/ });
+    // 바로 옆에 회사 이름이 있어 로고는 읽지 않는다.
+    expect(withLogo.querySelector('img')).toHaveAttribute(
+      'src',
+      'https://cdn.example.com/toss.png',
+    );
+    expect(withLogo.querySelector('img')).toHaveAttribute('alt', '');
+    const withoutLogo = screen.getByRole('link', { name: /Frontend Developer/ });
+    expect(withoutLogo.querySelector('img')).toBeNull();
+    expect(withoutLogo).toHaveAccessibleName(/^토스증권/);
+  });
+
+  it('검색하면 머리에 검색어와 결과 수를 보여 준다', async () => {
+    renderRoute('/?tab=job&q=토스');
+
+    expect(
+      await screen.findByRole('heading', { level: 2, name: '‘토스’ 검색 결과 2' }),
+    ).toBeVisible();
+  });
+
+  it('마감 임박순을 고르면 sort=DEADLINE으로 다시 불러와 마감이 가까운 공고부터 보여 준다', async () => {
+    const user = userEvent.setup();
+    const sorts: (string | null)[] = [];
+    server.events.on('request:start', ({ request }) => {
+      const url = new URL(request.url);
+      if (url.pathname === '/api/v1/job-postings') sorts.push(url.searchParams.get('sort'));
+    });
+    renderRoute('/?tab=job');
+
+    const sort = await screen.findByRole('group', { name: '정렬' });
+    expect(within(sort).getByRole('button', { name: '최신 등록순' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    await user.click(within(sort).getByRole('button', { name: '마감 임박순' }));
+
+    await waitFor(() =>
+      expect(within(sort).getByRole('button', { name: '마감 임박순' })).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      ),
+    );
+    const cards = await screen.findByRole('list', { name: '공고' });
+    await waitFor(() => expect(within(cards).getAllByRole('link')[0]).toHaveTextContent('D-day'));
+    expect(sorts).toEqual([null, 'DEADLINE']);
+    server.events.removeAllListeners();
   });
 
   it('추천 검색어로 공고를 찾으면 맞는 공고만 보여준다', async () => {

@@ -90,6 +90,7 @@ export type AnalyticsEvent =
   | { name: 'tech_talk_clicked'; resourceId: number }
   // 채용공고. position은 0부터 센다.
   | { name: 'job_posting_clicked'; jobPostingId: number; position: number }
+  | { name: 'job_sort_changed'; sort: string }
   | { name: 'job_posting_source_clicked'; jobPostingId: number }
   | {
       name: 'job_requirement_toggled';

@@ -143,6 +143,8 @@ const toListItem = (posting: MockJobPosting): JobPostingListItem => ({
   deadline: posting.deadlineInDays === null ? null : dateAfter(posting.deadlineInDays),
   requirementCount: posting.requirements.length,
   requirementNames: posting.requirements.map((requirement) => requirement.name),
+  // 로고가 없는 회사는 회색 자리를 보여 준다.
+  companyLogoUrl: null,
 });
 
 const toDetail = (posting: MockJobPosting): JobPostingDetail => ({
@@ -168,10 +170,15 @@ const matchesKeyword = (posting: MockJobPosting, keyword: string) => {
   ].some((text) => text.toLowerCase().includes(key));
 };
 
-export const getJobPostings = (keyword: string) => {
-  const postings = keyword
+// MOCK-API: 마감 임박순(sort=DEADLINE)은 서버에 아직 없다. 마감일이 가까운 순, 상시 공고는 뒤로 둔다.
+const byDeadline = (a: MockJobPosting, b: MockJobPosting) =>
+  (a.deadlineInDays ?? Infinity) - (b.deadlineInDays ?? Infinity);
+
+export const getJobPostings = (keyword: string, sort: string | null = null) => {
+  const filtered = keyword
     ? JOB_POSTINGS.filter((posting) => matchesKeyword(posting, keyword))
     : JOB_POSTINGS;
+  const postings = sort === 'DEADLINE' ? [...filtered].sort(byDeadline) : filtered;
   const roles: JobRole[] = ['BACKEND', 'FRONTEND', 'ANDROID', 'IOS', 'DEVOPS', 'DATA', 'AI', 'ETC'];
   const jobRoleCounts = roles.map((jobRole) => ({
     jobRole,
@@ -198,8 +205,12 @@ const findPosting = (jobPostingId: unknown) =>
 
 export const jobPostingHandlers = [
   http.get('/api/v1/job-postings', ({ request }) => {
-    const keyword = new URL(request.url).searchParams.get('keyword')?.trim() ?? '';
-    return HttpResponse.json({ status: 'success', ...getJobPostings(keyword) });
+    const searchParams = new URL(request.url).searchParams;
+    const keyword = searchParams.get('keyword')?.trim() ?? '';
+    return HttpResponse.json({
+      status: 'success',
+      ...getJobPostings(keyword, searchParams.get('sort')),
+    });
   }),
   http.get('/api/v1/job-postings/:jobPostingId', ({ params }) => {
     const posting = findPosting(params.jobPostingId);

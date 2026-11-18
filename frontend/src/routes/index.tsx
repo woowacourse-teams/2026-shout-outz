@@ -9,8 +9,8 @@ export interface ExploreSearch {
   q?: string;
   /** 프로젝트 탭의 기술 주제 */
   topic?: string;
-  /** 프로젝트 탭 정렬. 비어 있으면 최신 등록순 */
-  sort?: 'POPULAR';
+  /** 정렬. 비어 있으면 최신 등록순. 프로젝트 탭은 좋아요순, 채용공고 탭은 마감 임박순을 고를 수 있다. */
+  sort?: 'POPULAR' | 'DEADLINE';
 }
 
 const text = (value: unknown) => (typeof value === 'string' ? value.trim() : '');
@@ -32,6 +32,7 @@ export const Route = createFileRoute('/')({
       ...(q && { q }),
       ...(topic && { topic }),
       ...(tab === 'project' && search.sort === 'POPULAR' && { sort: 'POPULAR' }),
+      ...(tab === 'job' && search.sort === 'DEADLINE' && { sort: 'DEADLINE' }),
     };
   },
   component: ExploreRoute,
@@ -61,10 +62,12 @@ function ExploreRoute() {
           resetScroll: false,
         })
       }
-      sort={search.sort ?? 'LATEST'}
+      sort={search.sort === 'POPULAR' ? 'POPULAR' : 'LATEST'}
+      jobSort={search.sort === 'DEADLINE' ? 'DEADLINE' : 'LATEST'}
+      // 정렬은 목록만 바꾸므로 스크롤 위치를 그대로 둔다. 최신 등록순은 기본값이라 주소에서 뺀다.
       onSortChange={(sort) =>
         void navigate({
-          search: (prev) => ({ ...prev, sort: sort === 'POPULAR' ? 'POPULAR' : undefined }),
+          search: (prev) => ({ ...prev, sort: sort === 'LATEST' ? undefined : sort }),
           resetScroll: false,
         })
       }

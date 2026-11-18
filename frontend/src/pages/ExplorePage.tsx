@@ -10,6 +10,7 @@ import { ExploreSearchResult } from '@/components/explore/ExploreSearchResult';
 import { Footer } from '@/components/Footer';
 import { JobPostingList } from '@/components/job-postings/JobPostingList';
 import { ProjectExplore } from '@/components/project-explore/ProjectExplore';
+import type { JobPostingSort } from '@/apis/job-posting';
 import { analytics, type ExploreSearchSource } from '@/utils/analytics';
 import type { ProjectSort } from '@/types/project';
 
@@ -22,8 +23,11 @@ interface ExplorePageProps {
   /** 프로젝트 탭의 기술 주제 */
   topic: string | null;
   onTopicChange: (topic: string | null) => void;
+  /** 프로젝트 탭 정렬 */
   sort: ProjectSort;
-  onSortChange: (sort: ProjectSort) => void;
+  /** 채용공고 탭 정렬 */
+  jobSort: JobPostingSort;
+  onSortChange: (sort: ProjectSort | JobPostingSort) => void;
 }
 
 export function ExplorePage({
@@ -34,6 +38,7 @@ export function ExplorePage({
   topic,
   onTopicChange,
   sort,
+  jobSort,
   onSortChange,
 }: ExplorePageProps) {
   const popularKeywords = useQuery({ ...popularKeywordsQuery(), enabled: tab === 'keyword' });
@@ -96,9 +101,9 @@ export function ExplorePage({
             }}
           />
         ) : tab === 'job' ? (
-          <div className="mt-10">
+          <div className="mt-14">
             <AsyncBoundary>
-              <JobPostingList keyword={query} />
+              <JobPostingList keyword={query} sort={jobSort} onSortChange={onSortChange} />
             </AsyncBoundary>
           </div>
         ) : (
