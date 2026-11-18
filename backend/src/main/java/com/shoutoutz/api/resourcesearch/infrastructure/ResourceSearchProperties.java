@@ -10,7 +10,7 @@ import org.springframework.boot.context.properties.bind.DefaultValue;
  * 1은 느린 조회 하나가 뒤의 검색을 모두 막으므로 2로 둔다. 벡터 조회 한 번은 평소 최대 0.4초, 10개가 겹쳐도 2초 안팎이었다.
  * 자료 수나 DB 사양이 바뀌면 다시 잰다.
  *
- * @param queryTimeout   벡터 조회 한 번에 허용하는 시간. 넘으면 DB가 쿼리를 중단한다
+ * @param queryTimeout   벡터 조회 한 번에 허용하는 시간. 넘으면 DB가 쿼리를 중단한다. 5초까지만 설정할 수 있다
  * @param maxConcurrent  동시에 실행하는 벡터 조회 수의 상한. 커넥션 풀보다 작게 둬 다른 기능이 쓸 커넥션을 남긴다
  * @param acquireTimeout 상한이 찼을 때 자리를 기다리는 시간. 넘으면 조회를 시작하지 않는다
  */
@@ -21,8 +21,8 @@ public record ResourceSearchProperties(
         @DefaultValue("1s") Duration acquireTimeout
 ) {
 
-    // PostgreSQL statement_timeout이 받는 최댓값(ms). 넘으면 조회할 때 설정이 실패하므로 기동할 때 막는다.
-    private static final long MAX_QUERY_TIMEOUT_MILLIS = Integer.MAX_VALUE;
+    // 검색은 몇 초를 넘기면 기다릴 가치가 없다. 그보다 긴 값은 제한을 끄는 것과 같아 기동할 때 막는다.
+    private static final long MAX_QUERY_TIMEOUT_MILLIS = 5_000;
 
     public ResourceSearchProperties {
         if (queryTimeout == null || queryTimeout.toMillis() < 1 || queryTimeout.toMillis() > MAX_QUERY_TIMEOUT_MILLIS) {
