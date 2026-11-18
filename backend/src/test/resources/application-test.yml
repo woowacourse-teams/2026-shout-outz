@@ -12,11 +12,6 @@ job-posting:
   matching:
     enabled: false
 
-resource:
-  lexical-index:
-    rebuild:
-      enabled: false
-
 search-keyword:
   archive:
     enabled: false

@@ -7,12 +7,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.within;
 
 import com.shoutoutz.api.resourcesearch.application.ResourceSearchRepository;
-import com.shoutoutz.api.resourcesearch.application.dto.LexicalChunk;
 import com.shoutoutz.api.resourcesearch.application.dto.ResourceSearchCandidate;
 import com.shoutoutz.api.resourcesearch.domain.ResourceTrack;
 import com.shoutoutz.api.resourcesearch.support.ResourceDocumentFixture;
 import com.shoutoutz.api.resourcesearch.support.ResourceSearchFixture;
-import java.util.Comparator;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -151,185 +149,6 @@ class JdbcResourceSearchRepositoryIntegrationTest {
     }
 
     @Test
-    void 가까운_조각을_HNSW_인덱스로_찾는다() {
-        fixture.intro(fixture.document(ResourceTrack.BE), vector(1, 0));
-
-        search(null, 10);
-
-        assertThat(jdbcTemplate.queryForObject(
-                "SELECT pg_stat_get_xact_numscans('resource_chunks_embedding_idx'::regclass)",
-                Long.class
-        )).isPositive();
-    }
-
-    /**
-     * 질문과 가까운 450개는 FE, 그 바깥 50개는 BE 다. 인덱스가 처음 읽는 후보(ef_search 개)가 모두 트랙 조건에 걸러져도
-     * 더 읽어서 BE 후보를 채워야 한다. 두 무리 사이가 끊기면 그래프에서 건너가지 못하므로 같은 간격으로 이어 둔다.
-     */
-    @Test
-    void 가까운_조각이_트랙_조건에_모두_걸러져도_후보를_채운다() {
-        for (int i = 0; i < 450; i++) {
-            fixture.intro(fixture.document(ResourceTrack.FE), direction(i * 0.1));
-        }
-        for (int i = 0; i < 50; i++) {
-            fixture.intro(fixture.document(ResourceTrack.BE), direction(45 + i * 0.1));
-        }
-
-        List<ResourceSearchCandidate> result = search(ResourceTrack.BE, 40);
-
-        assertThat(result).hasSize(40)
-                .allMatch(candidate -> candidate.track() == ResourceTrack.BE)
-                .extracting(candidate -> candidate.chunk().similarityScore())
-                .isSortedAccordingTo(Comparator.reverseOrder());
-    }
-
-    @Test
-    void 검색을_마치면_같은_트랜잭션의_탐색_설정을_되돌린다() {
-        fixture.intro(fixture.document(ResourceTrack.BE), vector(1, 0));
-
-        search(null, 10);
-
-        assertThat(setting("hnsw.ef_search")).isEqualTo("40");
-        assertThat(setting("hnsw.iterative_scan")).isEqualTo("off");
-        assertThat(setting("enable_sort")).isEqualTo("on");
-    }
-
-    @Test
-    void 색인할_조각을_본문과_트랙과_함께_ID순으로_읽는다() {
-        long beChunk = fixture.chunk(fixture.document(ResourceTrack.BE), 0, "intro", "캐시 무효화", vector(1, 0), MODEL);
-        long unclassifiedChunk = fixture.chunk(fixture.document(null), 0, "intro", "분산 락", vector(1, 0), MODEL);
-
-        assertThat(resourceSearchRepository.findLexicalChunks(MODEL)).containsExactly(
-                new LexicalChunk(beChunk, "캐시 무효화", ResourceTrack.BE),
-                new LexicalChunk(unclassifiedChunk, "분산 락", null)
-        );
-    }
-
-    @Test
-    void 색인할_조각에서_삭제된_문서와_조각_및_다른_모델을_제외한다() {
-        long deletedDocument = fixture.document(ResourceTrack.BE);
-        fixture.intro(deletedDocument, vector(1, 0));
-        jdbcTemplate.update("UPDATE resource_documents SET deleted_at = now() WHERE id = ?", deletedDocument);
-        long deletedChunk = fixture.intro(fixture.document(ResourceTrack.BE), vector(1, 0));
-        jdbcTemplate.update("UPDATE resource_chunks SET deleted_at = now() WHERE id = ?", deletedChunk);
-        fixture.chunk(fixture.document(ResourceTrack.BE), 0, "intro", "다른 모델", vector(1, 0), "other@1024");
-        long available = fixture.intro(fixture.document(ResourceTrack.BE), vector(0, 1));
-
-        assertThat(resourceSearchRepository.findLexicalChunks(MODEL))
-                .extracting(LexicalChunk::chunkId).containsExactly(available);
-    }
-
-    @Test
-    void 색인할_조각에서_제보로_삭제가_승인된_자료를_제외한다() {
-        long accepted = fixture.document(ResourceTrack.BE);
-        fixture.intro(accepted, vector(1, 0));
-        documents.removalReport(accepted, "ACCEPTED");
-        long open = fixture.document(ResourceTrack.BE);
-        long openChunk = fixture.intro(open, vector(1, 0));
-        documents.removalReport(open, "OPEN");
-
-        assertThat(resourceSearchRepository.findLexicalChunks(MODEL))
-                .extracting(LexicalChunk::chunkId).containsExactly(openChunk);
-    }
-
-    @Test
-    void 색인할_조각에서_본문이_공백뿐인_조각을_제외한다() {
-        fixture.chunk(fixture.document(ResourceTrack.BE), 0, "intro", "   ", vector(1, 0), MODEL);
-        long available = fixture.intro(fixture.document(ResourceTrack.BE), vector(0, 1));
-
-        assertThat(resourceSearchRepository.findLexicalChunks(MODEL))
-                .extracting(LexicalChunk::chunkId).containsExactly(available);
-    }
-
-    @Test
-    void 색인할_조각에서_본문이_개행과_탭뿐인_조각을_제외한다() {
-        fixture.chunk(fixture.document(ResourceTrack.BE), 0, "intro", "\n\t", vector(1, 0), MODEL);
-        long available = fixture.intro(fixture.document(ResourceTrack.BE), vector(0, 1));
-
-        assertThat(resourceSearchRepository.findLexicalChunks(MODEL))
-                .extracting(LexicalChunk::chunkId).containsExactly(available);
-    }
-
-    @Test
-    void 색인할_조각에서_트랙을_알_수_없는_조각만_제외한다() {
-        long unknownDocument = fixture.document(ResourceTrack.BE);
-        fixture.intro(unknownDocument, vector(1, 0));
-        jdbcTemplate.update("UPDATE resource_chunks SET track = 'UNKNOWN' WHERE document_id = ?", unknownDocument);
-        long available = fixture.intro(fixture.document(ResourceTrack.BE), vector(0, 1));
-
-        assertThat(resourceSearchRepository.findLexicalChunks(MODEL))
-                .extracting(LexicalChunk::chunkId).containsExactly(available);
-    }
-
-    @Test
-    void 조각_ID로_문서_정보와_질문과의_코사인_유사도를_조각_ID순으로_읽는다() {
-        long partialDocument = fixture.document(ResourceTrack.BE);
-        long partial = fixture.chunk(partialDocument, 0, "intro", "캐시 무효화", vector(0.8f, 0.6f), MODEL);
-        long exactDocument = fixture.document(ResourceTrack.FE);
-        long exact = fixture.chunk(exactDocument, 0, "intro", "캐시 적재", vector(1, 0), MODEL);
-        fixture.intro(fixture.document(ResourceTrack.BE), vector(1, 0));
-
-        List<ResourceSearchCandidate> result = resourceSearchRepository.findByChunkIds(
-                List.of(exact, partial), vector(1, 0), MODEL
-        );
-
-        assertThat(result).extracting(candidate -> candidate.chunk().chunkId()).containsExactly(partial, exact);
-        assertThat(result).extracting(ResourceSearchCandidate::documentId).containsExactly(partialDocument, exactDocument);
-        assertThat(result.getFirst().chunk().text()).isEqualTo("캐시 무효화");
-        assertThat(result.getFirst().chunk().similarityScore()).isCloseTo(0.8, within(0.000001));
-        assertThat(result.getLast().chunk().similarityScore()).isCloseTo(1, within(0.000001));
-        assertThat(result).extracting(ResourceSearchCandidate::track).containsExactly(ResourceTrack.BE, ResourceTrack.FE);
-    }
-
-    @Test
-    void 조각_ID로_읽을_때_삭제된_문서와_조각_및_다른_모델을_제외한다() {
-        long deletedDocument = fixture.document(ResourceTrack.BE);
-        long chunkOfDeletedDocument = fixture.intro(deletedDocument, vector(1, 0));
-        jdbcTemplate.update("UPDATE resource_documents SET deleted_at = now() WHERE id = ?", deletedDocument);
-        long deletedChunk = fixture.intro(fixture.document(ResourceTrack.BE), vector(1, 0));
-        jdbcTemplate.update("UPDATE resource_chunks SET deleted_at = now() WHERE id = ?", deletedChunk);
-        long otherModel = fixture.chunk(fixture.document(ResourceTrack.BE), 0, "intro", "다른 모델", vector(1, 0), "other@1024");
-        long available = fixture.intro(fixture.document(ResourceTrack.BE), vector(0, 1));
-
-        List<ResourceSearchCandidate> result = resourceSearchRepository.findByChunkIds(
-                List.of(chunkOfDeletedDocument, deletedChunk, otherModel, available), vector(1, 0), MODEL
-        );
-
-        assertThat(result).extracting(candidate -> candidate.chunk().chunkId()).containsExactly(available);
-    }
-
-    @Test
-    void 조각_ID로_읽을_때_제보로_삭제가_승인된_자료를_제외한다() {
-        long accepted = fixture.document(ResourceTrack.BE);
-        long acceptedChunk = fixture.intro(accepted, vector(1, 0));
-        documents.removalReport(accepted, "ACCEPTED");
-        long openChunk = fixture.intro(fixture.document(ResourceTrack.BE), vector(1, 0));
-
-        List<ResourceSearchCandidate> result = resourceSearchRepository.findByChunkIds(
-                List.of(acceptedChunk, openChunk), vector(1, 0), MODEL
-        );
-
-        assertThat(result).extracting(candidate -> candidate.chunk().chunkId()).containsExactly(openChunk);
-    }
-
-    @Test
-    void 읽을_조각_ID가_없으면_빈_목록을_반환한다() {
-        fixture.intro(fixture.document(ResourceTrack.BE), vector(1, 0));
-
-        assertThat(resourceSearchRepository.findByChunkIds(List.of(), vector(1, 0), MODEL)).isEmpty();
-    }
-
-    @Test
-    void 조각_ID로_읽을_때도_잘못된_검색_벡터를_거부한다() {
-        long chunkId = fixture.intro(fixture.document(ResourceTrack.BE), vector(1, 0));
-
-        assertThatThrownBy(() -> resourceSearchRepository.findByChunkIds(List.of(chunkId), new float[2], MODEL))
-                .isInstanceOf(InvalidDataAccessApiUsageException.class)
-                .hasCauseInstanceOf(IllegalArgumentException.class)
-                .hasRootCauseMessage("검색 벡터는 1024차원이어야 합니다.");
-    }
-
-    @Test
     void 해당_모델의_후보가_없으면_빈_목록을_반환한다() {
         assertThat(search(null, 10)).isEmpty();
     }
@@ -365,14 +184,5 @@ class JdbcResourceSearchRepositoryIntegrationTest {
 
     private List<ResourceSearchCandidate> search(ResourceTrack track, int limit) {
         return resourceSearchRepository.findNearest(vector(1, 0), MODEL, track, limit);
-    }
-
-    private String setting(String name) {
-        return jdbcTemplate.queryForObject("SELECT current_setting(?)", String.class, name);
-    }
-
-    private static float[] direction(double degrees) {
-        double radians = Math.toRadians(degrees);
-        return vector((float) Math.cos(radians), (float) Math.sin(radians));
     }
 }

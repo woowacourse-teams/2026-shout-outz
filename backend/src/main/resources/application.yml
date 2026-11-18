@@ -93,12 +93,6 @@ resource:
     api-key: ${RESOURCE_EMBEDDING_API_KEY:}
     connect-timeout: ${RESOURCE_EMBEDDING_CONNECT_TIMEOUT:5s}
     read-timeout: ${RESOURCE_EMBEDDING_READ_TIMEOUT:30s}
-  # 렉시컬 색인은 서버 메모리에 있고 자료는 데이터 파이프라인이 넣는다. 색인을 통째로 다시 만든다.
-  # 수집이 매일 03시(한국 시각)에 시작하므로 그 뒤인 06시에 하루 한 번 돈다. 서버가 뜰 때도 새로 만든다.
-  lexical-index:
-    rebuild:
-      enabled: ${RESOURCE_LEXICAL_INDEX_REBUILD_ENABLED:true}
-      cron: ${RESOURCE_LEXICAL_INDEX_REBUILD_CRON:0 0 6 * * *}
 
 # 조회 결과를 앱 서버 메모리에 보관하는 로컬 캐시.
 # enabled를 끄면 보관하지 않고 매번 DB에서 읽는다. (부하 테스트에서 캐시 전후를 비교할 때 쓴다)
