@@ -20,7 +20,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.epages.restdocs.apispec.ResourceSnippetParameters;
 import com.epages.restdocs.apispec.Schema;
 import com.epages.restdocs.apispec.SimpleType;
+import com.shoutoutz.api.common.exception.custom.ServiceUnavailableException;
+import com.shoutoutz.api.common.restdocs.RestDocsFields;
 import com.shoutoutz.api.resourcesearch.application.ResourceQueryService;
+import com.shoutoutz.api.resourcesearch.domain.ResourceSearchErrorCode;
 import com.shoutoutz.api.resourcesearch.presentation.dto.request.ResourceSearchRequest;
 import com.shoutoutz.api.resourcesearch.presentation.dto.response.MatchedProjectResponse;
 import com.shoutoutz.api.resourcesearch.presentation.dto.response.ResourceCardResponse;
@@ -33,6 +36,7 @@ import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.restdocs.test.autoconfigure.AutoConfigureRestDocs;
@@ -47,6 +51,16 @@ class ResourceHttpApiSearchTest {
 
     private static final String VISITOR_KEY_ATTRIBUTE = VisitorKey.class.getName();
     private static final VisitorKey VISITOR_KEY = new VisitorKey("a".repeat(64));
+
+    private static final String SEARCH_DESCRIPTION = """
+            검색어로 블로그, PR과 팀 문서, 테코톡을 찾아 섹션별로 연관도가 높은 순으로 준다. 로그인 없이 볼 수 있다.
+            blogs, documents는 최대 20건, talks는 최대 6건이며, 관련성이 약한 자료로 억지로 채우지 않아 더 적거나 비어 있을 수 있다.
+            blogs, documents에 20건을 넘는 순위의 자료가 있으면 섹션의 hasNext가 true이고, 기술 자료 검색 결과 이어 읽기 API에 nextCursor를 보내 섹션마다 최대 60건까지 이어 읽는다.
+            검색어가 프로젝트 이름이나 저장소 이름과 같으면(대소문자와 기호는 무시) matchedProjects에 그 프로젝트를 담고, blogs와 documents에는 연관도 순 결과 대신 그 프로젝트의 자료를 최신순으로 준다. 이때 talks는 비어 있다. 그 프로젝트의 자료가 20건을 넘는 섹션은 nextCursor를 주고, 기술 자료 검색 결과 이어 읽기 API로 나머지를 끝까지 읽는다.
+            그 이름이 기술 주제의 이름이나 별칭과도 같으면 프로젝트 자료 뒤에 그 프로젝트가 아닌 자료의 연관도 순 결과를 이어 준다. 이때 blogs와 documents는 최대 40건이고 talks도 채우며, nextCursor는 주지 않는다.
+            검색어는 인기 검색어 집계에 방문자별로 하루 한 번 기록한다(VISITOR_ID 쿠키를 함께 보낸다).
+            keyword가 없거나 50자를 넘거나, track이 BE, FE, AN이 아니면 400(VALIDATION_FAILED)으로 응답한다.
+            검색이 제한 시간을 넘기면 503(RESOURCE_SEARCH_TIMEOUT), 동시에 처리 중인 검색이 많으면 503(RESOURCE_SEARCH_BUSY)으로 응답한다. 결과를 일부만 주지 않으며, 잠시 뒤 다시 요청하면 된다.""";
 
     @Autowired
     private MockMvc mockMvc;
@@ -92,14 +106,7 @@ class ResourceHttpApiSearchTest {
                         resource(ResourceSnippetParameters.builder()
                                 .tag("Resource")
                                 .summary("기술 자료 검색")
-                                .description("""
-                                        검색어로 블로그, PR과 팀 문서, 테코톡을 찾아 섹션별로 연관도가 높은 순으로 준다. 로그인 없이 볼 수 있다.
-                                        blogs, documents는 최대 20건, talks는 최대 6건이며, 관련성이 약한 자료로 억지로 채우지 않아 더 적거나 비어 있을 수 있다.
-                                        blogs, documents에 20건을 넘는 순위의 자료가 있으면 섹션의 hasNext가 true이고, 기술 자료 검색 결과 이어 읽기 API에 nextCursor를 보내 섹션마다 최대 60건까지 이어 읽는다.
-                                        검색어가 프로젝트 이름이나 저장소 이름과 같으면(대소문자와 기호는 무시) matchedProjects에 그 프로젝트를 담고, blogs와 documents에는 연관도 순 결과 대신 그 프로젝트의 자료를 최신순으로 준다. 이때 talks는 비어 있다. 그 프로젝트의 자료가 20건을 넘는 섹션은 nextCursor를 주고, 기술 자료 검색 결과 이어 읽기 API로 나머지를 끝까지 읽는다.
-                                        그 이름이 기술 주제의 이름이나 별칭과도 같으면 프로젝트 자료 뒤에 그 프로젝트가 아닌 자료의 연관도 순 결과를 이어 준다. 이때 blogs와 documents는 최대 40건이고 talks도 채우며, nextCursor는 주지 않는다.
-                                        검색어는 인기 검색어 집계에 방문자별로 하루 한 번 기록한다(VISITOR_ID 쿠키를 함께 보낸다).
-                                        keyword가 없거나 50자를 넘거나, track이 BE, FE, AN이 아니면 400(VALIDATION_FAILED)으로 응답한다.""")
+                                .description(SEARCH_DESCRIPTION)
                                 .queryParameters(
                                         parameterWithName("keyword").type(SimpleType.STRING)
                                                 .description("검색어(앞뒤 공백 제거 후 1~50자)"),
@@ -140,6 +147,31 @@ class ResourceHttpApiSearchTest {
                 .andExpect(jsonPath("$.data.documents.hasNext").value(false))
                 .andExpect(jsonPath("$.data.documents.nextCursor").isEmpty())
                 .andExpect(jsonPath("$.data.talks.items").isEmpty());
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = ResourceSearchErrorCode.class, names = {"RESOURCE_SEARCH_TIMEOUT", "RESOURCE_SEARCH_BUSY"})
+    @DisplayName("검색이 제한 시간을 넘기거나 동시에 처리 중인 검색이 많으면 503을 준다")
+    void respondsServiceUnavailableWhenSearchIsLimited(ResourceSearchErrorCode errorCode) throws Exception {
+        given(resourceQueryService.search(any(ResourceSearchRequest.class), any(VisitorKey.class)))
+                .willThrow(new ServiceUnavailableException(errorCode));
+
+        mockMvc.perform(get("/api/v1/resources/search")
+                        .queryParam("keyword", "캐시")
+                        .requestAttr(VISITOR_KEY_ATTRIBUTE, VISITOR_KEY))
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(jsonPath("$.code").value(errorCode.name()))
+                .andExpect(jsonPath("$.message").value(errorCode.getMessage()))
+                .andDo(document(
+                        errorCode.name().toLowerCase().replace('_', '-'),
+                        resource(ResourceSnippetParameters.builder()
+                                .tag("Resource")
+                                .summary("기술 자료 검색")
+                                .description(SEARCH_DESCRIPTION)
+                                .responseSchema(Schema.schema("ErrorResponse"))
+                                .responseFields(RestDocsFields.errorResponse())
+                                .build())
+                ));
     }
 
     @Test

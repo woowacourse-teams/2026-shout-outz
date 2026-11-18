@@ -17,6 +17,7 @@ import com.shoutoutz.api.jobposting.application.JobRequirementMatchingWorker;
 import com.shoutoutz.api.jobposting.application.RequirementJudge;
 import com.shoutoutz.api.jobposting.application.RequirementResourceSearcher;
 import com.shoutoutz.api.resourcesearch.application.ResourceSearchService;
+import com.shoutoutz.api.resourcesearch.infrastructure.ResourceSearchProperties;
 import java.time.Clock;
 import java.time.Duration;
 import java.util.List;
@@ -26,6 +27,10 @@ import org.springframework.scheduling.TaskScheduler;
 import tools.jackson.databind.ObjectMapper;
 
 class JobRequirementMatchingConfigurationTest {
+
+    private static final ResourceSearchProperties SEARCH = new ResourceSearchProperties(
+            Duration.ofSeconds(3), 2, Duration.ofSeconds(1)
+    );
 
     private final ApplicationContextRunner contextRunner = contextRunner("embedding-key");
 
@@ -41,6 +46,7 @@ class JobRequirementMatchingConfigurationTest {
                 .withBean(Clock.class, Clock::systemUTC)
                 .withBean(LlmProperties.class, () -> new LlmProperties(null, null, null))
                 .withBean(EmbeddingProperties.class, () -> embedding(embeddingApiKey, Duration.ofSeconds(30)))
+                .withBean(ResourceSearchProperties.class, () -> SEARCH)
                 .withUserConfiguration(
                         JobRequirementMatchingConfiguration.class,
                         JobRequirementMatchingWorker.class,
@@ -93,6 +99,7 @@ class JobRequirementMatchingConfigurationTest {
                 .withBean(ObjectMapper.class, ObjectMapper::new)
                 .withBean(LlmProperties.class, () -> new LlmProperties(null, null, null))
                 .withBean(EmbeddingProperties.class, () -> embedding("embedding-key", Duration.ofSeconds(30)))
+                .withBean(ResourceSearchProperties.class, () -> SEARCH)
                 .withUserConfiguration(
                         JobRequirementMatchingConfiguration.class,
                         ResourceSearchRequirementResourceSearcher.class,
@@ -141,11 +148,11 @@ class JobRequirementMatchingConfigurationTest {
     }
 
     @Test
-    void 임베딩까지_더한_제한_시간이_lease에_닿으면_기동에_실패한다() {
-        // 임베딩 5초 + 30초, 제공자 2개 50초씩으로 합이 135초다.
-        JobRequirementMatchingProperties justEnough = properties(Duration.ofSeconds(136),
+    void 임베딩과_벡터_조회와_판정의_제한_시간_합이_lease에_닿으면_기동에_실패한다() {
+        // 임베딩 5초 + 30초, 벡터 조회 6번 x (자리 대기 1초 + 쿼리 3초) = 24초, 제공자 2개 50초씩으로 합이 159초다.
+        JobRequirementMatchingProperties justEnough = properties(Duration.ofSeconds(160),
                 LlmProvider.BEDROCK_GPT, LlmProvider.BEDROCK_CLAUDE);
-        JobRequirementMatchingProperties tooShort = properties(Duration.ofSeconds(135),
+        JobRequirementMatchingProperties tooShort = properties(Duration.ofSeconds(159),
                 LlmProvider.BEDROCK_GPT, LlmProvider.BEDROCK_CLAUDE);
         LlmProperties llm = new LlmProperties(null, null, null);
         EmbeddingProperties embedding = embedding("key", Duration.ofSeconds(30));
@@ -179,7 +186,7 @@ class JobRequirementMatchingConfigurationTest {
     private void validate(JobRequirementMatchingProperties properties, LlmProperties llm, EmbeddingProperties embedding,
             JobRequirementMatchingRepository repository) throws Exception {
         new JobRequirementMatchingConfiguration()
-                .jobRequirementMatchingSettingsValidator(properties, llm, embedding, repository)
+                .jobRequirementMatchingSettingsValidator(properties, llm, embedding, SEARCH, repository)
                 .afterPropertiesSet();
     }
 

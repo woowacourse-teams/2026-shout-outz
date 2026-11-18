@@ -4,6 +4,8 @@ import com.shoutoutz.api.common.embedding.EmbeddingProperties;
 import com.shoutoutz.api.common.llm.LlmProperties;
 import com.shoutoutz.api.common.llm.LlmProvider;
 import com.shoutoutz.api.jobposting.application.JobRequirementMatchingRepository;
+import com.shoutoutz.api.resourcesearch.application.VectorResourceSearchService;
+import com.shoutoutz.api.resourcesearch.infrastructure.ResourceSearchProperties;
 import java.time.Duration;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -21,7 +23,7 @@ public class JobRequirementMatchingConfiguration {
 
     /**
      * 켠 뒤 역량마다 실패하고 나서야 알게 되지 않도록, 키 누락과 제한 시간 초과를 기동할 때 막는다.
-     * 제한 시간의 합이 lease 를 넘으면 처리 중인 역량을 다른 Worker 가 다시 가져갈 수 있다.
+     * 임베딩, 벡터 조회, 판정의 제한 시간 합이 lease 를 넘으면 처리 중인 역량을 다른 Worker 가 다시 가져갈 수 있다.
      * 현재 임베딩 모델로 만든 자료 조각이 없으면 모든 역량이 추천 없이 완료로 끝나 되돌릴 수 없어서 함께 막는다.
      */
     @Bean
@@ -29,13 +31,15 @@ public class JobRequirementMatchingConfiguration {
             JobRequirementMatchingProperties properties,
             LlmProperties llmProperties,
             EmbeddingProperties embeddingProperties,
+            ResourceSearchProperties resourceSearchProperties,
             JobRequirementMatchingRepository repository
     ) {
         return () -> {
             if (embeddingProperties.apiKey() == null || embeddingProperties.apiKey().isBlank()) {
                 throw new IllegalArgumentException("역량 매칭을 켜려면 임베딩 API 키를 설정해야 합니다.");
             }
-            Duration budget = embeddingProperties.connectTimeout().plus(embeddingProperties.readTimeout());
+            Duration budget = embeddingProperties.connectTimeout().plus(embeddingProperties.readTimeout())
+                    .plus(maxVectorSearchDuration(properties, resourceSearchProperties));
             for (LlmProvider provider : properties.providers()) {
                 if (!llmProperties.hasCredentials(provider)) {
                     throw new IllegalArgumentException("역량 판정 제공자 " + provider + "를 사용하려면 API 키를 설정해야 합니다.");
@@ -43,12 +47,22 @@ public class JobRequirementMatchingConfiguration {
                 budget = budget.plus(llmProperties.timeout(provider));
             }
             if (budget.compareTo(properties.lease()) >= 0) {
-                throw new IllegalArgumentException("임베딩과 판정 제공자의 제한 시간 합은 job-posting.matching.lease보다 짧아야 합니다.");
+                throw new IllegalArgumentException(
+                        "임베딩, 벡터 조회, 판정 제공자의 제한 시간 합은 job-posting.matching.lease보다 짧아야 합니다.");
             }
             if (!repository.hasSearchableChunks(embeddingProperties.label())) {
                 throw new IllegalArgumentException("역량 매칭을 켜려면 임베딩 모델 " + embeddingProperties.label()
                         + "로 만든 자료 조각이 있어야 합니다.");
             }
         };
+    }
+
+    // 벡터 조회는 후보를 늘려 가며 여러 번 할 수 있고, 한 번마다 자리 대기와 쿼리 제한 시간까지 걸릴 수 있다.
+    private static Duration maxVectorSearchDuration(
+            JobRequirementMatchingProperties properties,
+            ResourceSearchProperties resourceSearchProperties
+    ) {
+        Duration perAttempt = resourceSearchProperties.acquireTimeout().plus(resourceSearchProperties.queryTimeout());
+        return perAttempt.multipliedBy(VectorResourceSearchService.maxAttempts(properties.searchLimit()));
     }
 }

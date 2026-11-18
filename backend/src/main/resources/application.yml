@@ -91,8 +91,16 @@ resource:
     dimensions: ${RESOURCE_EMBEDDING_DIMENSIONS:1024}
     normalize: ${RESOURCE_EMBEDDING_NORMALIZE:true}
     api-key: ${RESOURCE_EMBEDDING_API_KEY:}
-    connect-timeout: ${RESOURCE_EMBEDDING_CONNECT_TIMEOUT:5s}
-    read-timeout: ${RESOURCE_EMBEDDING_READ_TIMEOUT:30s}
+    # 검색 요청이 임베딩 응답을 기다리는 시간이다. 평소 응답은 0.2초 안팎이라, 느려진 호출에 검색이 오래 붙잡히지 않게 짧게 둔다.
+    connect-timeout: ${RESOURCE_EMBEDDING_CONNECT_TIMEOUT:2s}
+    read-timeout: ${RESOURCE_EMBEDDING_READ_TIMEOUT:3s}
+  # 벡터 조회는 조각 전체를 읽어 DB 부하가 크다. 제한 시간을 넘긴 조회는 DB가 중단한다. query-timeout은 5초까지만 설정할 수 있다.
+  # 동시에 도는 조회는 max-concurrent 개까지만 받고, 자리가 없으면 acquire-timeout 만큼 기다린 뒤 조회를 시작하지 않는다.
+  # 제한에 걸리면 자료 검색 API는 503으로 응답하고, 프로젝트 검색은 글자 일치 결과로 응답하며, 역량 매칭은 실패로 기록해 다시 시도한다.
+  search:
+    query-timeout: ${RESOURCE_SEARCH_QUERY_TIMEOUT:3s}
+    max-concurrent: ${RESOURCE_SEARCH_MAX_CONCURRENT:2}
+    acquire-timeout: ${RESOURCE_SEARCH_ACQUIRE_TIMEOUT:1s}
 
 # 조회 결과를 앱 서버 메모리에 보관하는 로컬 캐시.
 # enabled를 끄면 보관하지 않고 매번 DB에서 읽는다. (부하 테스트에서 캐시 전후를 비교할 때 쓴다)

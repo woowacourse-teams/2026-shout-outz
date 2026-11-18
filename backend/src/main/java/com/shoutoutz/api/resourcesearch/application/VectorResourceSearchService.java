@@ -29,7 +29,7 @@ public class VectorResourceSearchService implements ResourceSearchService {
         long embeddingNanos = System.nanoTime() - startedAt;
         long databaseNanos = 0;
         long aggregationNanos = 0;
-        int candidateLimit = Math.min(MAX_CANDIDATES, Math.max(INITIAL_CANDIDATES, limit));
+        int candidateLimit = initialCandidateLimit(limit);
         int attempts = 0;
 
         while (true) {
@@ -53,8 +53,30 @@ public class VectorResourceSearchService implements ResourceSearchService {
                         attempts, candidateLimit, candidates.size(), hits.size());
                 return hits;
             }
-            candidateLimit = Math.min(MAX_CANDIDATES, candidateLimit * 2);
+            candidateLimit = nextCandidateLimit(candidateLimit);
         }
+    }
+
+    /**
+     * 문서를 limit 건 찾을 때 벡터 조회를 최대 몇 번 하는지. 후보를 두 배씩 늘리는 규칙을 그대로 따라 센다.
+     * 검색에 걸릴 수 있는 최대 시간을 미리 계산하는 쪽에서 쓴다.
+     */
+    public static int maxAttempts(int limit) {
+        int candidateLimit = initialCandidateLimit(limit);
+        int attempts = 1;
+        while (candidateLimit < MAX_CANDIDATES) {
+            candidateLimit = nextCandidateLimit(candidateLimit);
+            attempts++;
+        }
+        return attempts;
+    }
+
+    private static int initialCandidateLimit(int limit) {
+        return Math.min(MAX_CANDIDATES, Math.max(INITIAL_CANDIDATES, limit));
+    }
+
+    private static int nextCandidateLimit(int candidateLimit) {
+        return Math.min(MAX_CANDIDATES, candidateLimit * 2);
     }
 
     private void validateInput(String query, int limit) {
