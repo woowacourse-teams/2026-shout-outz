@@ -21,9 +21,14 @@ public record ResourceSearchProperties(
         @DefaultValue("1s") Duration acquireTimeout
 ) {
 
+    // PostgreSQL statement_timeout이 받는 최댓값(ms). 넘으면 조회할 때 설정이 실패하므로 기동할 때 막는다.
+    private static final long MAX_QUERY_TIMEOUT_MILLIS = Integer.MAX_VALUE;
+
     public ResourceSearchProperties {
-        if (queryTimeout == null || queryTimeout.toMillis() < 1) {
-            throw new IllegalArgumentException("자료 검색 쿼리 제한 시간은 1ms 이상이어야 합니다.");
+        if (queryTimeout == null || queryTimeout.toMillis() < 1 || queryTimeout.toMillis() > MAX_QUERY_TIMEOUT_MILLIS) {
+            throw new IllegalArgumentException(
+                    "자료 검색 쿼리 제한 시간은 1ms 이상 " + MAX_QUERY_TIMEOUT_MILLIS + "ms 이하여야 합니다."
+            );
         }
         if (maxConcurrent < 1) {
             throw new IllegalArgumentException("자료 검색 동시 실행 상한은 1 이상이어야 합니다.");

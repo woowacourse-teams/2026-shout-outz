@@ -28,6 +28,21 @@ class ResourceSearchPropertiesTest {
     }
 
     @Test
+    void 쿼리_제한_시간은_PostgreSQL이_받는_최댓값까지_허용한다() {
+        ResourceSearchProperties properties = new ResourceSearchProperties(
+                Duration.ofMillis(Integer.MAX_VALUE), 2, Duration.ofSeconds(1)
+        );
+
+        assertThat(properties.queryTimeout()).isEqualTo(Duration.ofMillis(Integer.MAX_VALUE));
+    }
+
+    @Test
+    void 쿼리_제한_시간이_PostgreSQL이_받는_최댓값을_넘으면_거절한다() {
+        assertThatThrownBy(() -> new ResourceSearchProperties(Duration.ofDays(25), 2, Duration.ofSeconds(1)))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
     void 동시_실행_상한은_1_이상이어야_한다() {
         assertThatThrownBy(() -> new ResourceSearchProperties(Duration.ofSeconds(3), 0, Duration.ofSeconds(1)))
                 .isInstanceOf(IllegalArgumentException.class);
