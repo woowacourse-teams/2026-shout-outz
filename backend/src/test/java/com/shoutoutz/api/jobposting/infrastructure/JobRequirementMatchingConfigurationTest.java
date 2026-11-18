@@ -31,6 +31,7 @@ class JobRequirementMatchingConfigurationTest {
     private static final ResourceSearchProperties SEARCH = new ResourceSearchProperties(
             Duration.ofSeconds(3), 2, Duration.ofSeconds(1)
     );
+    private static final long CONNECTION_TIMEOUT_MILLIS = 30_000;
 
     private final ApplicationContextRunner contextRunner = contextRunner("embedding-key");
 
@@ -149,16 +150,29 @@ class JobRequirementMatchingConfigurationTest {
 
     @Test
     void 임베딩과_벡터_조회와_판정의_제한_시간_합이_lease에_닿으면_기동에_실패한다() {
-        // 임베딩 5초 + 30초, 벡터 조회 한 번(자리 대기 1초 + 쿼리 3초) 4초, 제공자 2개 50초씩으로 합이 139초다.
-        JobRequirementMatchingProperties justEnough = properties(Duration.ofSeconds(140),
+        // 임베딩 5초 + 30초, 벡터 조회 한 번(자리 대기 1초 + 커넥션 대기 30초 + 쿼리 3초) 34초, 제공자 2개 50초씩으로 합이 169초다.
+        JobRequirementMatchingProperties justEnough = properties(Duration.ofSeconds(170),
                 LlmProvider.BEDROCK_GPT, LlmProvider.BEDROCK_CLAUDE);
-        JobRequirementMatchingProperties tooShort = properties(Duration.ofSeconds(139),
+        JobRequirementMatchingProperties tooShort = properties(Duration.ofSeconds(169),
                 LlmProvider.BEDROCK_GPT, LlmProvider.BEDROCK_CLAUDE);
         LlmProperties llm = new LlmProperties(null, null, null);
         EmbeddingProperties embedding = embedding("key", Duration.ofSeconds(30));
 
         assertThatCode(() -> validate(justEnough, llm, embedding)).doesNotThrowAnyException();
         assertThatThrownBy(() -> validate(tooShort, llm, embedding)).hasMessageContaining("lease");
+    }
+
+    @Test
+    void 커넥션_획득_제한_시간_설정을_읽어_lease_검사에_쓴다() {
+        ApplicationContextRunner enabled = contextRunner("embedding-key")
+                .withPropertyValues("job-posting.matching.enabled=true", "job-posting.matching.lease=100s",
+                        "job-posting.matching.providers=BEDROCK_GPT");
+
+        // 임베딩 35초 + 벡터 조회 4초 + 제공자 1개 50초로 89초다. 커넥션 대기가 1초면 90초, 30초면 119초라 lease 100초에서 갈린다.
+        enabled.withPropertyValues("spring.datasource.hikari.connection-timeout=1000")
+                .run(context -> assertThat(context).hasNotFailed());
+        enabled.withPropertyValues("spring.datasource.hikari.connection-timeout=30000")
+                .run(context -> assertThat(context).getFailure().rootCause().hasMessageContaining("lease"));
     }
 
     @Test
@@ -186,7 +200,7 @@ class JobRequirementMatchingConfigurationTest {
     private void validate(JobRequirementMatchingProperties properties, LlmProperties llm, EmbeddingProperties embedding,
             JobRequirementMatchingRepository repository) throws Exception {
         new JobRequirementMatchingConfiguration()
-                .jobRequirementMatchingSettingsValidator(properties, llm, embedding, SEARCH, repository)
+                .jobRequirementMatchingSettingsValidator(properties, llm, embedding, SEARCH, CONNECTION_TIMEOUT_MILLIS, repository)
                 .afterPropertiesSet();
     }
 

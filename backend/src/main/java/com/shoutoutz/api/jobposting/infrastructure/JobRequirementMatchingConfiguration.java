@@ -7,6 +7,7 @@ import com.shoutoutz.api.jobposting.application.JobRequirementMatchingRepository
 import com.shoutoutz.api.resourcesearch.infrastructure.ResourceSearchProperties;
 import java.time.Duration;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -31,15 +32,17 @@ public class JobRequirementMatchingConfiguration {
             LlmProperties llmProperties,
             EmbeddingProperties embeddingProperties,
             ResourceSearchProperties resourceSearchProperties,
+            @Value("${spring.datasource.hikari.connection-timeout:30000}") long connectionTimeoutMillis,
             JobRequirementMatchingRepository repository
     ) {
         return () -> {
             if (embeddingProperties.apiKey() == null || embeddingProperties.apiKey().isBlank()) {
                 throw new IllegalArgumentException("역량 매칭을 켜려면 임베딩 API 키를 설정해야 합니다.");
             }
-            // 역량 하나를 처리하는 동안 벡터 조회는 한 번 하고, 자리 대기와 쿼리 제한 시간까지 걸릴 수 있다.
+            // 역량 하나를 처리하는 동안 벡터 조회는 한 번 한다. 자리를 기다리고, 커넥션을 기다리고, 쿼리가 제한 시간까지 걸릴 수 있다.
             Duration budget = embeddingProperties.connectTimeout().plus(embeddingProperties.readTimeout())
                     .plus(resourceSearchProperties.acquireTimeout())
+                    .plus(Duration.ofMillis(connectionTimeoutMillis))
                     .plus(resourceSearchProperties.queryTimeout());
             for (LlmProvider provider : properties.providers()) {
                 if (!llmProperties.hasCredentials(provider)) {

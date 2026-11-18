@@ -5,6 +5,11 @@ spring:
     # 명시적인 프로필이 없을 때 local을 사용함.
     # 운영에서는 SPRING_PROFILES_ACTIVE=prod를 지정함.
     default: local
+  datasource:
+    hikari:
+      # 커넥션 풀이 찼을 때 커넥션을 기다리는 시간(ms). HikariCP 기본값과 같은 값을 적어 둔 것이다.
+      # 역량 매칭 기동 검사가 이 값을 처리 시간 합계에 넣어 lease와 비교한다.
+      connection-timeout: ${DB_CONNECTION_TIMEOUT_MS:30000}
   jpa:
     hibernate:
       ddl-auto: none
