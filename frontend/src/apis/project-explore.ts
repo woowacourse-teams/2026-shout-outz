@@ -47,6 +47,27 @@ export type ProjectTopicResources = ProjectTopicResourcesSuccessResponse['data']
 const projectPath = (slug: string) => `/api/v1/projects/@${slug}`;
 
 /** 목록 조회 조건. 서버는 기술 주제를 이름이 아니라 topicId로 받는다. */
+/**
+ * 직접 검색에서 프로젝트가 걸린 근거 자료. 생성된 schema.ts에는 아직 없어 여기서 더한다.
+ * 서버 ProjectFindAllResponse.MatchedResource
+ */
+export interface MatchedResource {
+  resourceId: number;
+  source: string;
+  title: string;
+}
+
+export type ExploreProject = ProjectSummary & { matchedResource?: MatchedResource | null };
+
+/** 검색어를 기술 주제로 해석했을 때 그 주제. 서버 ProjectFindAllResponse.MatchedTopic */
+export interface MatchedTopic {
+  topicId: string;
+  name: string;
+  side: string;
+}
+
+export type ExploreProjectMeta = ProjectListMeta & { matchedTopic?: MatchedTopic | null };
+
 export interface ExploreProjectQuery {
   keyword: string;
   topicId: string | null;
@@ -63,7 +84,7 @@ export async function fetchExploreProjectsPage(
   if (topicId) searchParams.topicId = topicId;
   if (cursor) searchParams.cursor = cursor;
 
-  const response = await httpClient<ApiSuccessBody<ProjectSummary[], ProjectListMeta>>(
+  const response = await httpClient<ApiSuccessBody<ExploreProject[], ExploreProjectMeta>>(
     '/api/v1/projects',
     { method: 'get', signal, searchParams },
   );
@@ -71,7 +92,11 @@ export async function fetchExploreProjectsPage(
     throw new Error('프로젝트 목록 응답이 비어 있습니다.');
   return {
     projects: response.data,
-    meta: response.meta ?? { nextCursor: null, hasNext: false, totalCount: response.data.length },
+    meta: (response.meta ?? {
+      nextCursor: null,
+      hasNext: false,
+      totalCount: response.data.length,
+    }) as ExploreProjectMeta,
   };
 }
 

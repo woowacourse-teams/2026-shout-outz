@@ -569,7 +569,7 @@ describe('ExplorePage 프로젝트 탭', () => {
     await user.click(within(nav).getByRole('button', { name: /트랜잭션\/데드락/ }));
     await waitFor(() =>
       expect(screen.getByText('키워드로 찾은 결과', { exact: false })).toHaveTextContent(
-        '트랜잭션/데드락 키워드로 찾은 결과',
+        '#트랜잭션/데드락 키워드로 찾은 결과',
       ),
     );
     const searchbox = screen.getByRole('searchbox', { name: '프로젝트 검색' });
@@ -599,6 +599,86 @@ describe('ExplorePage 프로젝트 탭', () => {
     expect(await screen.findByRole('heading', { name: '프로젝트 1' })).toBeVisible();
     expect(screen.getByRole('searchbox', { name: '프로젝트 검색' })).toHaveValue('트랜잭션/데드락');
     expect(screen.queryByRole('list', { name: '추천 검색어' })).not.toBeInTheDocument();
+  });
+
+  describe('거른 프로젝트 카드', () => {
+    const projectList = (meta: object, item: object = {}) =>
+      http.get('/api/v1/projects', () =>
+        HttpResponse.json({
+          status: 'success',
+          data: [
+            {
+              slug: 'dropit',
+              title: 'Dropit',
+              tagline: '드롭 서비스',
+              cohort: 8,
+              thumbnailUrl: null,
+              likeCount: 3,
+              likedByMe: false,
+              commentCount: 0,
+              bookmarkCount: 0,
+              bookmarkedByMe: false,
+              techTags: [],
+              members: [],
+              ...item,
+            },
+          ],
+          meta: { nextCursor: null, hasNext: false, totalCount: 1, ...meta },
+        }),
+      );
+
+    it('거르지 않은 목록의 카드에는 거른 까닭을 붙이지 않는다', async () => {
+      renderRoute('/?tab=project');
+
+      const cards = await screen.findByRole('list', { name: '프로젝트' });
+      expect(screen.queryByText('키워드로 찾은 결과')).not.toBeInTheDocument();
+      expect(within(cards).queryByLabelText(/검색에 걸린/)).not.toBeInTheDocument();
+    });
+
+    it('왼쪽 주제로 거르면 목록 위에 주제를 강조하고 카드마다 반복하지 않는다', async () => {
+      renderRoute('/?tab=project&topic=트랜잭션/데드락');
+
+      expect(await screen.findByText('#트랜잭션/데드락', { selector: 'b' })).toBeInTheDocument();
+      const cards = screen.getByRole('list', { name: '프로젝트' });
+      expect(within(cards).queryByText('#트랜잭션/데드락')).not.toBeInTheDocument();
+    });
+
+    it('검색어를 서버가 주제로 해석하면 검색어 아래에 그 주제를 알려 준다', async () => {
+      server.use(
+        projectList({ matchedTopic: { topicId: 'lock', name: '동시성', side: 'BACKEND' } }),
+      );
+      renderRoute('/?tab=project&q=락');
+
+      await screen.findByRole('link', { name: /Dropit/ });
+      expect(screen.getByText('키워드로 찾은 결과', { exact: false })).toHaveTextContent(
+        '락 키워드로 찾은 결과',
+      );
+      expect(screen.getByText('#동시성')).toBeInTheDocument();
+      expect(screen.getByText(/주제를 다룬 프로젝트를/)).toBeInTheDocument();
+    });
+
+    it('검색어로 찾으면 프로젝트가 걸린 근거 자료를 출처와 제목으로 보여 준다', async () => {
+      server.use(
+        projectList(
+          {},
+          {
+            matchedResource: {
+              resourceId: 7,
+              source: 'github-pr',
+              title: '레디스 분산 락으로 중복 드롭 막기',
+            },
+          },
+        ),
+      );
+      renderRoute('/?tab=project&q=분산 락');
+
+      const card = await screen.findByRole('link', { name: /Dropit/ });
+      const evidence = within(card).getByLabelText(
+        "'분산 락' 검색에 걸린 PR: 레디스 분산 락으로 중복 드롭 막기",
+      );
+      expect(within(evidence).getByText('PR')).toBeInTheDocument();
+      expect(within(evidence).getByText('레디스 분산 락으로 중복 드롭 막기')).toBeInTheDocument();
+    });
   });
 
   it('좋아요순으로 바꾸면 좋아요가 많은 프로젝트부터 보여준다', async () => {
