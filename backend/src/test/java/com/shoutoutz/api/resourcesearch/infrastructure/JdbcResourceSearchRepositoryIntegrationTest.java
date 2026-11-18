@@ -242,6 +242,15 @@ class JdbcResourceSearchRepositoryIntegrationTest {
     }
 
     @Test
+    void 색인할_조각에서_본문이_개행과_탭뿐인_조각을_제외한다() {
+        fixture.chunk(fixture.document(ResourceTrack.BE), 0, "intro", "\n\t", vector(1, 0), MODEL);
+        long available = fixture.intro(fixture.document(ResourceTrack.BE), vector(0, 1));
+
+        assertThat(resourceSearchRepository.findLexicalChunks(MODEL))
+                .extracting(LexicalChunk::chunkId).containsExactly(available);
+    }
+
+    @Test
     void 조각_ID로_문서_정보와_질문과의_코사인_유사도를_조각_ID순으로_읽는다() {
         long partialDocument = fixture.document(ResourceTrack.BE);
         long partial = fixture.chunk(partialDocument, 0, "intro", "캐시 무효화", vector(0.8f, 0.6f), MODEL);

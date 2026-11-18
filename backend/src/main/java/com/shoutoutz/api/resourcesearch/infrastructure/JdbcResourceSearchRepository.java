@@ -7,6 +7,7 @@ import com.shoutoutz.api.resourcesearch.application.dto.ResourceSearchCandidate;
 import com.shoutoutz.api.resourcesearch.domain.ResourceTrack;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -146,7 +147,7 @@ public class JdbcResourceSearchRepository implements ResourceSearchRepository {
 
     /**
      * 렉시컬 색인에 넣을 조각을 읽는다. 벡터 검색과 같은 자료가 검색되도록 삭제, 모델, 제보 조건을 똑같이 건다.
-     * 본문이 공백뿐인 조각은 찾을 단어가 없어 뺀다.
+     * 본문이 공백뿐인 조각은 찾을 단어가 없어 뺀다. 개행과 탭도 공백으로 보도록 LexicalChunk와 같은 isBlank 기준으로 거른다.
      */
     @Override
     public List<LexicalChunk> findLexicalChunks(String modelId) {
@@ -157,18 +158,21 @@ public class JdbcResourceSearchRepository implements ResourceSearchRepository {
                 WHERE c.deleted_at IS NULL
                   AND d.deleted_at IS NULL
                   AND c.embedding_model = :modelId
-                  AND btrim(c.chunk_text) <> ''
                 """ + NOT_REMOVED_BY_REPORT + " ORDER BY c.id";
 
-        return jdbcTemplate.query(
-                sql,
-                new MapSqlParameterSource("modelId", modelId),
-                (resultSet, rowNumber) -> new LexicalChunk(
-                        resultSet.getLong("chunk_id"),
-                        resultSet.getString("chunk_text"),
-                        ResourceTrack.from(resultSet.getString("track"))
-                )
-        );
+        List<LexicalChunk> chunks = new ArrayList<>();
+        jdbcTemplate.query(sql, new MapSqlParameterSource("modelId", modelId), resultSet -> {
+            String text = resultSet.getString("chunk_text");
+            if (text == null || text.isBlank()) {
+                return;
+            }
+            chunks.add(new LexicalChunk(
+                    resultSet.getLong("chunk_id"),
+                    text,
+                    ResourceTrack.from(resultSet.getString("track"))
+            ));
+        });
+        return List.copyOf(chunks);
     }
 
     private static ResourceSearchCandidate toCandidate(ResultSet resultSet) throws SQLException {
