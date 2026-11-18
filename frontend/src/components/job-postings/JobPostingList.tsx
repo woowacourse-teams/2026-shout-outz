@@ -8,6 +8,7 @@ import { analytics } from '@/utils/analytics';
 import { cn } from '@/utils/cn';
 import { getApiErrorMessage } from '@/utils/error';
 
+// PROTOTYPE-DIFF: 프로토타입은 마감 임박순이 기본이지만, 서버에 아직 없어 최신 등록순을 기본으로 둔다(routes/index.tsx).
 const SORT_OPTIONS: { sort: JobPostingSort; label: string }[] = [
   { sort: 'DEADLINE', label: '마감 임박순' },
   { sort: 'LATEST', label: '최신 등록순' },

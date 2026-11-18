@@ -48,7 +48,7 @@ export function JobPostingCard({
         </span>
       </div>
       <h2 className="mt-4 text-lg font-bold text-gray-900">{jobPosting.title}</h2>
-      {/* TODO(채용공고 후속 PR): 서버가 해시태그(tags)를 주면 제목 아래에 "#Kotlin #Spring"처럼 다시 둔다. */}
+      {/* PROTOTYPE-DIFF: 제목 아래 해시태그("#Kotlin #Spring")는 서버 응답에 없어 뺐다. 서버가 tags를 주면 다시 둔다. */}
       <p className="mt-auto pt-4 text-sm font-semibold text-gray-700">
         찾는 역량 {jobPosting.requirementCount}개 →
       </p>
