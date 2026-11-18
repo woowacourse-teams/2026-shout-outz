@@ -149,10 +149,10 @@ class JobRequirementMatchingConfigurationTest {
 
     @Test
     void 임베딩과_벡터_조회와_판정의_제한_시간_합이_lease에_닿으면_기동에_실패한다() {
-        // 임베딩 5초 + 30초, 벡터 조회 6번 x (자리 대기 1초 + 쿼리 3초) = 24초, 제공자 2개 50초씩으로 합이 159초다.
-        JobRequirementMatchingProperties justEnough = properties(Duration.ofSeconds(160),
+        // 임베딩 5초 + 30초, 벡터 조회 한 번(자리 대기 1초 + 쿼리 3초) 4초, 제공자 2개 50초씩으로 합이 139초다.
+        JobRequirementMatchingProperties justEnough = properties(Duration.ofSeconds(140),
                 LlmProvider.BEDROCK_GPT, LlmProvider.BEDROCK_CLAUDE);
-        JobRequirementMatchingProperties tooShort = properties(Duration.ofSeconds(159),
+        JobRequirementMatchingProperties tooShort = properties(Duration.ofSeconds(139),
                 LlmProvider.BEDROCK_GPT, LlmProvider.BEDROCK_CLAUDE);
         LlmProperties llm = new LlmProperties(null, null, null);
         EmbeddingProperties embedding = embedding("key", Duration.ofSeconds(30));
