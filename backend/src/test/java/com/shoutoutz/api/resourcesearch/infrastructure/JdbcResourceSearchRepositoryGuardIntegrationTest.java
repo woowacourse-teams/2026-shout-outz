@@ -135,6 +135,8 @@ class JdbcResourceSearchRepositoryGuardIntegrationTest {
         long deadline = System.nanoTime() + Duration.ofSeconds(5).toNanos();
         try (Statement statement = blocker.createStatement()) {
             while (System.nanoTime() < deadline) {
+                // 잠금을 쥔 트랜잭션 안에서는 세션 상태 조회가 첫 결과로 고정되므로 조회마다 비운다.
+                statement.execute("SELECT pg_stat_clear_snapshot()");
                 try (var resultSet = statement.executeQuery(
                         "SELECT count(*) FROM pg_stat_activity WHERE wait_event_type = 'Lock'")) {
                     resultSet.next();
