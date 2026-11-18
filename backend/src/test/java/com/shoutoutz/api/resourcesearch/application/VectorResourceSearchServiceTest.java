@@ -22,6 +22,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -222,5 +223,11 @@ class VectorResourceSearchServiceTest {
                 "https://example.com/" + documentId,
                 new MatchedChunk(chunkId, kind, "문제: 작업 유실\n해결: 재시도", score)
         );
+    }
+
+    @ParameterizedTest
+    @CsvSource({"1, 6", "10, 6", "20, 6", "21, 6", "40, 5", "200, 2", "400, 1", "500, 1"})
+    void 문서_수에_따라_벡터_조회를_최대_몇_번_하는지_알려_준다(int limit, int expected) {
+        assertThat(VectorResourceSearchService.maxAttempts(limit)).isEqualTo(expected);
     }
 }
