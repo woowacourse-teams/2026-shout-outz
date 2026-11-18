@@ -27,7 +27,7 @@ type ExploreProjectCardProps = Pick<
 
 /**
  * 탐색 프로젝트 탭 카드. 썸네일, 기수, 이름, 소개, 좋아요 수를 보여 주고,
- * 주제나 검색어로 거른 목록이면 소개 아래에 거른 까닭을 한 줄로 더한다.
+ * 검색어로 찾은 목록이면 소개 아래에 프로젝트가 걸린 근거 자료를 한 줄로 더한다.
  */
 export function ExploreProjectCard({
   slug,
@@ -75,23 +75,19 @@ export function ExploreProjectCard({
       <p className="mt-1 line-clamp-2 text-sm leading-relaxed break-words text-gray-600">
         {tagline}
       </p>
-      {match && <MatchLine match={match} />}
+      {/* 주제로 거른 목록은 목록 위에서 한 번 보여 주고, 카드에는 프로젝트마다 다른 근거 자료만 단다. */}
+      {match?.kind === 'resource' && <MatchedResourceLine match={match} />}
       <p className="mt-2 text-xs text-gray-500">좋아요 {likeCount}</p>
     </Link>
   );
 }
 
-/** 카드 소개 아래 거른 까닭. 카드 전체가 링크라 안에는 누를 것을 두지 않는다. */
-function MatchLine({ match }: { match: ExploreProjectMatch }) {
-  if (match.kind === 'topic') {
-    return (
-      <p className="mt-3 flex items-center gap-1.5 text-xs text-gray-500">
-        <Badge tone="primary">#{match.topic}</Badge>
-        <span>주제를 다뤘어요</span>
-      </p>
-    );
-  }
-
+/** 카드 소개 아래 검색에 걸린 근거 자료. 카드 전체가 링크라 안에는 누를 것을 두지 않는다. */
+function MatchedResourceLine({
+  match,
+}: {
+  match: Extract<ExploreProjectMatch, { kind: 'resource' }>;
+}) {
   const [label, tone] = sourceBadgeOf(match.resource.source);
   return (
     <p
