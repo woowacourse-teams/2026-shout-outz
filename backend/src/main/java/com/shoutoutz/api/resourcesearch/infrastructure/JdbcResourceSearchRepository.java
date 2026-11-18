@@ -1,15 +1,20 @@
 package com.shoutoutz.api.resourcesearch.infrastructure;
 
+import com.shoutoutz.api.common.exception.custom.ServiceUnavailableException;
 import com.shoutoutz.api.resourcesearch.application.ResourceSearchRepository;
 import com.shoutoutz.api.resourcesearch.application.dto.MatchedChunk;
 import com.shoutoutz.api.resourcesearch.application.dto.ResourceSearchCandidate;
+import com.shoutoutz.api.resourcesearch.domain.ResourceSearchErrorCode;
 import com.shoutoutz.api.resourcesearch.domain.ResourceTrack;
+import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 @Repository
 @RequiredArgsConstructor
@@ -31,9 +36,19 @@ public class JdbcResourceSearchRepository implements ResourceSearchRepository {
 
     private static final int VECTOR_DIMENSIONS = 1024;
 
-    private final NamedParameterJdbcTemplate jdbcTemplate;
+    // PostgreSQL이 statement_timeout으로 쿼리를 중단할 때 내는 SQLSTATE
+    private static final String QUERY_CANCELED = "57014";
 
+    private final NamedParameterJdbcTemplate jdbcTemplate;
+    private final ResourceSearchProperties properties;
+
+    /**
+     * 조각 전체를 읽는 무거운 조회라 제한 시간을 건다. 느려진 조회가 끝까지 돌며 DB를 붙잡지 않게 한다.
+     * SET LOCAL은 트랜잭션 안에서만 적용되므로 이 조회만 감싸는 트랜잭션을 두고, 바깥 트랜잭션에 섞여 불려도
+     * 다음 쿼리에 남지 않도록 조회 뒤에 되돌린다.
+     */
     @Override
+    @Transactional(readOnly = true)
     public List<ResourceSearchCandidate> findNearest(
             float[] queryVector,
             String modelId,
@@ -63,27 +78,45 @@ public class JdbcResourceSearchRepository implements ResourceSearchRepository {
         }
         sql += " ORDER BY similarity_score DESC, c.id LIMIT :candidateLimit";
 
-        return jdbcTemplate.query(
-                sql,
-                parameters,
-                (resultSet, rowNumber) -> new ResourceSearchCandidate(
-                        resultSet.getLong("document_id"),
-                        resultSet.getString("external_key"),
-                        resultSet.getObject("project_id", Long.class),
-                        resultSet.getString("repo"),
-                        resultSet.getString("title"),
-                        resultSet.getString("summary"),
-                        resultSet.getString("source"),
-                        ResourceTrack.from(resultSet.getString("track")),
-                        resultSet.getString("url"),
-                        new MatchedChunk(
-                                resultSet.getLong("chunk_id"),
-                                resultSet.getString("chunk_kind"),
-                                resultSet.getString("chunk_text"),
-                                resultSet.getDouble("similarity_score")
-                        )
-                )
-        );
+        jdbcTemplate.getJdbcTemplate().execute("SET LOCAL statement_timeout = " + properties.queryTimeout().toMillis());
+        List<ResourceSearchCandidate> candidates;
+        try {
+            candidates = jdbcTemplate.query(
+                    sql,
+                    parameters,
+                    (resultSet, rowNumber) -> new ResourceSearchCandidate(
+                            resultSet.getLong("document_id"),
+                            resultSet.getString("external_key"),
+                            resultSet.getObject("project_id", Long.class),
+                            resultSet.getString("repo"),
+                            resultSet.getString("title"),
+                            resultSet.getString("summary"),
+                            resultSet.getString("source"),
+                            ResourceTrack.from(resultSet.getString("track")),
+                            resultSet.getString("url"),
+                            new MatchedChunk(
+                                    resultSet.getLong("chunk_id"),
+                                    resultSet.getString("chunk_kind"),
+                                    resultSet.getString("chunk_text"),
+                                    resultSet.getDouble("similarity_score")
+                            )
+                    )
+            );
+        } catch (DataAccessException exception) {
+            if (isQueryCanceled(exception)) {
+                throw new ServiceUnavailableException(ResourceSearchErrorCode.RESOURCE_SEARCH_TIMEOUT, exception);
+            }
+            throw exception;
+        }
+        jdbcTemplate.getJdbcTemplate().execute("SET LOCAL statement_timeout TO DEFAULT");
+        return candidates;
+    }
+
+    private static boolean isQueryCanceled(DataAccessException exception) {
+        if (exception.getRootCause() instanceof SQLException sqlException) {
+            return QUERY_CANCELED.equals(sqlException.getSQLState());
+        }
+        return false;
     }
 
     private void validateVector(float[] vector) {

@@ -182,6 +182,17 @@ class JdbcResourceSearchRepositoryIntegrationTest {
                 .hasCauseInstanceOf(IllegalArgumentException.class);
     }
 
+    @Test
+    void 조회를_마치면_같은_트랜잭션의_제한_시간_설정을_되돌린다() {
+        fixture.intro(fixture.document(ResourceTrack.BE), vector(1, 0));
+        String before = jdbcTemplate.queryForObject("SELECT current_setting('statement_timeout')", String.class);
+
+        search(null, 10);
+
+        assertThat(jdbcTemplate.queryForObject("SELECT current_setting('statement_timeout')", String.class))
+                .isEqualTo(before);
+    }
+
     private List<ResourceSearchCandidate> search(ResourceTrack track, int limit) {
         return resourceSearchRepository.findNearest(vector(1, 0), MODEL, track, limit);
     }
