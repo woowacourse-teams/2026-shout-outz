@@ -5,15 +5,19 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.bind.DefaultValue;
 
 /**
+ * 기본값은 운영 RDS 사양(메모리 1GB, vCPU 2)으로 맞춘 환경에서 조각 16,483개로 재서 정했다.
+ * 동시 실행 2에서 처리량이 가장 높았고 그보다 많으면 줄었다. 벡터 조회 한 번은 평소 최대 0.4초, 10개가 겹쳐도 2초 안팎이었다.
+ * 자료 수나 DB 사양이 바뀌면 다시 잰다.
+ *
  * @param queryTimeout   벡터 조회 한 번에 허용하는 시간. 넘으면 DB가 쿼리를 중단한다
  * @param maxConcurrent  동시에 실행하는 벡터 조회 수의 상한. 커넥션 풀보다 작게 둬 다른 기능이 쓸 커넥션을 남긴다
  * @param acquireTimeout 상한이 찼을 때 자리를 기다리는 시간. 넘으면 조회를 시작하지 않는다
  */
 @ConfigurationProperties(prefix = "resource.search")
 public record ResourceSearchProperties(
-        @DefaultValue("10s") Duration queryTimeout,
-        @DefaultValue("4") int maxConcurrent,
-        @DefaultValue("200ms") Duration acquireTimeout
+        @DefaultValue("3s") Duration queryTimeout,
+        @DefaultValue("2") int maxConcurrent,
+        @DefaultValue("1s") Duration acquireTimeout
 ) {
 
     public ResourceSearchProperties {
