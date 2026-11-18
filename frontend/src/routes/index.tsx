@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
 
 import type { ExploreTab } from '@/components/explore/ExploreHero';
+import type { SearchResultKind } from '@/components/explore/ExploreSearchResult';
 import { ExplorePage } from '@/pages/ExplorePage';
 
 export interface ExploreSearch {
@@ -11,7 +12,13 @@ export interface ExploreSearch {
   topic?: string;
   /** 프로젝트 탭 정렬. 비어 있으면 최신 등록순 */
   sort?: 'POPULAR';
+  /** 키워드 탭 검색 결과의 자료 종류. 비어 있으면 전체 */
+  kind?: SearchResultKind;
 }
+
+const MATERIAL_KINDS: readonly SearchResultKind[] = ['PROJECT', 'BLOG', 'DOCUMENT', 'TALK'];
+const isMaterialKind = (value: unknown): value is SearchResultKind =>
+  MATERIAL_KINDS.includes(value as SearchResultKind);
 
 const text = (value: unknown) => (typeof value === 'string' ? value.trim() : '');
 
@@ -32,6 +39,8 @@ export const Route = createFileRoute('/')({
       ...(q && { q }),
       ...(topic && { topic }),
       ...(tab === 'project' && search.sort === 'POPULAR' && { sort: 'POPULAR' }),
+      // 자료 종류는 키워드 탭의 검색 결과에서만 쓴다.
+      ...(!tab && q && isMaterialKind(search.kind) && { kind: search.kind }),
     };
   },
   component: ExploreRoute,
@@ -50,8 +59,18 @@ function ExploreRoute() {
       onTabChange={(tab) => void navigate({ search: tabSearch(tab) })}
       query={search.q ?? ''}
       // 프로젝트 탭의 기술 주제는 검색어처럼 다뤄, 검색하면 주제를 풀고 주제를 고르면 검색어를 비운다.
+      // 검색어가 바뀌면 자료 종류도 전체로 되돌린다.
       onSearch={(q) =>
-        void navigate({ search: (prev) => ({ ...prev, q: q || undefined, topic: undefined }) })
+        void navigate({
+          search: (prev) => ({ ...prev, q: q || undefined, topic: undefined, kind: undefined }),
+        })
+      }
+      kind={search.kind ?? null}
+      onKindChange={(kind) =>
+        void navigate({
+          search: (prev) => ({ ...prev, kind: kind ?? undefined }),
+          resetScroll: false,
+        })
       }
       topic={search.topic ?? null}
       // 주제와 정렬은 목록만 바꾸므로 스크롤 위치를 그대로 둔다.

@@ -2,7 +2,7 @@ import { useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { useEffect, useRef } from 'react';
 
 import { jobPostingsQuery } from '@/apis/job-posting';
-import { Button } from '@/components/Button';
+import { ExploreMoreButton } from '@/components/explore/ExploreMoreButton';
 import { JobPostingCard, UpcomingJobPostingCard } from '@/components/job-postings/JobPostingCard';
 import { getApiErrorMessage } from '@/utils/error';
 
@@ -59,19 +59,17 @@ export function JobPostingList({ keyword }: { keyword: string }) {
       <div ref={sentinel} />
       {/* 매거진 목록처럼 스크롤 끝에서 다음 페이지를 이어 불러오고, 실패하면 버튼으로 다시 시도한다. */}
       {hasNextPage && (
-        <div className="mt-5 grid">
-          <Button
-            variant="outline"
-            disabled={isFetchingNextPage}
-            onClick={() => void fetchNextPage({ cancelRefetch: false })}
-          >
-            {isFetchingNextPage
-              ? '불러오는 중…'
-              : isFetchNextPageError
-                ? '공고 다시 불러오기'
-                : '공고 더 보기'}
-          </Button>
-        </div>
+        <ExploreMoreButton
+          icon={isFetchingNextPage || isFetchNextPageError ? undefined : 'down'}
+          disabled={isFetchingNextPage}
+          onClick={() => void fetchNextPage({ cancelRefetch: false })}
+        >
+          {isFetchingNextPage
+            ? '불러오는 중…'
+            : isFetchNextPageError
+              ? '공고 다시 불러오기'
+              : '공고 더 보기'}
+        </ExploreMoreButton>
       )}
     </div>
   );
