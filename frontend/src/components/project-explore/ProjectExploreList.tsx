@@ -61,7 +61,8 @@ function ProjectList({
   const totalCount = firstMeta?.totalCount ?? projects.length;
   // 검색어와 기술 주제는 함께 걸리지 않는다(routes/index.tsx).
   const keyword = filter.keyword.trim();
-  const searchedBy = filter.topic ?? keyword;
+  // 서버가 검색어를 기술 주제로 해석했으면 그 주제. 검색어와 다를 때만 따로 알려 준다.
+  const interpretedTopic = filter.topic ? null : (firstMeta?.matchedTopic?.name ?? null);
   // 왼쪽 주제로 거른 경우, 또는 서버가 검색어를 기술 주제로 해석해 그 주제로 찾은 경우
   const matchedTopic = filter.topic ?? firstMeta?.matchedTopic?.name ?? null;
   const matchOf = (project: ExploreProject): ExploreProjectMatch | null => {
@@ -79,10 +80,11 @@ function ProjectList({
           <h2 className="text-xl font-bold text-gray-900">
             프로젝트 <span className="font-medium text-gray-400">{totalCount}</span>
           </h2>
-          {searchedBy && (
-            <p className="mt-1 text-sm break-keep text-gray-500">
-              <b className="font-semibold text-gray-900">{searchedBy}</b> 키워드로 찾은 결과
-            </p>
+          {(filter.topic || keyword) && (
+            <SearchedBy
+              keyword={filter.topic ? `#${filter.topic}` : keyword}
+              interpretedTopic={interpretedTopic === keyword ? null : interpretedTopic}
+            />
           )}
         </div>
         <div
@@ -144,6 +146,35 @@ function ProjectList({
             <IconChevronDown className="size-3.5" aria-hidden="true" />
           </button>
         </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * 목록 위 "무엇으로 찾았는지". 카드마다 같은 주제를 반복하지 않고 여기서 한 번 강조한다.
+ * 검색어를 서버가 기술 주제로 해석했으면 그 주제도 덧붙인다.
+ */
+function SearchedBy({
+  keyword,
+  interpretedTopic,
+}: {
+  keyword: string;
+  interpretedTopic: string | null;
+}) {
+  return (
+    <div className="mt-2.5">
+      <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-base break-keep text-gray-700">
+        <b className="bg-primary-50 text-primary-600 rounded-lg px-2.5 py-1 font-bold break-all">
+          {keyword}
+        </b>{' '}
+        키워드로 찾은 결과
+      </p>
+      {interpretedTopic && (
+        <p className="mt-1.5 text-xs text-gray-500">
+          <b className="font-semibold text-gray-700">#{interpretedTopic}</b> 주제를 다룬 프로젝트를
+          모았어요
+        </p>
       )}
     </div>
   );

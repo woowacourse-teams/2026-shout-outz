@@ -569,7 +569,7 @@ describe('ExplorePage 프로젝트 탭', () => {
     await user.click(within(nav).getByRole('button', { name: /트랜잭션\/데드락/ }));
     await waitFor(() =>
       expect(screen.getByText('키워드로 찾은 결과', { exact: false })).toHaveTextContent(
-        '트랜잭션/데드락 키워드로 찾은 결과',
+        '#트랜잭션/데드락 키워드로 찾은 결과',
       ),
     );
     const searchbox = screen.getByRole('searchbox', { name: '프로젝트 검색' });
@@ -631,32 +631,36 @@ describe('ExplorePage 프로젝트 탭', () => {
       renderRoute('/?tab=project');
 
       const cards = await screen.findByRole('list', { name: '프로젝트' });
-      expect(within(cards).queryByText('주제를 다뤘어요')).not.toBeInTheDocument();
+      expect(screen.queryByText('키워드로 찾은 결과')).not.toBeInTheDocument();
+      expect(within(cards).queryByLabelText(/검색에 걸린/)).not.toBeInTheDocument();
     });
 
-    it('왼쪽 주제로 거르면 카드에 주제 배지를 단다', async () => {
+    it('왼쪽 주제로 거르면 목록 위에 주제를 강조하고 카드마다 반복하지 않는다', async () => {
       renderRoute('/?tab=project&topic=트랜잭션/데드락');
 
-      const cards = await screen.findByRole('list', { name: '프로젝트' });
-      const [first] = within(cards).getAllByRole('link');
-      if (!first) throw new Error('프로젝트 카드가 없습니다.');
-      expect(within(first).getByText('#트랜잭션/데드락')).toBeInTheDocument();
-      expect(within(first).getByText('주제를 다뤘어요')).toBeInTheDocument();
+      expect(await screen.findByText('#트랜잭션/데드락', { selector: 'b' })).toBeInTheDocument();
+      const cards = screen.getByRole('list', { name: '프로젝트' });
+      expect(within(cards).queryByText('#트랜잭션/데드락')).not.toBeInTheDocument();
       // 그 주제를 고른 자료 탭으로 연다.
+      const [first] = within(cards).getAllByRole('link');
       expect(first).toHaveAttribute(
         'href',
         expect.stringMatching(/^\/projects\/@[^/]+\/materials\?topic=/),
       );
     });
 
-    it('검색어를 서버가 주제로 해석하면 그 주제 배지를 단다', async () => {
+    it('검색어를 서버가 주제로 해석하면 검색어 아래에 그 주제를 알려 준다', async () => {
       server.use(
         projectList({ matchedTopic: { topicId: 'lock', name: '동시성', side: 'BACKEND' } }),
       );
       renderRoute('/?tab=project&q=락');
 
-      const card = await screen.findByRole('link', { name: /Dropit/ });
-      expect(within(card).getByText('#동시성')).toBeInTheDocument();
+      await screen.findByRole('link', { name: /Dropit/ });
+      expect(screen.getByText('키워드로 찾은 결과', { exact: false })).toHaveTextContent(
+        '락 키워드로 찾은 결과',
+      );
+      expect(screen.getByText('#동시성')).toBeInTheDocument();
+      expect(screen.getByText(/주제를 다룬 프로젝트를/)).toBeInTheDocument();
     });
 
     it('검색어로 찾으면 프로젝트가 걸린 근거 자료를 출처와 제목으로 보여 준다', async () => {
