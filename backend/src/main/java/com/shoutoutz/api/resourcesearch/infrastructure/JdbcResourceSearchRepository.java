@@ -11,11 +11,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Repository
 @RequiredArgsConstructor
 public class JdbcResourceSearchRepository implements ResourceSearchRepository {
@@ -148,6 +150,7 @@ public class JdbcResourceSearchRepository implements ResourceSearchRepository {
     /**
      * 렉시컬 색인에 넣을 조각을 읽는다. 벡터 검색과 같은 자료가 검색되도록 삭제, 모델, 제보 조건을 똑같이 건다.
      * 본문이 공백뿐인 조각은 찾을 단어가 없어 뺀다. 개행과 탭도 공백으로 보도록 LexicalChunk와 같은 isBlank 기준으로 거른다.
+     * 트랙 값이 잘못된 조각은 그 조각만 빼고 경고를 남긴다. 조각 하나 때문에 색인 적재 전체가 실패하면 서버가 뜨지 못한다.
      */
     @Override
     public List<LexicalChunk> findLexicalChunks(String modelId) {
@@ -166,11 +169,12 @@ public class JdbcResourceSearchRepository implements ResourceSearchRepository {
             if (text == null || text.isBlank()) {
                 return;
             }
-            chunks.add(new LexicalChunk(
-                    resultSet.getLong("chunk_id"),
-                    text,
-                    ResourceTrack.from(resultSet.getString("track"))
-            ));
+            long chunkId = resultSet.getLong("chunk_id");
+            try {
+                chunks.add(new LexicalChunk(chunkId, text, ResourceTrack.from(resultSet.getString("track"))));
+            } catch (IllegalArgumentException exception) {
+                log.warn("Lexical chunk skipped: chunkId={}, reason={}", chunkId, exception.getMessage());
+            }
         });
         return List.copyOf(chunks);
     }
