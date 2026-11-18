@@ -9,15 +9,16 @@ import com.shoutoutz.api.resourcesearch.domain.ResourceTrack;
 import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.List;
-import lombok.RequiredArgsConstructor;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 @Repository
-@RequiredArgsConstructor
 public class JdbcResourceSearchRepository implements ResourceSearchRepository {
 
     /**
@@ -41,14 +42,28 @@ public class JdbcResourceSearchRepository implements ResourceSearchRepository {
 
     private final NamedParameterJdbcTemplate jdbcTemplate;
     private final ResourceSearchProperties properties;
+    private final TransactionTemplate readOnlyTransaction;
+    private final Semaphore slots;
+
+    public JdbcResourceSearchRepository(
+            NamedParameterJdbcTemplate jdbcTemplate,
+            ResourceSearchProperties properties,
+            PlatformTransactionManager transactionManager
+    ) {
+        this.jdbcTemplate = jdbcTemplate;
+        this.properties = properties;
+        this.readOnlyTransaction = new TransactionTemplate(transactionManager);
+        this.readOnlyTransaction.setReadOnly(true);
+        this.slots = new Semaphore(properties.maxConcurrent(), true);
+    }
 
     /**
-     * 조각 전체를 읽는 무거운 조회라 제한 시간을 건다. 느려진 조회가 끝까지 돌며 DB를 붙잡지 않게 한다.
-     * SET LOCAL은 트랜잭션 안에서만 적용되므로 이 조회만 감싸는 트랜잭션을 두고, 바깥 트랜잭션에 섞여 불려도
-     * 다음 쿼리에 남지 않도록 조회 뒤에 되돌린다.
+     * 조각 전체를 읽는 무거운 조회라 두 가지로 막는다.
+     * 동시에 도는 조회 수를 제한해 검색이 커넥션 풀을 전부 차지하지 못하게 하고,
+     * 제한 시간을 넘긴 조회는 DB가 중단하게 해 느려진 조회가 끝까지 돌며 DB를 붙잡지 않게 한다.
+     * 자리를 얻은 뒤에 커넥션을 잡도록 트랜잭션을 메서드 안에서 연다.
      */
     @Override
-    @Transactional(readOnly = true)
     public List<ResourceSearchCandidate> findNearest(
             float[] queryVector,
             String modelId,
@@ -56,6 +71,34 @@ public class JdbcResourceSearchRepository implements ResourceSearchRepository {
             int candidateLimit
     ) {
         validateVector(queryVector);
+        acquireSlot();
+        try {
+            return readOnlyTransaction.execute(
+                    status -> findNearestWithinTimeout(queryVector, modelId, track, candidateLimit)
+            );
+        } finally {
+            slots.release();
+        }
+    }
+
+    private void acquireSlot() {
+        try {
+            if (!slots.tryAcquire(properties.acquireTimeout().toMillis(), TimeUnit.MILLISECONDS)) {
+                throw new ServiceUnavailableException(ResourceSearchErrorCode.RESOURCE_SEARCH_BUSY);
+            }
+        } catch (InterruptedException exception) {
+            Thread.currentThread().interrupt();
+            throw new ServiceUnavailableException(ResourceSearchErrorCode.RESOURCE_SEARCH_BUSY, exception);
+        }
+    }
+
+    // SET LOCAL은 트랜잭션 안에서만 적용된다. 바깥 트랜잭션에 섞여 불려도 다음 쿼리에 남지 않도록 조회 뒤에 되돌린다.
+    private List<ResourceSearchCandidate> findNearestWithinTimeout(
+            float[] queryVector,
+            String modelId,
+            ResourceTrack track,
+            int candidateLimit
+    ) {
         String sql = """
                 SELECT d.id AS document_id, d.external_key, d.project_id, d.repo,
                        d.title, d.summary, d.source, d.track, d.url,
