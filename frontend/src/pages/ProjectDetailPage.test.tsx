@@ -256,6 +256,51 @@ describe('프로젝트 상세 탭', () => {
     ).toBeInTheDocument();
   });
 
+  test('로그인한 사용자의 분야에 맞는 직군 탭을 먼저 보여 주고, 직접 고른 탭은 유지한다', async () => {
+    const me = await (await fetch('http://localhost/api/v1/users/me')).json();
+    server.use(
+      http.get('/api/v1/users/me', () =>
+        HttpResponse.json({ status: 'success', data: { ...me.data, track: 'FRONTEND' } }),
+      ),
+    );
+    renderPage('/projects/@shout-outz');
+
+    const roles = await screen.findByRole('tablist', { name: '직군' });
+    await waitFor(() =>
+      expect(within(roles).getByRole('tab', { name: '프론트엔드' })).toHaveAttribute(
+        'aria-selected',
+        'true',
+      ),
+    );
+    expect(
+      within(screen.getByRole('list', { name: '경험' })).getByRole('heading', {
+        name: '모달을 overlay-kit으로 통일',
+      }),
+    ).toBeInTheDocument();
+
+    await userEvent.click(within(roles).getByRole('tab', { name: '백엔드' }));
+    expect(within(roles).getByRole('tab', { name: '백엔드' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+  });
+
+  test('분야의 경험이 없으면 첫 직군 탭을 보여 준다', async () => {
+    const me = await (await fetch('http://localhost/api/v1/users/me')).json();
+    server.use(
+      http.get('/api/v1/users/me', () =>
+        HttpResponse.json({ status: 'success', data: { ...me.data, track: 'ANDROID' } }),
+      ),
+    );
+    renderPage('/projects/@shout-outz');
+
+    const roles = await screen.findByRole('tablist', { name: '직군' });
+    expect(within(roles).getByRole('tab', { name: '백엔드' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+  });
+
   test('경험 카드를 누르면 경험 상세에서 포트폴리오 글, 연관 자료, 다른 경험을 보여준다', async () => {
     renderPage('/projects/@shout-outz');
 

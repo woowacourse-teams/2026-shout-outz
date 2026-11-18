@@ -165,6 +165,20 @@ class ResourceCardQueryRepositoryIntegrationTest {
     }
 
     @Test
+    @DisplayName("관리자가 받아들인 필요 없어요 제보가 있는 자료는 빼고, 제보만 들어온 자료는 준다")
+    void skipsDocumentsRemovedByReport() {
+        long alive = fixture.document("blog-post").save();
+        long reportedOnly = fixture.document("blog-post").save();
+        long removed = fixture.document("blog-post").save();
+        fixture.removalReport(reportedOnly, "OPEN");
+        fixture.removalReport(removed, "ACCEPTED");
+
+        List<ResourceCard> cards = resourceCardQueryRepository.findByIds(List.of(removed, reportedOnly, alive));
+
+        assertThat(cards).extracting(ResourceCard::resourceId).containsExactly(reportedOnly, alive);
+    }
+
+    @Test
     @DisplayName("빈 ID 목록이면 빈 목록을 준다")
     void returnsEmptyForEmptyIds() {
         assertThat(resourceCardQueryRepository.findByIds(List.of())).isEmpty();

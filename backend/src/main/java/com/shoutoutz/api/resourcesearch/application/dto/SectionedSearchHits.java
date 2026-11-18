@@ -25,12 +25,26 @@ public final class SectionedSearchHits {
     private static List<SearchHit> topOf(ResourceSection section, List<SearchHit> rankedHits) {
         return rankedHits.stream()
                 .filter(hit -> ResourceSection.of(hit.source()).equals(Optional.of(section)))
+                .limit(section.depth())
+                .toList();
+    }
+
+    /**
+     * 첫 화면에 보여 줄 자료. 섹션 상한까지만 담는다.
+     */
+    public List<SearchHit> hits(ResourceSection section) {
+        return hitsBySection.get(section).stream()
                 .limit(section.limit())
                 .toList();
     }
 
-    public List<SearchHit> hits(ResourceSection section) {
-        return hitsBySection.get(section);
+    /**
+     * 첫 화면 다음에 이어 읽을 자료. 섹션의 깊이 상한까지만 담는다.
+     */
+    public List<SearchHit> rest(ResourceSection section) {
+        return hitsBySection.get(section).stream()
+                .skip(section.limit())
+                .toList();
     }
 
     public boolean isFull(ResourceSection section) {
