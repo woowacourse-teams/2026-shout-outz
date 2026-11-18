@@ -25,6 +25,7 @@ import com.shoutoutz.api.common.exception.custom.ConflictException;
 import com.shoutoutz.api.common.exception.custom.DuplicateEntityException;
 import com.shoutoutz.api.common.exception.custom.DomainValidationException;
 import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
+import com.shoutoutz.api.common.exception.custom.ServiceUnavailableException;
 import com.shoutoutz.api.media.application.MediaUrlResolver;
 import com.shoutoutz.api.media.domain.MediaMetadata;
 import com.shoutoutz.api.media.domain.MediaMetadataRepository;
@@ -82,6 +83,7 @@ import com.shoutoutz.api.projectresource.application.ProjectResourceQueryReposit
 import com.shoutoutz.api.projectresource.domain.ResourceTopic;
 import com.shoutoutz.api.resourcesearch.application.ResourceSearchService;
 import com.shoutoutz.api.resourcesearch.application.dto.SearchHit;
+import com.shoutoutz.api.resourcesearch.domain.ResourceSearchErrorCode;
 import com.shoutoutz.api.resourcesearch.domain.ResourceTrack;
 import com.shoutoutz.api.project.presentation.dto.request.ProjectFilterOptionsRequest;
 import com.shoutoutz.api.project.presentation.dto.request.ProjectFindAllRequest;
@@ -923,6 +925,25 @@ class ProjectServiceTest {
         when(projectRepository.findPublicProjectNames()).thenReturn(List.of());
         when(resourceSearchService.search("eda", null, 20))
                 .thenThrow(new EmbeddingException(null, "TRANSPORT_ERROR", true));
+        when(projectRepository.findKeywordCandidates(new ProjectFilterCondition("eda", List.of(), List.of()), List.of()))
+                .thenReturn(List.of(new KeywordCandidate(2L, false, NOW)));
+        when(projectRepository.findAll(any(ProjectSearchCondition.class)))
+                .thenReturn(new ProjectPage(List.of(), false, 0));
+
+        projectService.findAll(new ProjectFindAllRequest("eda", null, null, null, null, null, null));
+
+        ArgumentCaptor<ProjectSearchCondition> conditionCaptor = ArgumentCaptor.forClass(ProjectSearchCondition.class);
+        verify(projectRepository).findAll(conditionCaptor.capture());
+        assertThat(conditionCaptor.getValue().projectIds()).containsExactly(2L);
+        assertThat(output).contains("resourceSearchFailed=true");
+    }
+
+    @Test
+    @DisplayName("자료 검색이 시간 제한이나 동시 실행 상한에 걸리면 글자 일치 프로젝트만으로 직접 검색 결과를 만든다.")
+    void findsKeywordMatchesOnlyWhenResourceSearchIsUnavailable(CapturedOutput output) {
+        when(projectRepository.findPublicProjectNames()).thenReturn(List.of());
+        when(resourceSearchService.search("eda", null, 20))
+                .thenThrow(new ServiceUnavailableException(ResourceSearchErrorCode.RESOURCE_SEARCH_TIMEOUT));
         when(projectRepository.findKeywordCandidates(new ProjectFilterCondition("eda", List.of(), List.of()), List.of()))
                 .thenReturn(List.of(new KeywordCandidate(2L, false, NOW)));
         when(projectRepository.findAll(any(ProjectSearchCondition.class)))

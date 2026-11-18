@@ -20,6 +20,7 @@ import com.shoutoutz.api.common.embedding.EmbeddingException;
 import com.shoutoutz.api.common.exception.custom.ConflictException;
 import com.shoutoutz.api.common.exception.custom.DuplicateEntityException;
 import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
+import com.shoutoutz.api.common.exception.custom.ServiceUnavailableException;
 import com.shoutoutz.api.media.application.MediaUrlResolver;
 import com.shoutoutz.api.media.domain.MediaMetadata;
 import com.shoutoutz.api.media.domain.MediaMetadataRepository;
@@ -441,7 +442,8 @@ public class ProjectService {
     /**
      * 프로젝트마다 자료 검색에 처음 나온 자료를, 프로젝트가 처음 나온 순서대로 모은다. 팀이 없는 자료(테코톡 등)는 건너뛴다.
      * 처음 나온 자료가 그 프로젝트의 근거 자료가 된다.
-     * 외부 임베딩 호출이 실패하면 자료 검색 없이 글자 일치 결과만 보여 주고, 실패는 로그로 남긴다.
+     * 외부 임베딩 호출이 실패하거나 자료 검색이 시간 제한, 동시 실행 상한에 걸리면 자료 검색 없이 글자 일치 결과만 보여 주고,
+     * 실패는 로그로 남긴다.
      */
     private ResourceSearchResult searchResourceProjectIds(String keyword) {
         try {
@@ -453,6 +455,9 @@ public class ProjectService {
         } catch (EmbeddingException exception) {
             log.warn("Project direct search without resource search: errorCode={}, httpStatus={}",
                     exception.errorCode(), exception.httpStatus());
+            return new ResourceSearchResult(Map.of(), true);
+        } catch (ServiceUnavailableException exception) {
+            log.warn("Project direct search without resource search: errorCode={}", exception.getErrorCode());
             return new ResourceSearchResult(Map.of(), true);
         }
     }
