@@ -1,7 +1,7 @@
 package com.shoutoutz.api.resourcesearch.application;
 
 import com.shoutoutz.api.common.embedding.EmbeddingClient;
-import com.shoutoutz.api.resourcesearch.application.dto.ResourceSearchCandidate;
+import com.shoutoutz.api.resourcesearch.application.dto.HybridRanking;
 import com.shoutoutz.api.resourcesearch.application.dto.SearchHit;
 import com.shoutoutz.api.resourcesearch.domain.ResourceTrack;
 import java.util.List;
@@ -12,13 +12,13 @@ import org.springframework.stereotype.Service;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class VectorResourceSearchService implements ResourceSearchService {
+public class HybridResourceSearchService implements ResourceSearchService {
 
     private static final int INITIAL_CANDIDATES = 20;
     private static final int MAX_CANDIDATES = 400;
 
     private final EmbeddingClient embeddingClient;
-    private final ResourceSearchRepository resourceSearchRepository;
+    private final HybridResourceRanker hybridResourceRanker;
 
     @Override
     public List<SearchHit> search(String query, ResourceTrack track, int limit) {
@@ -27,30 +27,19 @@ public class VectorResourceSearchService implements ResourceSearchService {
         float[] queryVector = embeddingClient.embed(query);
         String modelId = embeddingClient.modelId();
         long embeddingNanos = System.nanoTime() - startedAt;
-        long databaseNanos = 0;
-        long aggregationNanos = 0;
         int candidateLimit = Math.min(MAX_CANDIDATES, Math.max(INITIAL_CANDIDATES, limit));
         int attempts = 0;
 
         while (true) {
-            long databaseStartedAt = System.nanoTime();
-            List<ResourceSearchCandidate> candidates = resourceSearchRepository.findNearest(
-                    queryVector, modelId, track, candidateLimit
-            );
-            databaseNanos += System.nanoTime() - databaseStartedAt;
-            long aggregationStartedAt = System.nanoTime();
-            List<SearchHit> hits = SearchHits.rank(candidates).stream().limit(limit).toList();
-            aggregationNanos += System.nanoTime() - aggregationStartedAt;
+            HybridRanking ranking = hybridResourceRanker.rank(query, queryVector, modelId, track, candidateLimit);
+            List<SearchHit> hits = ranking.hits().stream().limit(limit).toList();
             attempts++;
 
-            if (hits.size() >= limit || candidates.size() < candidateLimit || candidateLimit == MAX_CANDIDATES) {
-                log.debug("Resource search: embeddingMs={}, databaseMs={}, aggregationMs={}, totalMs={}, "
-                                + "attempts={}, candidateLimit={}, candidates={}, documents={}",
+            if (hits.size() >= limit || ranking.exhausted() || candidateLimit == MAX_CANDIDATES) {
+                log.debug("Resource search: embeddingMs={}, rankingMs={}, attempts={}, candidateLimit={}, documents={}",
                         embeddingNanos / 1_000_000.0,
-                        databaseNanos / 1_000_000.0,
-                        aggregationNanos / 1_000_000.0,
-                        (System.nanoTime() - startedAt) / 1_000_000.0,
-                        attempts, candidateLimit, candidates.size(), hits.size());
+                        (System.nanoTime() - startedAt - embeddingNanos) / 1_000_000.0,
+                        attempts, candidateLimit, hits.size());
                 return hits;
             }
             candidateLimit = Math.min(MAX_CANDIDATES, candidateLimit * 2);
