@@ -385,6 +385,27 @@ describe('프로젝트 상세 탭', () => {
     ).toBeInTheDocument();
   });
 
+  test('주소에 주제가 있으면 자료 탭에서 그 주제를 고른 상태로 보여 준다', async () => {
+    renderPage(`/projects/@shout-outz/materials?topic=${encodeURIComponent('무중단 배포')}`);
+
+    expect(
+      await screen.findByRole('heading', { level: 2, name: '무중단 배포' }),
+    ).toBeInTheDocument();
+    const nav = screen.getByRole('navigation', { name: '주제' });
+    const selected = within(nav)
+      .getAllByRole('button')
+      .filter((button) => button.getAttribute('aria-current') === 'true');
+    expect(selected[0]).toHaveAccessibleName(/무중단 배포/);
+  });
+
+  test('주소의 주제가 이 프로젝트 자료에 없으면 첫 주제를 보여 준다', async () => {
+    renderPage(`/projects/@shout-outz/materials?topic=${encodeURIComponent('없는 주제')}`);
+
+    expect(
+      await screen.findByRole('heading', { level: 2, name: '인덱스/쿼리 최적화' }),
+    ).toBeInTheDocument();
+  });
+
   test('자료 탭에서 주제를 고르면 그 주제의 팀 자료와 다른 팀 자료를 보여준다', async () => {
     renderPage('/projects/@shout-outz/materials');
 

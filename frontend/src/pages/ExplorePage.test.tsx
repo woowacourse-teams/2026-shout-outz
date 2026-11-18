@@ -641,6 +641,12 @@ describe('ExplorePage 프로젝트 탭', () => {
       expect(await screen.findByText('#트랜잭션/데드락', { selector: 'b' })).toBeInTheDocument();
       const cards = screen.getByRole('list', { name: '프로젝트' });
       expect(within(cards).queryByText('#트랜잭션/데드락')).not.toBeInTheDocument();
+      // 그 주제를 고른 자료 탭으로 연다.
+      const [first] = within(cards).getAllByRole('link');
+      expect(first).toHaveAttribute(
+        'href',
+        expect.stringMatching(/^\/projects\/@[^/]+\/materials\?topic=/),
+      );
     });
 
     it('검색어를 서버가 주제로 해석하면 검색어 아래에 그 주제를 알려 준다', async () => {
@@ -673,6 +679,8 @@ describe('ExplorePage 프로젝트 탭', () => {
       renderRoute('/?tab=project&q=분산 락');
 
       const card = await screen.findByRole('link', { name: /Dropit/ });
+      // 근거 자료로 찾은 카드는 주제를 모르니 지금처럼 경험 탭으로 연다.
+      expect(card).toHaveAttribute('href', '/projects/@dropit');
       const evidence = within(card).getByLabelText(
         "'분산 락' 검색에 걸린 PR: 레디스 분산 락으로 중복 드롭 막기",
       );

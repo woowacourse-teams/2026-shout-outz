@@ -19,6 +19,7 @@ import {
 } from '@/components/explore/MaterialList';
 import { isGithubMaterial } from '@/components/explore/MaterialParts';
 import { ResourceReportModal } from '@/components/projects/detail/ResourceReportModal';
+import { useIsClient } from '@/components/ClientOnly';
 import { useIsProjectMember } from '@/components/projects/detail/useIsProjectMember';
 import { useModal } from '@/hooks/useModal';
 import { cn } from '@/utils/cn';
@@ -37,13 +38,20 @@ interface ProjectMaterialsProps {
   projectName: string;
   /** 팀원만 자료를 제보할 수 있어 제보 링크를 보여 줄지 정한다. */
   memberUserIds: (number | null | undefined)[];
+  /** 처음 고를 기술 주제 이름. 탐색에서 주제로 거른 프로젝트를 열면 온다. */
+  initialTopic?: string;
 }
 
 const reportLinkClass =
   'focus-visible:outline-primary-600 cursor-pointer rounded-sm text-left hover:text-gray-900 hover:underline focus-visible:outline-2';
 
 /** 프로젝트 상세 자료 탭. 직군과 기술 주제를 고르면 그 주제의 팀 자료를 보여 준다. */
-export function ProjectMaterials({ slug, projectName, memberUserIds }: ProjectMaterialsProps) {
+export function ProjectMaterials({
+  slug,
+  projectName,
+  memberUserIds,
+  initialTopic,
+}: ProjectMaterialsProps) {
   const [jobRole, setJobRole] = useState<MaterialJobRole>('ALL');
   const isMember = useIsProjectMember(memberUserIds);
   const { open } = useModal();
@@ -112,8 +120,15 @@ export function ProjectMaterials({ slug, projectName, memberUserIds }: ProjectMa
     analytics.track({ name: 'project_material_topic_selected', slug, topicId });
     setChosenTopicIdState(topicId);
   };
-  // 처음이나 직군을 바꿔 고른 주제가 목록에 없으면 첫 주제를 보여 준다.
-  const topic = topics.find((item) => item.topicId === chosenTopicId) ?? topics[0] ?? null;
+  // 빌드 때 미리 만든 HTML에는 주소의 topic이 없어, hydration 뒤에 주소의 주제를 고른다.
+  const isClient = useIsClient();
+  const linkedTopic = isClient && initialTopic ? initialTopic : null;
+  // 직접 고른 주제 → 탐색에서 거른 주제 → 첫 주제 순. 직군을 바꿔 목록에 없으면 다음으로 넘어간다.
+  const topic =
+    topics.find((item) => item.topicId === chosenTopicId) ??
+    topics.find((item) => item.name === linkedTopic) ??
+    topics[0] ??
+    null;
 
   if (data.totalCount === 0) {
     return (
