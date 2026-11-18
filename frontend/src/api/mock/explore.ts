@@ -1,6 +1,6 @@
 import { http, HttpResponse } from 'msw';
 
-import type { Material, MaterialDetail, MaterialSearchResult, TopicField } from '@/apis/explore';
+import type { Material, MaterialDetail, TopicField } from '@/apis/explore';
 import { matchTopics, teamName, topics, type Resource } from '@/pages/about/resources';
 
 // 기술 자료 API(/api/v1/resources/*)의 목 응답이다. 응답 모양은 서버 명세(openapi3.yaml)를 따른다.
@@ -212,12 +212,26 @@ const allMaterials = collectMaterials(topics.map((topic) => topic.topic));
 export const isTalk = (material: Material) => material.source === 'youtube-tekotalk';
 export const isBlog = (material: Material) => material.source === 'blog-post';
 
-const searchMaterials = (keyword: string): MaterialSearchResult => {
+const searchMaterials = (
+  keyword: string,
+): { blogs: Material[]; documents: Material[]; talks: Material[] } => {
   const materials = collectMaterials(matchTopics(keyword).map((topic) => topic.topic));
   return {
     blogs: materials.filter(isBlog),
     documents: materials.filter((material) => material.source.startsWith('github-')),
     talks: materials.filter(isTalk),
+  };
+};
+
+// 서버 커서는 내용을 해석하지 않는 값이다. 목은 다음 자료의 위치를 문자열로 담는다.
+const SECTION_PAGE_SIZE = 20;
+const sectionPage = (materials: Material[], offset: number) => {
+  const next = offset + SECTION_PAGE_SIZE;
+  const hasNext = next < materials.length;
+  return {
+    items: materials.slice(offset, next),
+    nextCursor: hasNext ? String(next) : null,
+    hasNext,
   };
 };
 
@@ -388,10 +402,23 @@ export const exploreHandlers = [
     return HttpResponse.json({
       status: 'success',
       data: {
-        blogs: { items: blogs.slice(0, 20) },
-        documents: { items: documents.slice(0, 20) },
-        talks: { items: talks.slice(0, 6) },
+        blogs: sectionPage(blogs, 0),
+        documents: sectionPage(documents, 0),
+        talks: { items: talks.slice(0, 6), nextCursor: null, hasNext: false },
+        matchedProjects: [],
       },
+    });
+  }),
+  http.get('/api/v1/resources/search/more', ({ request }) => {
+    const searchParams = new URL(request.url).searchParams;
+    const { blogs, documents } = searchMaterials(searchParams.get('keyword')?.trim() ?? '');
+    const materials = searchParams.get('section') === 'BLOG' ? blogs : documents;
+    const offset = Number(searchParams.get('cursor') ?? 0) || 0;
+    const { items, nextCursor, hasNext } = sectionPage(materials, offset);
+    return HttpResponse.json({
+      status: 'success',
+      data: items,
+      meta: { nextCursor, hasNext, totalCount: materials.length },
     });
   }),
   http.get('/api/v1/resources/:resourceId', ({ params }) => {

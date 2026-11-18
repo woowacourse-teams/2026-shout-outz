@@ -456,6 +456,133 @@ describe('ExplorePage', () => {
   });
 });
 
+describe('ExplorePage 검색 결과 자료 종류와 이어 읽기', () => {
+  const prs = (from: number, count: number) =>
+    Array.from({ length: count }, (_, index) =>
+      serverMaterial(from + index, 'github-pr', `PR ${from + index}`),
+    );
+  const section = (items: unknown[], nextCursor: string | null = null) => ({
+    items,
+    nextCursor,
+    hasNext: nextCursor !== null,
+  });
+  const searchResponse = (data: Record<string, unknown>) =>
+    http.get('*/api/v1/resources/search', () =>
+      HttpResponse.json({
+        status: 'success',
+        data: {
+          blogs: section([]),
+          documents: section([]),
+          talks: section([]),
+          matchedProjects: [],
+          ...data,
+        },
+      }),
+    );
+  const prCount = (region: HTMLElement) =>
+    within(region).queryAllByRole('button', { name: /PR \d+/ }).length;
+
+  it('주소의 자료 종류로 들어오면 그 종류만 보여 주고, 칩에는 건수를 쓰지 않는다', async () => {
+    renderRoute('/?q=동시성&kind=TALK');
+
+    const kinds = await screen.findByRole('tablist', { name: '자료 종류' });
+    expect(within(kinds).getByRole('tab', { name: '테코톡' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    expect(await resultSection(/^테코톡$/)).toBeVisible();
+    expect(screen.queryByRole('region', { name: /^블로그/ })).not.toBeInTheDocument();
+  });
+
+  it('자료 종류를 고르면 주소에 남기고, 검색어를 바꾸면 전체로 되돌린다', async () => {
+    const user = userEvent.setup();
+    const router = renderRoute('/?q=동시성');
+
+    const kinds = await screen.findByRole('tablist', { name: '자료 종류' });
+    await user.click(within(kinds).getByRole('tab', { name: '블로그' }));
+    await waitFor(() =>
+      expect(router.state.location.search).toEqual({ q: '동시성', kind: 'BLOG' }),
+    );
+
+    const searchbox = screen.getByRole('searchbox', { name: '기술 이야기 검색' });
+    await user.clear(searchbox);
+    await user.type(searchbox, 'LLM');
+    await user.click(screen.getByRole('button', { name: '검색' }));
+    await waitFor(() => expect(router.state.location.search).toEqual({ q: 'LLM' }));
+  });
+
+  it('자료가 없는 종류는 칩을 두지 않고, 한 종류만 남으면 전체 칩도 두지 않는다', async () => {
+    server.use(searchResponse({ blogs: section(prs(1, 1)), documents: section(prs(2, 1)) }));
+    renderRoute('/?q=동시성');
+
+    const kinds = await screen.findByRole('tablist', { name: '자료 종류' });
+    expect(
+      within(kinds)
+        .getAllByRole('tab')
+        .map((tab) => tab.textContent),
+    ).toEqual(['전체', '블로그', 'PR과 팀 문서']);
+  });
+
+  it('한 종류만 있으면 칩 없이 그 종류를 모두 보여 준다', async () => {
+    server.use(searchResponse({ documents: section(prs(1, 12)) }));
+    renderRoute('/?q=동시성');
+
+    const documents = await resultSection(/^PR과 팀 문서$/);
+    expect(prCount(documents)).toBe(12);
+    expect(screen.queryByRole('tablist', { name: '자료 종류' })).not.toBeInTheDocument();
+  });
+
+  it('모두 보기로 그 종류만 보고, 더 보기는 받은 커서로 이어 읽다가 커서가 없으면 숨긴다', async () => {
+    const requests: Record<string, string | null>[] = [];
+    server.use(
+      searchResponse({ blogs: section(prs(100, 1)), documents: section(prs(1, 20), 'cursor-1') }),
+      http.get('*/api/v1/resources/search/more', ({ request }) => {
+        const params = new URL(request.url).searchParams;
+        requests.push({
+          keyword: params.get('keyword'),
+          section: params.get('section'),
+          cursor: params.get('cursor'),
+          track: params.get('track'),
+        });
+        // 받는 건수는 20건보다 적을 수 있고, 더 있는지는 hasNext로만 정한다.
+        const page =
+          params.get('cursor') === 'cursor-1'
+            ? { data: prs(21, 3), meta: { nextCursor: 'cursor-2', hasNext: true, totalCount: 24 } }
+            : { data: prs(24, 1), meta: { nextCursor: null, hasNext: false, totalCount: 24 } };
+        return HttpResponse.json({ status: 'success', ...page });
+      }),
+    );
+    const user = userEvent.setup();
+    const router = renderRoute('/?q=동시성');
+
+    // 전체에서는 앞의 5건만 보여 준다.
+    expect(prCount(await resultSection(/^PR과 팀 문서$/))).toBe(5);
+    await user.click(screen.getByRole('button', { name: 'PR과 팀 문서 모두 보기' }));
+
+    await waitFor(() =>
+      expect(router.state.location.search).toEqual({ q: '동시성', kind: 'DOCUMENT' }),
+    );
+    const documents = await resultSection(/^PR과 팀 문서$/);
+    expect(prCount(documents)).toBe(20);
+    expect(screen.queryByRole('region', { name: /^블로그/ })).not.toBeInTheDocument();
+    // 칩만 바꾸고 이어 읽기는 아직 부르지 않는다.
+    expect(requests).toEqual([]);
+
+    await user.click(within(documents).getByRole('button', { name: 'PR과 팀 문서 더 보기' }));
+    await waitFor(() => expect(prCount(documents)).toBe(23));
+    await user.click(within(documents).getByRole('button', { name: 'PR과 팀 문서 더 보기' }));
+    await waitFor(() => expect(prCount(documents)).toBe(24));
+
+    expect(
+      within(documents).queryByRole('button', { name: 'PR과 팀 문서 더 보기' }),
+    ).not.toBeInTheDocument();
+    expect(requests).toEqual([
+      { keyword: '동시성', section: 'DOCUMENT', cursor: 'cursor-1', track: null },
+      { keyword: '동시성', section: 'DOCUMENT', cursor: 'cursor-2', track: null },
+    ]);
+  });
+});
+
 describe('ExplorePage 채용공고 탭', () => {
   it('채용공고 탭을 누르면 공고 카드 목록을 보여준다', async () => {
     const user = userEvent.setup();
