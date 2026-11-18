@@ -86,7 +86,8 @@ class ResourceHttpApiSearchMoreTest {
                                         연관도 순 검색 결과는 첫 검색에서 정한 순위를 그대로 이어 주며, 섹션마다 첫 화면을 포함해 최대 60건까지다. 프로젝트 이름 검색 결과는 그 프로젝트의 자료를 최신순으로 끝까지 준다.
                                         keyword, track은 검색 때와 같은 값을 보낸다. 커서 없이 요청하면 검색어가 가리키는 프로젝트의 자료를 처음부터 주고, 검색어가 프로젝트 이름이 아니면 빈 목록을 준다.
                                         이어 읽기는 인기 검색어 집계에 기록하지 않는다.
-                                        keyword가 없거나 50자를 넘거나, track이 BE, FE, AN이 아니거나, section이 BLOG, DOCUMENT가 아니면 400(VALIDATION_FAILED), 커서를 풀 수 없으면 400(RESOURCE_SEARCH_CURSOR_INVALID)으로 응답한다.""")
+                                        keyword가 없거나 50자를 넘거나, track이 BE, FE, AN이 아니거나, section이 BLOG, DOCUMENT가 아니면 400(VALIDATION_FAILED), 커서를 풀 수 없으면 400(RESOURCE_SEARCH_CURSOR_INVALID)으로 응답한다.
+                                        연관도 순 결과를 이어 읽을 때 검색이 제한 시간을 넘기면 503(RESOURCE_SEARCH_TIMEOUT), 동시에 처리 중인 검색이 많으면 503(RESOURCE_SEARCH_BUSY)으로 응답한다. 같은 커서로 잠시 뒤 다시 요청하면 된다.""")
                                 .queryParameters(
                                         parameterWithName("keyword").type(SimpleType.STRING)
                                                 .description("검색 때 보낸 검색어(앞뒤 공백 제거 후 1~50자)"),
