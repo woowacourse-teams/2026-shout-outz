@@ -183,14 +183,14 @@ class JdbcResourceSearchRepositoryIntegrationTest {
     }
 
     @Test
-    void 조회를_마치면_같은_트랜잭션의_제한_시간_설정을_되돌린다() {
+    void 조회를_마치면_호출자가_같은_트랜잭션에_걸어_둔_제한_시간으로_되돌린다() {
         fixture.intro(fixture.document(ResourceTrack.BE), vector(1, 0));
-        String before = jdbcTemplate.queryForObject("SELECT current_setting('statement_timeout')", String.class);
+        jdbcTemplate.execute("SET LOCAL statement_timeout = '750ms'");
 
         search(null, 10);
 
         assertThat(jdbcTemplate.queryForObject("SELECT current_setting('statement_timeout')", String.class))
-                .isEqualTo(before);
+                .isEqualTo("750ms");
     }
 
     private List<ResourceSearchCandidate> search(ResourceTrack track, int limit) {

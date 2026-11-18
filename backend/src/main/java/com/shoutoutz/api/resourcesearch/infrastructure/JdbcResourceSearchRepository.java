@@ -92,7 +92,7 @@ public class JdbcResourceSearchRepository implements ResourceSearchRepository {
         }
     }
 
-    // SET LOCAL은 트랜잭션 안에서만 적용된다. 바깥 트랜잭션에 섞여 불려도 다음 쿼리에 남지 않도록 조회 뒤에 되돌린다.
+    // 제한 시간은 이 트랜잭션에만 건다. 바깥 트랜잭션에 섞여 불렸을 때 호출자가 걸어 둔 값을 지우지 않도록 조회 전 값으로 되돌린다.
     private List<ResourceSearchCandidate> findNearestWithinTimeout(
             float[] queryVector,
             String modelId,
@@ -121,7 +121,9 @@ public class JdbcResourceSearchRepository implements ResourceSearchRepository {
         }
         sql += " ORDER BY similarity_score DESC, c.id LIMIT :candidateLimit";
 
-        jdbcTemplate.getJdbcTemplate().execute("SET LOCAL statement_timeout = " + properties.queryTimeout().toMillis());
+        String previousTimeout = jdbcTemplate.getJdbcTemplate()
+                .queryForObject("SELECT current_setting('statement_timeout')", String.class);
+        setLocalStatementTimeout(properties.queryTimeout().toMillis() + "ms");
         List<ResourceSearchCandidate> candidates;
         try {
             candidates = jdbcTemplate.query(
@@ -151,8 +153,14 @@ public class JdbcResourceSearchRepository implements ResourceSearchRepository {
             }
             throw exception;
         }
-        jdbcTemplate.getJdbcTemplate().execute("SET LOCAL statement_timeout TO DEFAULT");
+        setLocalStatementTimeout(previousTimeout);
         return candidates;
+    }
+
+    // set_config의 세 번째 인자가 true면 SET LOCAL과 같이 이 트랜잭션에만 적용된다.
+    private void setLocalStatementTimeout(String value) {
+        jdbcTemplate.getJdbcTemplate()
+                .queryForObject("SELECT set_config('statement_timeout', ?, true)", String.class, value);
     }
 
     private static boolean isQueryCanceled(DataAccessException exception) {
