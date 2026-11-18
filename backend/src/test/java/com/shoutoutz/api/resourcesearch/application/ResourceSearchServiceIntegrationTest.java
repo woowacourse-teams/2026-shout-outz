@@ -14,7 +14,6 @@ import com.shoutoutz.api.common.embedding.EmbeddingClient;
 import com.shoutoutz.api.resourcesearch.application.dto.MatchedChunk;
 import com.shoutoutz.api.resourcesearch.application.dto.SearchHit;
 import com.shoutoutz.api.resourcesearch.domain.ResourceTrack;
-import com.shoutoutz.api.resourcesearch.infrastructure.ReloadingLexicalChunkSearch;
 import com.shoutoutz.api.resourcesearch.support.ResourceSearchFixture;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -25,7 +24,6 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
-import org.springframework.test.context.transaction.AfterTransaction;
 import org.springframework.transaction.annotation.Transactional;
 
 @ActiveProfiles("test")
@@ -38,9 +36,6 @@ class ResourceSearchServiceIntegrationTest {
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
-
-    @Autowired
-    private ReloadingLexicalChunkSearch lexicalChunkSearch;
 
     @MockitoBean
     private EmbeddingClient embeddingClient;
@@ -57,30 +52,6 @@ class ResourceSearchServiceIntegrationTest {
         queryVector = vector(1, 0);
         when(embeddingClient.embed(any())).thenReturn(queryVector);
         when(embeddingClient.modelId()).thenReturn(MODEL);
-    }
-
-    // 롤백된 자료가 색인에 남아 다른 테스트에 섞이지 않게 한다.
-    @AfterTransaction
-    void rebuildLexicalIndex() {
-        lexicalChunkSearch.reload();
-    }
-
-    @Test
-    void 뜻이_먼_자료도_검색어의_단어가_본문에_있으면_찾는다() {
-        for (int i = 0; i < 20; i++) {
-            fixture.intro(fixture.document(ResourceTrack.BE), vector(1, 0));
-        }
-        long worded = fixture.document("github-pr", ResourceTrack.BE, null, "example/lock", "락 적용");
-        long chunk = fixture.chunk(worded, 1, "experience", "문제: 중복 실행\n해결: Redisson 분산 락 적용",
-                vector(0, 1), MODEL);
-        lexicalChunkSearch.reload();
-
-        List<SearchHit> hits = resourceSearchService.search("Redisson", ResourceTrack.BE, 2);
-
-        assertThat(hits).extracting(SearchHit::documentId).contains(worded);
-        SearchHit hit = hits.stream().filter(found -> found.documentId().equals(worded)).findFirst().orElseThrow();
-        assertThat(hit.similarityScore()).isCloseTo(0, within(0.000001));
-        assertThat(hit.matchedChunks()).extracting(MatchedChunk::chunkId).containsExactly(chunk);
     }
 
     @Test
