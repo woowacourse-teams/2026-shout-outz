@@ -7,6 +7,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.within;
 
 import com.shoutoutz.api.resourcesearch.application.ResourceSearchRepository;
+import com.shoutoutz.api.resourcesearch.application.dto.LexicalChunk;
 import com.shoutoutz.api.resourcesearch.application.dto.ResourceSearchCandidate;
 import com.shoutoutz.api.resourcesearch.domain.ResourceTrack;
 import com.shoutoutz.api.resourcesearch.support.ResourceDocumentFixture;
@@ -146,6 +147,73 @@ class JdbcResourceSearchRepositoryIntegrationTest {
 
         assertThat(resourceSearchRepository.findNearest(vector(2, 0), MODEL, null, 1)
                 .getFirst().chunk().similarityScore()).isCloseTo(1, within(0.000001));
+    }
+
+    @Test
+    void 색인할_조각을_본문과_트랙과_함께_ID순으로_읽는다() {
+        long beChunk = fixture.chunk(fixture.document(ResourceTrack.BE), 0, "intro", "캐시 무효화", vector(1, 0), MODEL);
+        long unclassifiedChunk = fixture.chunk(fixture.document(null), 0, "intro", "분산 락", vector(1, 0), MODEL);
+
+        assertThat(resourceSearchRepository.findLexicalChunks(MODEL)).containsExactly(
+                new LexicalChunk(beChunk, "캐시 무효화", ResourceTrack.BE),
+                new LexicalChunk(unclassifiedChunk, "분산 락", null)
+        );
+    }
+
+    @Test
+    void 색인할_조각에서_삭제된_문서와_조각_및_다른_모델을_제외한다() {
+        long deletedDocument = fixture.document(ResourceTrack.BE);
+        fixture.intro(deletedDocument, vector(1, 0));
+        jdbcTemplate.update("UPDATE resource_documents SET deleted_at = now() WHERE id = ?", deletedDocument);
+        long deletedChunk = fixture.intro(fixture.document(ResourceTrack.BE), vector(1, 0));
+        jdbcTemplate.update("UPDATE resource_chunks SET deleted_at = now() WHERE id = ?", deletedChunk);
+        fixture.chunk(fixture.document(ResourceTrack.BE), 0, "intro", "다른 모델", vector(1, 0), "other@1024");
+        long available = fixture.intro(fixture.document(ResourceTrack.BE), vector(0, 1));
+
+        assertThat(resourceSearchRepository.findLexicalChunks(MODEL))
+                .extracting(LexicalChunk::chunkId).containsExactly(available);
+    }
+
+    @Test
+    void 색인할_조각에서_제보로_삭제가_승인된_자료를_제외한다() {
+        long accepted = fixture.document(ResourceTrack.BE);
+        fixture.intro(accepted, vector(1, 0));
+        documents.removalReport(accepted, "ACCEPTED");
+        long open = fixture.document(ResourceTrack.BE);
+        long openChunk = fixture.intro(open, vector(1, 0));
+        documents.removalReport(open, "OPEN");
+
+        assertThat(resourceSearchRepository.findLexicalChunks(MODEL))
+                .extracting(LexicalChunk::chunkId).containsExactly(openChunk);
+    }
+
+    @Test
+    void 색인할_조각에서_본문이_공백뿐인_조각을_제외한다() {
+        fixture.chunk(fixture.document(ResourceTrack.BE), 0, "intro", "   ", vector(1, 0), MODEL);
+        long available = fixture.intro(fixture.document(ResourceTrack.BE), vector(0, 1));
+
+        assertThat(resourceSearchRepository.findLexicalChunks(MODEL))
+                .extracting(LexicalChunk::chunkId).containsExactly(available);
+    }
+
+    @Test
+    void 색인할_조각에서_본문이_개행과_탭뿐인_조각을_제외한다() {
+        fixture.chunk(fixture.document(ResourceTrack.BE), 0, "intro", "\n\t", vector(1, 0), MODEL);
+        long available = fixture.intro(fixture.document(ResourceTrack.BE), vector(0, 1));
+
+        assertThat(resourceSearchRepository.findLexicalChunks(MODEL))
+                .extracting(LexicalChunk::chunkId).containsExactly(available);
+    }
+
+    @Test
+    void 색인할_조각에서_트랙을_알_수_없는_조각만_제외한다() {
+        long unknownDocument = fixture.document(ResourceTrack.BE);
+        fixture.intro(unknownDocument, vector(1, 0));
+        jdbcTemplate.update("UPDATE resource_chunks SET track = 'UNKNOWN' WHERE document_id = ?", unknownDocument);
+        long available = fixture.intro(fixture.document(ResourceTrack.BE), vector(0, 1));
+
+        assertThat(resourceSearchRepository.findLexicalChunks(MODEL))
+                .extracting(LexicalChunk::chunkId).containsExactly(available);
     }
 
     @Test

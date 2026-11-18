@@ -2,15 +2,18 @@ package com.shoutoutz.api.resourcesearch.infrastructure;
 
 import com.shoutoutz.api.common.exception.custom.ServiceUnavailableException;
 import com.shoutoutz.api.resourcesearch.application.ResourceSearchRepository;
+import com.shoutoutz.api.resourcesearch.application.dto.LexicalChunk;
 import com.shoutoutz.api.resourcesearch.application.dto.MatchedChunk;
 import com.shoutoutz.api.resourcesearch.application.dto.ResourceSearchCandidate;
 import com.shoutoutz.api.resourcesearch.domain.ResourceSearchErrorCode;
 import com.shoutoutz.api.resourcesearch.domain.ResourceTrack;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -18,6 +21,7 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
+@Slf4j
 @Repository
 public class JdbcResourceSearchRepository implements ResourceSearchRepository {
 
@@ -155,6 +159,38 @@ public class JdbcResourceSearchRepository implements ResourceSearchRepository {
         }
         setLocalStatementTimeout(previousTimeout);
         return candidates;
+    }
+
+    /**
+     * 렉시컬 색인에 넣을 조각을 읽는다. 벡터 검색과 같은 자료가 검색되도록 삭제, 모델, 제보 조건을 똑같이 건다.
+     * 본문이 공백뿐인 조각은 찾을 단어가 없어 뺀다. 개행과 탭도 공백으로 보도록 LexicalChunk와 같은 isBlank 기준으로 거른다.
+     * 트랙 값이 잘못된 조각은 그 조각만 빼고 경고를 남긴다. 조각 하나 때문에 색인 적재 전체가 실패하면 서버가 뜨지 못한다.
+     */
+    @Override
+    public List<LexicalChunk> findLexicalChunks(String modelId) {
+        String sql = """
+                SELECT c.id AS chunk_id, c.chunk_text, c.track
+                FROM resource_chunks c
+                JOIN resource_documents d ON d.id = c.document_id
+                WHERE c.deleted_at IS NULL
+                  AND d.deleted_at IS NULL
+                  AND c.embedding_model = :modelId
+                """ + NOT_REMOVED_BY_REPORT + " ORDER BY c.id";
+
+        List<LexicalChunk> chunks = new ArrayList<>();
+        jdbcTemplate.query(sql, new MapSqlParameterSource("modelId", modelId), resultSet -> {
+            String text = resultSet.getString("chunk_text");
+            if (text == null || text.isBlank()) {
+                return;
+            }
+            long chunkId = resultSet.getLong("chunk_id");
+            try {
+                chunks.add(new LexicalChunk(chunkId, text, ResourceTrack.from(resultSet.getString("track"))));
+            } catch (IllegalArgumentException exception) {
+                log.warn("Lexical chunk skipped: chunkId={}, reason={}", chunkId, exception.getMessage());
+            }
+        });
+        return List.copyOf(chunks);
     }
 
     // set_config의 세 번째 인자가 true면 SET LOCAL과 같이 이 트랜잭션에만 적용된다.
