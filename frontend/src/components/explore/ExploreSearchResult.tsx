@@ -10,6 +10,7 @@ import {
   type MaterialSectionKind,
 } from '@/apis/explore';
 import { ExploreMoreButton } from '@/components/explore/ExploreMoreButton';
+import { MatchedProjects } from '@/components/explore/MatchedProjects';
 import { MaterialList, TechTalkList } from '@/components/explore/MaterialList';
 import { Tab } from '@/components/Tab';
 import { analytics } from '@/utils/analytics';
@@ -17,6 +18,7 @@ import { getApiErrorMessage } from '@/utils/error';
 
 /** 검색 결과의 자료 종류. 주소의 kind 값과 같다. */
 export type MaterialKind = 'BLOG' | 'DOCUMENT' | 'TALK';
+export type SearchResultKind = MaterialKind | 'PROJECT';
 
 const ALL = 'ALL';
 
@@ -35,8 +37,8 @@ const KIND_ORDER: readonly MaterialKind[] = ['BLOG', 'TALK', 'DOCUMENT'];
 interface ExploreSearchResultProps {
   query: string;
   /** 주소에 남긴 자료 종류. null이면 전체 */
-  kind: MaterialKind | null;
-  onKindChange: (kind: MaterialKind | null) => void;
+  kind: SearchResultKind | null;
+  onKindChange: (kind: SearchResultKind | null) => void;
 }
 
 /** 검색어로 찾은 블로그·테코톡·PR과 팀 문서 */
@@ -53,7 +55,7 @@ export function ExploreSearchResult({ query, kind, onKindChange }: ExploreSearch
   // 자료가 없는 종류는 칩도 보여 주지 않는다.
   const kinds = KIND_ORDER.filter((target) => itemsOf(target).length > 0);
 
-  if (kinds.length === 0) {
+  if (kinds.length === 0 && data.matchedProjects.length === 0) {
     return (
       <EmptyResult title={`'${query}'에 맞는 자료를 아직 못 찾았어요.`}>
         다른 검색어나 추천 검색어로 찾아보세요.
@@ -62,10 +64,14 @@ export function ExploreSearchResult({ query, kind, onKindChange }: ExploreSearch
   }
 
   // 종류가 하나뿐이면 '전체'를 두지 않고 그 종류만 보여 준다. 주소의 종류가 비어 있으면 전체로 본다.
-  const selected: MaterialKind | typeof ALL =
-    kinds.length === 1 ? kinds[0]! : kind && kinds.includes(kind) ? kind : ALL;
+  const selected: SearchResultKind | typeof ALL =
+    kinds.length === 1 && data.matchedProjects.length === 0
+      ? kinds[0]!
+      : kind && (kind === 'PROJECT' ? data.matchedProjects.length > 0 : kinds.includes(kind))
+        ? kind
+        : ALL;
 
-  const changeKind = (next: MaterialKind | typeof ALL) => {
+  const changeKind = (next: SearchResultKind | typeof ALL) => {
     analytics.track({
       name: 'explore_result_filter_changed',
       filter: next,
@@ -81,16 +87,17 @@ export function ExploreSearchResult({ query, kind, onKindChange }: ExploreSearch
           {/* 서버 검색은 주제가 아니라 검색어로 찾으므로 검색어를 보여 준다. */}
           <strong className="text-primary-600 font-bold">{query}</strong> 검색 결과
         </p>
-        {kinds.length > 1 && (
+        {(kinds.length > 1 || (kinds.length > 0 && data.matchedProjects.length > 0)) && (
           <Tab
             variant="chip"
             size="sm"
             value={selected}
-            onChange={(value) => changeKind(value as MaterialKind | typeof ALL)}
+            onChange={(value) => changeKind(value as SearchResultKind | typeof ALL)}
             aria-label="자료 종류"
             className="mt-3 flex-wrap"
           >
             <Tab.Item value={ALL}>전체</Tab.Item>
+            {data.matchedProjects.length > 0 && <Tab.Item value="PROJECT">프로젝트</Tab.Item>}
             {kinds.map((target) => (
               <Tab.Item key={target} value={target}>
                 {KIND_TITLE[target]}
@@ -101,6 +108,19 @@ export function ExploreSearchResult({ query, kind, onKindChange }: ExploreSearch
       </section>
 
       <div className="mt-5">
+        {(selected === ALL || selected === 'PROJECT') && data.matchedProjects.length > 0 && (
+          <MatchedProjects
+            projects={selected === ALL ? data.matchedProjects.slice(0, 3) : data.matchedProjects}
+            onMore={
+              selected === ALL && data.matchedProjects.length > 3
+                ? () => {
+                    changeKind('PROJECT');
+                    summaryRef.current?.scrollIntoView?.({ block: 'start' });
+                  }
+                : undefined
+            }
+          />
+        )}
         {selected === ALL ? (
           kinds.map((target, index) => {
             const items = itemsOf(target);
@@ -125,7 +145,7 @@ export function ExploreSearchResult({ query, kind, onKindChange }: ExploreSearch
               </KindSection>
             );
           })
-        ) : selected === 'TALK' ? (
+        ) : selected === 'PROJECT' ? null : selected === 'TALK' ? (
           <KindSection kind="TALK">
             <KindItems kind="TALK" items={data.talks} />
           </KindSection>

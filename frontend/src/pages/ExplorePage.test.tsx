@@ -28,6 +28,128 @@ const serverMaterial = (resourceId: number, source: string, title: string) => ({
 });
 
 describe('ExplorePage', () => {
+  it('전체에서 프로젝트 세 개만 요청하고 모두 보기에서 나머지를 불러온다', async () => {
+    const user = userEvent.setup();
+    const requested: string[] = [];
+    server.use(
+      http.get('*/api/v1/resources/search', () =>
+        HttpResponse.json({
+          status: 'success',
+          data: {
+            blogs: { items: [] },
+            documents: { items: [] },
+            talks: { items: [] },
+            matchedProjects: [1, 2, 3, 4].map((id) => ({
+              name: `프로젝트 ${id}`,
+              projectSlug: `project-${id}`,
+            })),
+          },
+        }),
+      ),
+      http.get('*/api/v1/projects/@:slug', ({ params }) => {
+        const slug = String(params.slug);
+        requested.push(slug);
+        return HttpResponse.json({
+          status: 'success',
+          data: { slug, title: slug, tagline: '소개', cohort: 8, likeCount: 0, imageUrl: null },
+        });
+      }),
+    );
+    const router = renderRoute('/?q=프로젝트');
+    expect(await screen.findByRole('link', { name: /project-3/ })).toBeVisible();
+    expect(requested).not.toContain('project-4');
+    await user.click(screen.getByRole('button', { name: '프로젝트 모두 보기' }));
+    await waitFor(() =>
+      expect(router.state.location.search).toEqual({ q: '프로젝트', kind: 'PROJECT' }),
+    );
+    expect(await screen.findByRole('link', { name: /project-4/ })).toBeVisible();
+    expect(requested).toContain('project-4');
+    expect(screen.queryByRole('button', { name: '프로젝트 모두 보기' })).not.toBeInTheDocument();
+  });
+  it('프로젝트 칩을 선택하면 프로젝트만 보여주고 주소에 선택을 남긴다', async () => {
+    const user = userEvent.setup();
+    server.use(
+      http.get('*/api/v1/resources/search', () =>
+        HttpResponse.json({
+          status: 'success',
+          data: {
+            blogs: { items: [serverMaterial(1, 'blog-post', '관련 블로그')] },
+            documents: { items: [] },
+            talks: { items: [] },
+            matchedProjects: [{ name: '샤라웃', projectSlug: 'shout-outz' }],
+          },
+        }),
+      ),
+      http.get('*/api/v1/projects/@shout-outz', () =>
+        HttpResponse.json({
+          status: 'success',
+          data: {
+            slug: 'shout-outz',
+            title: '샤라웃',
+            tagline: '프로젝트 소개',
+            cohort: 8,
+            likeCount: 3,
+            imageUrl: null,
+          },
+        }),
+      ),
+    );
+    const router = renderRoute('/?q=샤라웃');
+    const tabs = await screen.findByRole('tablist', { name: '자료 종류' });
+    expect(await screen.findByText('관련 블로그')).toBeVisible();
+    await user.click(within(tabs).getByRole('tab', { name: '프로젝트' }));
+    await waitFor(() =>
+      expect(router.state.location.search).toEqual({ q: '샤라웃', kind: 'PROJECT' }),
+    );
+    expect(await screen.findByRole('link', { name: /샤라웃/ })).toBeVisible();
+    expect(screen.queryByText('관련 블로그')).not.toBeInTheDocument();
+    await user.click(within(tabs).getByRole('tab', { name: '전체' }));
+    expect(await screen.findByText('관련 블로그')).toBeVisible();
+  });
+  it('자료가 없어도 매칭된 프로젝트를 스켈레톤 뒤에 보여준다', async () => {
+    let release!: () => void;
+    const pending = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    server.use(
+      http.get('*/api/v1/resources/search', () =>
+        HttpResponse.json({
+          status: 'success',
+          data: {
+            blogs: { items: [] },
+            documents: { items: [] },
+            talks: { items: [] },
+            matchedProjects: [{ name: '샤라웃', projectSlug: 'shout-outz' }],
+          },
+        }),
+      ),
+      http.get('*/api/v1/projects/@shout-outz', async () => {
+        await pending;
+        return HttpResponse.json({
+          status: 'success',
+          data: {
+            slug: 'shout-outz',
+            title: '샤라웃',
+            tagline: '프로젝트 소개',
+            cohort: 8,
+            likeCount: 3,
+            imageUrl: null,
+          },
+        });
+      }),
+    );
+    renderRoute('/?q=샤라웃');
+    expect(
+      await screen.findByRole('status', { name: '샤라웃 프로젝트 불러오는 중' }),
+    ).toBeVisible();
+    expect(screen.queryByText(/자료를 아직 못 찾았어요/)).not.toBeInTheDocument();
+    release();
+    expect(await screen.findByRole('link', { name: /샤라웃/ })).toHaveAttribute(
+      'href',
+      '/projects/@shout-outz',
+    );
+    expect(screen.getByText('프로젝트 소개')).toBeVisible();
+  });
   it('홈(/)이 탐색 화면이고, 헤더에서 탐색을 현재 페이지로 표시한다', async () => {
     renderRoute('/');
 

@@ -41,10 +41,16 @@ export interface MaterialSection {
 }
 
 export interface MaterialSearchResult {
+  matchedProjects: MatchedProject[];
   blogs: MaterialSection;
   /** PR과 팀 문서 */
   documents: MaterialSection;
   talks: Material[];
+}
+
+export interface MatchedProject {
+  name: string;
+  projectSlug: string;
 }
 
 type SearchSection = ResourceSearchSuccessResponse['data']['blogs'];
@@ -112,6 +118,11 @@ export function materialSearchQuery(keyword: string) {
         { keyword },
       );
       return {
+        matchedProjects: (data.matchedProjects ?? []).flatMap((project) =>
+          project.projectSlug
+            ? [{ name: project.name ?? project.projectSlug, projectSlug: project.projectSlug }]
+            : [],
+        ),
         blogs: toSection(data.blogs),
         documents: toSection(data.documents),
         talks: data.talks?.items ?? [],

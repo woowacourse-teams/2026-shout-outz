@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
 
 import type { ExploreTab } from '@/components/explore/ExploreHero';
-import type { MaterialKind } from '@/components/explore/ExploreSearchResult';
+import type { SearchResultKind } from '@/components/explore/ExploreSearchResult';
 import { ExplorePage } from '@/pages/ExplorePage';
 
 export interface ExploreSearch {
@@ -13,12 +13,12 @@ export interface ExploreSearch {
   /** 프로젝트 탭 정렬. 비어 있으면 최신 등록순 */
   sort?: 'POPULAR';
   /** 키워드 탭 검색 결과의 자료 종류. 비어 있으면 전체 */
-  kind?: MaterialKind;
+  kind?: SearchResultKind;
 }
 
-const MATERIAL_KINDS: readonly MaterialKind[] = ['BLOG', 'DOCUMENT', 'TALK'];
-const isMaterialKind = (value: unknown): value is MaterialKind =>
-  MATERIAL_KINDS.includes(value as MaterialKind);
+const MATERIAL_KINDS: readonly SearchResultKind[] = ['PROJECT', 'BLOG', 'DOCUMENT', 'TALK'];
+const isMaterialKind = (value: unknown): value is SearchResultKind =>
+  MATERIAL_KINDS.includes(value as SearchResultKind);
 
 const text = (value: unknown) => (typeof value === 'string' ? value.trim() : '');
 
