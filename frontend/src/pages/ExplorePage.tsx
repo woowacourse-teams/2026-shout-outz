@@ -6,7 +6,7 @@ import { AsyncBoundary } from '@/components/AsyncBoundary';
 import { ExploreHero, type ExploreTab } from '@/components/explore/ExploreHero';
 import { exploreHead } from '@/components/explore/exploreHead';
 import { ExploreHome } from '@/components/explore/ExploreHome';
-import { ExploreSearchResult } from '@/components/explore/ExploreSearchResult';
+import { ExploreSearchResult, type MaterialKind } from '@/components/explore/ExploreSearchResult';
 import { Footer } from '@/components/Footer';
 import { JobPostingList } from '@/components/job-postings/JobPostingList';
 import { ProjectExplore } from '@/components/project-explore/ProjectExplore';
@@ -28,6 +28,9 @@ interface ExplorePageProps {
   /** 채용공고 탭 정렬 */
   jobSort: JobPostingSort;
   onSortChange: (sort: ProjectSort | JobPostingSort) => void;
+  /** 키워드 탭 검색 결과의 자료 종류. null이면 전체 */
+  kind: MaterialKind | null;
+  onKindChange: (kind: MaterialKind | null) => void;
 }
 
 export function ExplorePage({
@@ -40,6 +43,8 @@ export function ExplorePage({
   sort,
   jobSort,
   onSortChange,
+  kind,
+  onKindChange,
 }: ExplorePageProps) {
   const popularKeywords = useQuery({ ...popularKeywordsQuery(), enabled: tab === 'keyword' });
   // 프로젝트 탭에서 기술 주제를 고르면 그 주제로 검색한 것으로 보고 검색창에 주제 이름을 넣는다.
@@ -111,8 +116,7 @@ export function ExplorePage({
             {query ? (
               <div className="mt-10" aria-live="polite">
                 <AsyncBoundary>
-                  {/* 검색어가 바뀌면 종류 탭을 '전체'로 되돌린다. */}
-                  <ExploreSearchResult key={query} query={query} />
+                  <ExploreSearchResult query={query} kind={kind} onKindChange={onKindChange} />
                 </AsyncBoundary>
               </div>
             ) : (

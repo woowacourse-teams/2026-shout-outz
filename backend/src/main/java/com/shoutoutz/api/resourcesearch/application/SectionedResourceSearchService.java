@@ -20,15 +20,22 @@ public class SectionedResourceSearchService {
     private final EmbeddingClient embeddingClient;
     private final ResourceSearchRepository resourceSearchRepository;
 
+    /**
+     * 블로그는 전체 자료의 일부라 가까운 조각 몇십 개 안에 20건이 들어오지 않는 일이 흔하다.
+     * 그래서 블로그 섹션이 찰 때까지 보는 범위를 60, 120, 240, 400개로 넓힌다.
+     * 조회는 조각 전체를 읽으므로 범위를 넓힐 때마다 다시 하지 않고, 가장 넓은 범위를 한 번 읽어 앞에서부터 잘라 본다.
+     * 가까운 순서가 항상 같아 앞 N개는 N개만 조회한 결과와 같다.
+     */
     public SectionedSearchHits search(String query, ResourceTrack track) {
         validateQuery(query);
         float[] queryVector = embeddingClient.embed(query);
         String modelId = embeddingClient.modelId();
+        List<ResourceSearchCandidate> nearest =
+                resourceSearchRepository.findNearest(queryVector, modelId, track, MAX_CANDIDATES);
 
         int candidateLimit = INITIAL_CANDIDATES;
         while (true) {
-            List<ResourceSearchCandidate> candidates =
-                    resourceSearchRepository.findNearest(queryVector, modelId, track, candidateLimit);
+            List<ResourceSearchCandidate> candidates = nearest.subList(0, Math.min(candidateLimit, nearest.size()));
             SectionedSearchHits hits = SectionedSearchHits.from(SearchHits.rank(candidates));
             if (hits.isFull(PRIORITY_SECTION) || isExhausted(candidates, candidateLimit)) {
                 return hits;

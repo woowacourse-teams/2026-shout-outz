@@ -20,6 +20,7 @@ import com.shoutoutz.api.common.embedding.EmbeddingException;
 import com.shoutoutz.api.common.exception.custom.ConflictException;
 import com.shoutoutz.api.common.exception.custom.DuplicateEntityException;
 import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
+import com.shoutoutz.api.common.exception.custom.ServiceUnavailableException;
 import com.shoutoutz.api.media.application.MediaUrlResolver;
 import com.shoutoutz.api.media.domain.MediaMetadata;
 import com.shoutoutz.api.media.domain.MediaMetadataRepository;
@@ -254,13 +255,15 @@ public class ProjectService {
     /**
      * 승인된 프로젝트 목록을 검색어, 필터, 정렬 조건으로 한 페이지 조회한다.
      * 요청 값은 기본값과 검증을 거친 resolved 메서드로만 꺼내 쓴다.
+     * 트랜잭션으로 묶지 않는다. 직접 검색은 외부 임베딩 API 응답(읽기 제한 30초)을 기다리는데, 트랜잭션 안이면 그동안 DB 커넥션을
+     * 붙잡아 다른 API 가 커넥션을 기다리게 된다. 각 조회는 커넥션을 짧게 쓰고 바로 돌려준다.
+     * 조회는 모두 읽기 한 번씩이고, PostgreSQL 기본 격리 수준(READ COMMITTED)에서는 한 트랜잭션 안에서도 조회마다 시점이 달라
+     * 묶지 않아도 읽는 결과의 일관성은 같다.
      */
-    @Transactional(readOnly = true)
     public ProjectFindAllResponse findAll(ProjectFindAllRequest request) {
         return findAll(request, null);
     }
 
-    @Transactional(readOnly = true)
     public ProjectFindAllResponse findAll(ProjectFindAllRequest request, Long viewerId) {
         long startedAt = System.nanoTime();
         ProjectSort sort = request.resolvedSort();
@@ -439,7 +442,8 @@ public class ProjectService {
     /**
      * 프로젝트마다 자료 검색에 처음 나온 자료를, 프로젝트가 처음 나온 순서대로 모은다. 팀이 없는 자료(테코톡 등)는 건너뛴다.
      * 처음 나온 자료가 그 프로젝트의 근거 자료가 된다.
-     * 외부 임베딩 호출이 실패하면 자료 검색 없이 글자 일치 결과만 보여 주고, 실패는 로그로 남긴다.
+     * 외부 임베딩 호출이 실패하거나 자료 검색이 시간 제한, 동시 실행 상한에 걸리면 자료 검색 없이 글자 일치 결과만 보여 주고,
+     * 실패는 로그로 남긴다.
      */
     private ResourceSearchResult searchResourceProjectIds(String keyword) {
         try {
@@ -451,6 +455,9 @@ public class ProjectService {
         } catch (EmbeddingException exception) {
             log.warn("Project direct search without resource search: errorCode={}, httpStatus={}",
                     exception.errorCode(), exception.httpStatus());
+            return new ResourceSearchResult(Map.of(), true);
+        } catch (ServiceUnavailableException exception) {
+            log.warn("Project direct search without resource search: errorCode={}", exception.getErrorCode());
             return new ResourceSearchResult(Map.of(), true);
         }
     }

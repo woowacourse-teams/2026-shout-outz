@@ -1,5 +1,4 @@
 import { useSuspenseInfiniteQuery, useSuspenseQuery } from '@tanstack/react-query';
-import { IconChevronDown } from '@tabler/icons-react';
 
 import {
   exploreProjectsQuery,
@@ -8,6 +7,7 @@ import {
   type ProjectTopics,
   type ExploreProject,
 } from '@/apis/project-explore';
+import { ExploreMoreButton } from '@/components/explore/ExploreMoreButton';
 import {
   ExploreProjectCard,
   type ExploreProjectMatch,
@@ -135,17 +135,13 @@ function ProjectList({
       )}
 
       {query.hasNextPage && (
-        <div className="mt-8 flex justify-center">
-          <button
-            type="button"
-            disabled={query.isFetchingNextPage}
-            onClick={() => void query.fetchNextPage({ cancelRefetch: false })}
-            className="focus-visible:outline-primary-600 inline-flex h-8.5 cursor-pointer items-center gap-1 rounded-full border border-gray-200 px-3.5 text-sm font-semibold text-gray-600 hover:bg-gray-50 focus-visible:outline-2 disabled:cursor-default disabled:opacity-50"
-          >
-            {query.isFetchingNextPage ? '불러오는 중…' : '더 보기'}
-            <IconChevronDown className="size-3.5" aria-hidden="true" />
-          </button>
-        </div>
+        <ExploreMoreButton
+          icon="down"
+          disabled={query.isFetchingNextPage}
+          onClick={() => void query.fetchNextPage({ cancelRefetch: false })}
+        >
+          {query.isFetchingNextPage ? '불러오는 중…' : '더 보기'}
+        </ExploreMoreButton>
       )}
     </div>
   );

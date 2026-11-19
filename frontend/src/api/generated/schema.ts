@@ -38,6 +38,10 @@ export interface AdminJobPostingDetailSuccessResponse {
       | "DATA"
       | "AI"
       | "ETC";
+    /** 회사 로고 이미지 ID. 수정 요청에 그대로 다시 보내야 로고가 유지된다. 없으면 null */
+    logoImageId?: number | null;
+    /** 회사 로고 작은 이미지(THUMBNAIL) 주소. 로고가 없거나 이미지가 준비되지 않았으면 null */
+    logoUrl?: string | null;
     /** 등록한 관리자 ID */
     registeredBy: number;
     /** 역량 목록 */
@@ -236,6 +240,8 @@ export interface AdminJobPostingSaveRequest {
     | "DATA"
     | "AI"
     | "ETC";
+  /** 회사 로고 이미지 ID. JOB_POSTING_COMPANY_LOGO 용도로 올려 처리가 끝난 이미지만 받는다. 다른 용도이거나 없는 이미지면 400(JOB_POSTING_INVALID_LOGO), 처리 중이면 400(JOB_POSTING_LOGO_NOT_READY). 수정은 전체 교체라서 빼거나 null 이면 로고를 지운다. */
+  logoImageId?: number | null;
   /** 역량 목록(1~50개) */
   requirements: {
     /** 역량 구분 */
@@ -264,6 +270,45 @@ export interface AdminJobPostingSaveSuccessResponse {
   };
   /** 응답 상태 */
   status: string;
+}
+
+/** AdminJobPostingUpdateRequest */
+export interface AdminJobPostingUpdateRequest {
+  /** 경력 조건(50자 이하) */
+  careerRequirement?: string | null;
+  /** 회사명(100자 이하) */
+  companyName: string;
+  /** 공고 글(10,000자 이하). 해시만 만들고 저장하지 않는다. 공고 정보만 고칠 때는 빼거나 null 로 보낸다. 비어 있거나 공백뿐이면 보내지 않은 것으로 본다. */
+  content?: string | null;
+  /** 마감일(yyyy-MM-dd) */
+  deadline?: string | null;
+  /** 고용 형태(30자 이하) */
+  employmentType?: string | null;
+  /** 직무 */
+  jobRole:
+    | "BACKEND"
+    | "FRONTEND"
+    | "ANDROID"
+    | "IOS"
+    | "DEVOPS"
+    | "DATA"
+    | "AI"
+    | "ETC";
+  /** 회사 로고 이미지 ID. JOB_POSTING_COMPANY_LOGO 용도로 올려 처리가 끝난 이미지만 받는다. 다른 용도이거나 없는 이미지면 400(JOB_POSTING_INVALID_LOGO), 처리 중이면 400(JOB_POSTING_LOGO_NOT_READY). 수정은 전체 교체라서 빼거나 null 이면 로고를 지운다. */
+  logoImageId?: number | null;
+  /** 역량 목록(최대 50개). 공고 글을 보내면 1개 이상 필요하고, 없으면 400(오류 응답의 details.field는 requirementsPresentWithContent). 공고 글이 없거나 해시가 같으면 반영하지 않으므로 빼도 된다. */
+  requirements?: {
+    /** 역량 구분 */
+    category: "REQUIRED" | "PREFERRED" | "DUTY_OR_STACK";
+    /** 역량 이름(100자 이하) */
+    name: string;
+    /** 역량 요약(500자 이하) */
+    summary: string;
+  }[];
+  /** 채용공고 주소(http 또는 https, 1,024자 이하) */
+  sourceUrl: string;
+  /** 공고 제목(200자 이하) */
+  title: string;
 }
 
 /** AdminJobPostingUpdateSuccessResponse */
@@ -1862,6 +1907,8 @@ export interface JobPostingDetailSuccessResponse {
   data: {
     /** 경력 조건 */
     careerRequirement?: string | null;
+    /** 회사 로고 작은 이미지 주소. 로고가 없거나 이미지가 준비되지 않았으면 null */
+    companyLogoUrl?: string | null;
     /** 회사명 */
     companyName: string;
     /** 마감일(yyyy-MM-dd). 없으면 null이고 상시 채용 */
@@ -1910,6 +1957,8 @@ export interface JobPostingFindAllSuccessResponse {
   data: {
     /** 경력 조건 */
     careerRequirement?: string | null;
+    /** 회사 로고 작은 이미지 주소. 로고가 없거나 이미지가 준비되지 않았으면 null */
+    companyLogoUrl?: string | null;
     /** 회사명 */
     companyName: string;
     /** 마감일(yyyy-MM-dd). 없으면 null이고 상시 채용 */
@@ -2887,7 +2936,7 @@ export interface ProjectCareerCardsSuccessResponse {
     }[];
     /** 근거 자료. source_order 순(PR, 팀 문서, 블로그). PR 번호는 PR 주소 끝(/pull/{번호})에서 읽는다 */
     sources: {
-      /** 블로그 출처 아이콘 주소. tistory, velog, rilog 는 플랫폼 공식 아이콘, 그 밖의 블로그(개인 도메인 등)는 원문 페이지의 파비콘. 블로그가 아니거나 아직 수집 전이면 null */
+      /** 원문 사이트 아이콘 주소. PR, 팀 문서, 위키, 디스커션은 GitHub 아이콘, tistory, velog, rilog 블로그는 플랫폼 공식 아이콘으로 고정. 그 밖의 블로그(개인 도메인 등)는 원문 페이지의 파비콘이고 아직 수집 전이면 null. 테코톡은 null */
       faviconUrl?: string | null;
       /** 블로그 플랫폼. 블로그가 아니면 null */
       platform?: string | null;
@@ -2899,13 +2948,13 @@ export interface ProjectCareerCardsSuccessResponse {
       source: string;
       /** 한 줄 소개. 없으면 null */
       summary?: string | null;
-      /** 자료를 만든 팀. 테코톡처럼 팀이 없거나 팀을 알 수 없으면 null */
+      /** 자료를 만든 팀. 등록된 프로젝트, 수집 때 저장한 팀 이름, 저장소 이름 순으로 정한다. 테코톡처럼 팀이 없거나 팀을 알 수 없으면 null */
       team?: {
         /** 프로젝트 로고 미디어 ID. 등록 전이거나 로고가 없으면 null */
         logoMediaId?: number | null;
         /** 팀 로고 이미지 주소(작은 크기). logoMediaId가 없거나 이미지가 준비되지 않았으면 null */
         logoUrl?: string | null;
-        /** 등록된 프로젝트면 팀 이름, 등록 전 팀이면 수집 때 저장한 팀 이름 */
+        /** 등록된 프로젝트면 프로젝트 이름, 등록 전 팀이면 수집 때 저장한 프로젝트 이름, 그것도 없으면 저장소 이름에서 조직명과 기수 연도 접두사를 뗀 이름(예: 2026-career-form → career-form) */
         name?: string | null;
         /** 등록된 프로젝트의 slug. 등록 전이면 null */
         projectSlug?: string | null;
@@ -3215,7 +3264,7 @@ export interface ProjectFilterOptionsSuccessResponse {
       /** 기수 연도 */
       year: number;
     }[];
-    /** 검색어와 고른 필터를 모두 적용한 프로젝트 수. 같은 조건의 목록 조회 meta.totalCount와 같다. */
+    /** 검색어(이름, 소개, 크루 이름 부분 일치)와 고른 필터를 모두 적용한 프로젝트 수. 검색어가 없으면 같은 조건의 목록 조회 meta.totalCount와 같고, 검색어가 있으면 목록 조회의 검색어 해석을 반영하지 않아 다를 수 있다. */
     matchedProjectCount: number;
     /** 활성 기술 스택 전체. 이름순으로 정렬하며, 프로젝트 수가 0인 기술 스택도 포함한다. */
     techTags: {
@@ -3247,6 +3296,15 @@ export interface ProjectFindAllSuccessResponse {
     likeCount: number;
     /** 요청자의 좋아요 여부. 비로그인이면 false다. */
     likedByMe: boolean;
+    /** 직접 검색에서 이 프로젝트가 걸린 근거 자료 중 자료 검색 순위가 가장 높은 자료. 카드에 왜 이 프로젝트가 나왔는지 보여 주는 데 쓴다. 직접 검색이 아니거나, 이름, 소개 같은 글자 일치로만 걸린 프로젝트면 null */
+    matchedResource?: {
+      /** 자료 id. 자료 상세 조회에 쓴다 */
+      resourceId?: number | null;
+      /** 자료 원천. 기술 자료 검색의 source와 같은 값 (blog-post, github-pr, github-teamdoc, github-wiki, github-discussion) */
+      source?: string | null;
+      /** 자료 제목 */
+      title?: string | null;
+    };
     /** 팀원 전체 목록. 상세 조회의 members와 같은 규칙이며, 등록 순서대로 정렬한다. */
     members: {
       /** 프로필 이미지 URL. 가입한 팀원은 CloudFront 공개 이미지 URL을 우선하고, 없으면 연결된 GitHub 프로필 이미지 URL을 사용하며, 가입하지 않은 이관 팀원은 저장된 GitHub 프로필 이미지 URL을 사용한다. */
@@ -3290,8 +3348,19 @@ export interface ProjectFindAllSuccessResponse {
   meta: {
     /** 다음 페이지 존재 여부 */
     hasNext: boolean;
+    /** topicId 없이 보낸 검색어가 기술 주제 별칭과 맞아 그 주제로 조회했을 때의 주제. 이름이 같은 프로젝트가 있거나, 맞는 주제가 없거나 여럿이거나, topicId와 함께 보내면 null */
+    matchedTopic?: {
+      /** 기술 주제 이름 */
+      name?: string | null;
+      /** 기술 주제 직군 (backend, frontend, mobile, common) */
+      side?: string | null;
+      /** 기술 주제 id. 기술 주제 목록 조회의 topicId와 같다 */
+      topicId?: string | null;
+    };
     /** 다음 페이지 조회에 쓸 커서. 다음 페이지가 없으면 null */
     nextCursor?: string | null;
+    /** 검색어로 조회할 때마다 새로 만드는 검색 id. 서버 검색 로그와 화면의 결과 클릭 기록을 잇는 데 쓴다. 다음 페이지 요청에도 새 id가 나오므로, 클릭 기록에는 첫 페이지의 id를 쓴다. 검색어가 없으면 null */
+    searchId?: string | null;
     /** 커서와 size를 제외한 검색어와 필터 조건을 만족하는 전체 프로젝트 수 */
     totalCount: number;
   };
@@ -3476,7 +3545,7 @@ export interface ProjectTopicResourcesSuccessResponse {
   data: {
     /** 같은 주제의 다른 팀 자료. 점수 높은 순(점수가 없으면 85점) 상위 20건 */
     otherTeamResources: {
-      /** 블로그 출처 아이콘 주소. tistory, velog, rilog 는 플랫폼 공식 아이콘, 그 밖의 블로그(개인 도메인 등)는 원문 페이지의 파비콘. 블로그가 아니거나 아직 수집 전이면 null */
+      /** 원문 사이트 아이콘 주소. PR, 팀 문서, 위키, 디스커션은 GitHub 아이콘, tistory, velog, rilog 블로그는 플랫폼 공식 아이콘으로 고정. 그 밖의 블로그(개인 도메인 등)는 원문 페이지의 파비콘이고 아직 수집 전이면 null. 테코톡은 null */
       faviconUrl?: string | null;
       /** 블로그 플랫폼. 블로그가 아니면 null */
       platform?: string | null;
@@ -3488,13 +3557,13 @@ export interface ProjectTopicResourcesSuccessResponse {
       source: string;
       /** 한 줄 소개. 없으면 null */
       summary?: string | null;
-      /** 자료를 만든 팀. 테코톡처럼 팀이 없거나 팀을 알 수 없으면 null */
+      /** 자료를 만든 팀. 등록된 프로젝트, 수집 때 저장한 팀 이름, 저장소 이름 순으로 정한다. 테코톡처럼 팀이 없거나 팀을 알 수 없으면 null */
       team?: {
         /** 프로젝트 로고 미디어 ID. 등록 전이거나 로고가 없으면 null */
         logoMediaId?: number | null;
         /** 팀 로고 이미지 주소(작은 크기). logoMediaId가 없거나 이미지가 준비되지 않았으면 null */
         logoUrl?: string | null;
-        /** 등록된 프로젝트면 팀 이름, 등록 전 팀이면 수집 때 저장한 팀 이름 */
+        /** 등록된 프로젝트면 프로젝트 이름, 등록 전 팀이면 수집 때 저장한 프로젝트 이름, 그것도 없으면 저장소 이름에서 조직명과 기수 연도 접두사를 뗀 이름(예: 2026-career-form → career-form) */
         name?: string | null;
         /** 등록된 프로젝트의 slug. 등록 전이면 null */
         projectSlug?: string | null;
@@ -3506,7 +3575,7 @@ export interface ProjectTopicResourcesSuccessResponse {
     }[];
     /** 이 팀 자료 전부. 블로그 먼저, 그다음 점수 높은 순, 같으면 최신순 */
     resources: {
-      /** 블로그 출처 아이콘 주소. tistory, velog, rilog 는 플랫폼 공식 아이콘, 그 밖의 블로그(개인 도메인 등)는 원문 페이지의 파비콘. 블로그가 아니거나 아직 수집 전이면 null */
+      /** 원문 사이트 아이콘 주소. PR, 팀 문서, 위키, 디스커션은 GitHub 아이콘, tistory, velog, rilog 블로그는 플랫폼 공식 아이콘으로 고정. 그 밖의 블로그(개인 도메인 등)는 원문 페이지의 파비콘이고 아직 수집 전이면 null. 테코톡은 null */
       faviconUrl?: string | null;
       /** 블로그 플랫폼. 블로그가 아니면 null */
       platform?: string | null;
@@ -3518,13 +3587,13 @@ export interface ProjectTopicResourcesSuccessResponse {
       source: string;
       /** 한 줄 소개. 없으면 null */
       summary?: string | null;
-      /** 자료를 만든 팀. 테코톡처럼 팀이 없거나 팀을 알 수 없으면 null */
+      /** 자료를 만든 팀. 등록된 프로젝트, 수집 때 저장한 팀 이름, 저장소 이름 순으로 정한다. 테코톡처럼 팀이 없거나 팀을 알 수 없으면 null */
       team?: {
         /** 프로젝트 로고 미디어 ID. 등록 전이거나 로고가 없으면 null */
         logoMediaId?: number | null;
         /** 팀 로고 이미지 주소(작은 크기). logoMediaId가 없거나 이미지가 준비되지 않았으면 null */
         logoUrl?: string | null;
-        /** 등록된 프로젝트면 팀 이름, 등록 전 팀이면 수집 때 저장한 팀 이름 */
+        /** 등록된 프로젝트면 프로젝트 이름, 등록 전 팀이면 수집 때 저장한 프로젝트 이름, 그것도 없으면 저장소 이름에서 조직명과 기수 연도 접두사를 뗀 이름(예: 2026-career-form → career-form) */
         name?: string | null;
         /** 등록된 프로젝트의 slug. 등록 전이면 null */
         projectSlug?: string | null;
@@ -3536,7 +3605,7 @@ export interface ProjectTopicResourcesSuccessResponse {
     }[];
     /** 그 주제의 테코톡 전부. 최신 발표순 */
     talks: {
-      /** 블로그 출처 아이콘 주소. tistory, velog, rilog 는 플랫폼 공식 아이콘, 그 밖의 블로그(개인 도메인 등)는 원문 페이지의 파비콘. 블로그가 아니거나 아직 수집 전이면 null */
+      /** 원문 사이트 아이콘 주소. PR, 팀 문서, 위키, 디스커션은 GitHub 아이콘, tistory, velog, rilog 블로그는 플랫폼 공식 아이콘으로 고정. 그 밖의 블로그(개인 도메인 등)는 원문 페이지의 파비콘이고 아직 수집 전이면 null. 테코톡은 null */
       faviconUrl?: string | null;
       /** 블로그 플랫폼. 블로그가 아니면 null */
       platform?: string | null;
@@ -3548,13 +3617,13 @@ export interface ProjectTopicResourcesSuccessResponse {
       source: string;
       /** 한 줄 소개. 없으면 null */
       summary?: string | null;
-      /** 자료를 만든 팀. 테코톡처럼 팀이 없거나 팀을 알 수 없으면 null */
+      /** 자료를 만든 팀. 등록된 프로젝트, 수집 때 저장한 팀 이름, 저장소 이름 순으로 정한다. 테코톡처럼 팀이 없거나 팀을 알 수 없으면 null */
       team?: {
         /** 프로젝트 로고 미디어 ID. 등록 전이거나 로고가 없으면 null */
         logoMediaId?: number | null;
         /** 팀 로고 이미지 주소(작은 크기). logoMediaId가 없거나 이미지가 준비되지 않았으면 null */
         logoUrl?: string | null;
-        /** 등록된 프로젝트면 팀 이름, 등록 전 팀이면 수집 때 저장한 팀 이름 */
+        /** 등록된 프로젝트면 프로젝트 이름, 등록 전 팀이면 수집 때 저장한 프로젝트 이름, 그것도 없으면 저장소 이름에서 조직명과 기수 연도 접두사를 뗀 이름(예: 2026-career-form → career-form) */
         name?: string | null;
         /** 등록된 프로젝트의 slug. 등록 전이면 null */
         projectSlug?: string | null;
@@ -3701,7 +3770,7 @@ export interface ResourceDetailSuccessResponse {
       /** 쓴 기술. 없으면 빈 배열 */
       techs: string[];
     }[];
-    /** 블로그 출처 아이콘 주소. tistory, velog, rilog 는 플랫폼 공식 아이콘, 그 밖의 블로그(개인 도메인 등)는 원문 페이지의 파비콘. 블로그가 아니거나 아직 수집 전이면 null */
+    /** 원문 사이트 아이콘 주소. PR, 팀 문서, 위키, 디스커션은 GitHub 아이콘, tistory, velog, rilog 블로그는 플랫폼 공식 아이콘으로 고정. 그 밖의 블로그(개인 도메인 등)는 원문 페이지의 파비콘이고 아직 수집 전이면 null. 테코톡은 null */
     faviconUrl?: string | null;
     /** 이 자료에서 배울 점. 없으면 빈 배열 */
     keyPoints: string[];
@@ -3726,13 +3795,13 @@ export interface ResourceDetailSuccessResponse {
     source: string;
     /** 한줄 소개 */
     summary?: string | null;
-    /** 자료를 만든 팀. 없으면 null */
+    /** 자료를 만든 팀. 등록된 프로젝트, 수집 때 저장한 팀 이름, 저장소 이름 순으로 정한다. 팀을 알 수 없거나 승인 전, 삭제된 프로젝트의 자료면 null */
     team?: {
       /** 프로젝트 로고 미디어 ID. 없으면 null */
       logoMediaId?: number | null;
       /** 팀 로고 이미지 주소(작은 크기). logoMediaId가 없거나 이미지가 준비되지 않았으면 null */
       logoUrl?: string | null;
-      /** 팀 이름 */
+      /** 등록된 프로젝트면 프로젝트 이름, 등록 전 팀이면 수집 때 저장한 프로젝트 이름, 그것도 없으면 저장소 이름에서 조직명과 기수 연도 접두사를 뗀 이름(예: woowacourse-teams/2026-career-form → career-form) */
       name?: string | null;
       /** 등록된 프로젝트 slug. 등록 전 팀이면 null */
       projectSlug?: string | null;
@@ -3759,7 +3828,7 @@ export interface ResourceDetailSuccessResponse {
 export interface ResourceRecentSuccessResponse {
   /** 자료 카드 목록 */
   data: {
-    /** 블로그 출처 아이콘 주소. tistory, velog, rilog 는 플랫폼 공식 아이콘, 그 밖의 블로그(개인 도메인 등)는 원문 페이지의 파비콘. 블로그가 아니거나 아직 수집 전이면 null */
+    /** 원문 사이트 아이콘 주소. PR, 팀 문서, 위키, 디스커션은 GitHub 아이콘, tistory, velog, rilog 블로그는 플랫폼 공식 아이콘으로 고정. 그 밖의 블로그(개인 도메인 등)는 원문 페이지의 파비콘이고 아직 수집 전이면 null. 테코톡은 null */
     faviconUrl?: string | null;
     /** 블로그 플랫폼. 블로그가 아니면 null */
     platform?: string | null;
@@ -3771,13 +3840,13 @@ export interface ResourceRecentSuccessResponse {
     source: string;
     /** 한줄 소개 */
     summary: string;
-    /** 자료를 만든 팀. 없으면 null */
+    /** 자료를 만든 팀. 등록된 프로젝트, 수집 때 저장한 팀 이름, 저장소 이름 순으로 정한다. 팀을 알 수 없거나 승인 전, 삭제된 프로젝트의 자료면 null */
     team?: {
       /** 프로젝트 로고 미디어 ID. 없으면 null */
       logoMediaId?: number | null;
       /** 팀 로고 이미지 주소(작은 크기). logoMediaId가 없거나 이미지가 준비되지 않았으면 null */
       logoUrl?: string | null;
-      /** 팀 이름 */
+      /** 등록된 프로젝트면 프로젝트 이름, 등록 전 팀이면 수집 때 저장한 프로젝트 이름, 그것도 없으면 저장소 이름에서 조직명과 기수 연도 접두사를 뗀 이름(예: woowacourse-teams/2026-career-form → career-form) */
       name?: string | null;
       /** 등록된 프로젝트 slug. 등록 전 팀이면 null */
       projectSlug?: string | null;
@@ -3885,14 +3954,61 @@ export interface ResourceReportStatusUpdateSuccessResponse {
   status: string;
 }
 
+/** ResourceSearchMoreSuccessResponse */
+export interface ResourceSearchMoreSuccessResponse {
+  /** 이어지는 자료 카드, 최대 20건 */
+  data: {
+    /** 원문 사이트 아이콘 주소. 기술 자료 검색의 카드와 같다 */
+    faviconUrl?: string | null;
+    /** 블로그 플랫폼. 블로그가 아니면 null */
+    platform?: string | null;
+    /** 원문 게시 시각(UTC) */
+    publishedAt?: string | null;
+    /** 자료 ID. 자료 상세 조회에 쓴다 */
+    resourceId: number;
+    /** 자료 원천 */
+    source: string;
+    /** 한줄 소개 */
+    summary?: string | null;
+    /** 자료를 만든 팀. 기술 자료 검색의 카드와 같다 */
+    team?: {
+      /** 프로젝트 로고 미디어 ID. 없으면 null */
+      logoMediaId?: number | null;
+      /** 팀 로고 이미지 주소(작은 크기). 없으면 null */
+      logoUrl?: string | null;
+      /** 팀 이름 */
+      name?: string | null;
+      /** 등록된 프로젝트 slug. 등록 전 팀이면 null */
+      projectSlug?: string | null;
+    };
+    /** 자료 제목 */
+    title: string;
+    /** 원문 주소 */
+    url: string;
+  }[];
+  /** 이어 읽기 정보 */
+  meta: {
+    /** 다음 페이지가 있는지 */
+    hasNext: boolean;
+    /** 다음 페이지 커서. 마지막 페이지면 없다 */
+    nextCursor?: string | null;
+    /** 이 섹션에서 이어 읽기까지 볼 수 있는 자료 전체 수. 연관도 순 검색은 최대 60, 프로젝트 이름 검색은 그 프로젝트 자료의 전체 수 */
+    totalCount: number;
+  };
+  /** 응답 상태 */
+  status: string;
+}
+
 /** ResourceSearchSuccessResponse */
 export interface ResourceSearchSuccessResponse {
   /** 섹션별 검색 결과 */
   data: {
     blogs?: {
+      /** 블로그를 이어 읽을 자료가 있는지. nextCursor가 있을 때만 true */
+      hasNext: boolean;
       /** 블로그(blog-post), 최대 20건 */
       items: {
-        /** 블로그 출처 아이콘 주소. tistory, velog, rilog 는 플랫폼 공식 아이콘, 그 밖의 블로그(개인 도메인 등)는 원문 페이지의 파비콘. 블로그가 아니거나 아직 수집 전이면 null */
+        /** 원문 사이트 아이콘 주소. PR, 팀 문서, 위키, 디스커션은 GitHub 아이콘, tistory, velog, rilog 블로그는 플랫폼 공식 아이콘으로 고정. 그 밖의 블로그(개인 도메인 등)는 원문 페이지의 파비콘이고 아직 수집 전이면 null. 테코톡은 null */
         faviconUrl?: string | null;
         /** 블로그 플랫폼. 블로그가 아니면 null */
         platform?: string | null;
@@ -3904,13 +4020,13 @@ export interface ResourceSearchSuccessResponse {
         source: string;
         /** 한줄 소개 */
         summary?: string | null;
-        /** 자료를 만든 팀. 팀이 없거나 알 수 없으면 null */
+        /** 자료를 만든 팀. 등록된 프로젝트, 수집 때 저장한 팀 이름, 저장소 이름 순으로 정한다. 팀을 알 수 없거나 승인 전, 삭제된 프로젝트의 자료면 null */
         team?: {
           /** 프로젝트 로고 미디어 ID. 없으면 null */
           logoMediaId?: number | null;
           /** 팀 로고 이미지 주소(작은 크기). logoMediaId가 없거나 이미지가 준비되지 않았으면 null */
           logoUrl?: string | null;
-          /** 팀 이름 */
+          /** 등록된 프로젝트면 프로젝트 이름, 등록 전 팀이면 수집 때 저장한 프로젝트 이름, 그것도 없으면 저장소 이름에서 조직명과 기수 연도 접두사를 뗀 이름(예: woowacourse-teams/2026-career-form → career-form) */
           name?: string | null;
           /** 등록된 프로젝트 slug. 등록 전 팀이면 null */
           projectSlug?: string | null;
@@ -3920,11 +4036,15 @@ export interface ResourceSearchSuccessResponse {
         /** 원문 주소 */
         url: string;
       }[];
+      /** 블로그를 이어 읽을 커서. 이어 읽을 블로그가 없으면 null */
+      nextCursor?: string | null;
     };
     documents?: {
+      /** PR과 팀 문서를 이어 읽을 자료가 있는지. nextCursor가 있을 때만 true */
+      hasNext: boolean;
       /** PR과 팀 문서(github-pr, github-teamdoc, github-wiki, github-discussion), 최대 20건 */
       items: {
-        /** 블로그 출처 아이콘 주소. tistory, velog, rilog 는 플랫폼 공식 아이콘, 그 밖의 블로그(개인 도메인 등)는 원문 페이지의 파비콘. 블로그가 아니거나 아직 수집 전이면 null */
+        /** 원문 사이트 아이콘 주소. PR, 팀 문서, 위키, 디스커션은 GitHub 아이콘, tistory, velog, rilog 블로그는 플랫폼 공식 아이콘으로 고정. 그 밖의 블로그(개인 도메인 등)는 원문 페이지의 파비콘이고 아직 수집 전이면 null. 테코톡은 null */
         faviconUrl?: string | null;
         /** 블로그 플랫폼. 블로그가 아니면 null */
         platform?: string | null;
@@ -3936,13 +4056,13 @@ export interface ResourceSearchSuccessResponse {
         source: string;
         /** 한줄 소개 */
         summary?: string | null;
-        /** 자료를 만든 팀. 팀이 없거나 알 수 없으면 null */
+        /** 자료를 만든 팀. 등록된 프로젝트, 수집 때 저장한 팀 이름, 저장소 이름 순으로 정한다. 팀을 알 수 없거나 승인 전, 삭제된 프로젝트의 자료면 null */
         team?: {
           /** 프로젝트 로고 미디어 ID. 없으면 null */
           logoMediaId?: number | null;
           /** 팀 로고 이미지 주소(작은 크기). logoMediaId가 없거나 이미지가 준비되지 않았으면 null */
           logoUrl?: string | null;
-          /** 팀 이름 */
+          /** 등록된 프로젝트면 프로젝트 이름, 등록 전 팀이면 수집 때 저장한 프로젝트 이름, 그것도 없으면 저장소 이름에서 조직명과 기수 연도 접두사를 뗀 이름(예: woowacourse-teams/2026-career-form → career-form) */
           name?: string | null;
           /** 등록된 프로젝트 slug. 등록 전 팀이면 null */
           projectSlug?: string | null;
@@ -3952,11 +4072,22 @@ export interface ResourceSearchSuccessResponse {
         /** 원문 주소 */
         url: string;
       }[];
+      /** PR과 팀 문서를 이어 읽을 커서. 이어 읽을 문서가 없으면 null */
+      nextCursor?: string | null;
     };
+    /** 검색어가 이름으로 가리킨 프로젝트. 없으면 빈 배열이고, 이름이 같은 프로젝트가 여럿이면 모두 담는다 */
+    matchedProjects: {
+      /** 프로젝트 이름 */
+      name?: string | null;
+      /** 프로젝트 slug */
+      projectSlug?: string | null;
+    }[];
     talks?: {
+      /** 항상 false */
+      hasNext: boolean;
       /** 테코톡(youtube-tekotalk), 최대 6건 */
       items: {
-        /** 블로그 출처 아이콘 주소. tistory, velog, rilog 는 플랫폼 공식 아이콘, 그 밖의 블로그(개인 도메인 등)는 원문 페이지의 파비콘. 블로그가 아니거나 아직 수집 전이면 null */
+        /** 원문 사이트 아이콘 주소. PR, 팀 문서, 위키, 디스커션은 GitHub 아이콘, tistory, velog, rilog 블로그는 플랫폼 공식 아이콘으로 고정. 그 밖의 블로그(개인 도메인 등)는 원문 페이지의 파비콘이고 아직 수집 전이면 null. 테코톡은 null */
         faviconUrl?: string | null;
         /** 블로그 플랫폼. 블로그가 아니면 null */
         platform?: string | null;
@@ -3968,13 +4099,13 @@ export interface ResourceSearchSuccessResponse {
         source: string;
         /** 한줄 소개 */
         summary?: string | null;
-        /** 자료를 만든 팀. 팀이 없거나 알 수 없으면 null */
+        /** 자료를 만든 팀. 등록된 프로젝트, 수집 때 저장한 팀 이름, 저장소 이름 순으로 정한다. 팀을 알 수 없거나 승인 전, 삭제된 프로젝트의 자료면 null */
         team?: {
           /** 프로젝트 로고 미디어 ID. 없으면 null */
           logoMediaId?: number | null;
           /** 팀 로고 이미지 주소(작은 크기). logoMediaId가 없거나 이미지가 준비되지 않았으면 null */
           logoUrl?: string | null;
-          /** 팀 이름 */
+          /** 등록된 프로젝트면 프로젝트 이름, 등록 전 팀이면 수집 때 저장한 프로젝트 이름, 그것도 없으면 저장소 이름에서 조직명과 기수 연도 접두사를 뗀 이름(예: woowacourse-teams/2026-career-form → career-form) */
           name?: string | null;
           /** 등록된 프로젝트 slug. 등록 전 팀이면 null */
           projectSlug?: string | null;
@@ -3984,6 +4115,8 @@ export interface ResourceSearchSuccessResponse {
         /** 원문 주소 */
         url: string;
       }[];
+      /** 항상 null */
+      nextCursor?: string | null;
     };
   };
   /** 응답 상태 */
