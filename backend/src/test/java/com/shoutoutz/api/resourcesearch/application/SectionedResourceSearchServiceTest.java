@@ -17,7 +17,11 @@ import com.shoutoutz.api.resourcesearch.application.dto.SectionedSearchHits;
 import com.shoutoutz.api.resourcesearch.domain.ResourceSection;
 import com.shoutoutz.api.resourcesearch.domain.ResourceTrack;
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Random;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -46,14 +50,18 @@ class SectionedResourceSearchServiceTest {
 
     private float[] vector;
     private List<ResourceSearchCandidate> pool;
+    private Map<Long, String> sources;
     private long nextId;
+    private long nextChunkId;
 
     @BeforeEach
     void setUp() {
         vector = new float[1024];
         vector[0] = 1;
         pool = new ArrayList<>();
+        sources = new HashMap<>();
         nextId = 1;
+        nextChunkId = 1;
     }
 
     @Test
@@ -88,8 +96,8 @@ class SectionedResourceSearchServiceTest {
     }
 
     @Test
-    @DisplayName("블로그 섹션이 차지 않으면 후보를 늘려 다시 찾고 질의는 한 번만 임베딩한다")
-    void expandsCandidatesUntilBlogSectionIsFull() {
+    @DisplayName("블로그 섹션이 차지 않으면 후보 범위를 넓히되 조회와 임베딩은 한 번만 한다")
+    void widensCandidatesUntilBlogSectionIsFullWithSingleQuery() {
         addMany("github-pr", 100, 0.9);
         addMany("blog-post", 20, 0.5);
         givenRepositoryReturnsTopOfPool();
@@ -98,8 +106,49 @@ class SectionedResourceSearchServiceTest {
 
         assertThat(result.hits(ResourceSection.BLOG)).hasSize(20);
         verify(embeddingClient, times(1)).embed(QUERY);
-        verify(resourceSearchRepository).findNearest(vector, MODEL, null, 60);
-        verify(resourceSearchRepository).findNearest(vector, MODEL, null, 120);
+        verify(resourceSearchRepository, times(1)).findNearest(vector, MODEL, null, 400);
+    }
+
+    @Test
+    @DisplayName("블로그 섹션이 찬 범위까지만 쓰고 그 뒤 순위의 조각은 다른 섹션에도 담지 않는다")
+    void usesOnlyCandidatesWithinTheRangeWhereBlogSectionBecameFull() {
+        addMany("github-pr", 55, 0.9);
+        addMany("blog-post", 20, 0.5);
+        addMany("youtube-tekotalk", 45, 0.4);
+        addMany("github-wiki", 30, 0.3);
+        givenRepositoryReturnsTopOfPool();
+
+        SectionedSearchHits result = service.search(QUERY, null);
+
+        // 앞 120개(PR 55, 블로그 20, 테코톡 45)에서 블로그가 차므로 121번째부터인 위키는 문서 섹션에 들어가지 않는다.
+        assertThat(result.hits(ResourceSection.BLOG)).hasSize(20);
+        assertThat(result.hits(ResourceSection.DOCUMENT).size() + result.rest(ResourceSection.DOCUMENT).size())
+                .isEqualTo(55);
+    }
+
+    @ParameterizedTest
+    @ValueSource(longs = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20})
+    @DisplayName("후보를 늘려 가며 여러 번 조회하던 방식과 섹션별 결과가 같다")
+    void returnsSameSectionsAsQueryingOnceMorePerExpansion(long seed) {
+        Random random = new Random(seed);
+        String[] sources = {"github-pr", "github-pr", "github-pr", "github-pr", "github-teamdoc", "blog-post",
+                "youtube-tekotalk", "unknown-source"};
+        int documents = random.nextInt(450);
+        for (int i = 0; i < documents; i++) {
+            long documentId = add(sources[random.nextInt(sources.length)], random.nextDouble());
+            for (int extra = random.nextInt(3); extra > 0; extra--) {
+                addChunk(documentId, random.nextDouble());
+            }
+        }
+        givenRepositoryReturnsTopOfPool();
+
+        SectionedSearchHits result = service.search(QUERY, null);
+
+        SectionedSearchHits expected = expandingOneQueryAtATime();
+        for (ResourceSection section : ResourceSection.values()) {
+            assertThat(result.hits(section)).isEqualTo(expected.hits(section));
+            assertThat(result.rest(section)).isEqualTo(expected.rest(section));
+        }
     }
 
     @Test
@@ -113,18 +162,21 @@ class SectionedResourceSearchServiceTest {
 
         assertThat(result.hits(ResourceSection.BLOG)).hasSize(3);
         verify(resourceSearchRepository, times(1)).findNearest(eq(vector), eq(MODEL), eq(null), anyInt());
+        assertThat(result.hits(ResourceSection.DOCUMENT)).hasSize(10);
     }
 
     @Test
-    @DisplayName("후보 확대는 400개에서 멈춘다")
-    void stopsExpandingAtMaximumCandidates() {
+    @DisplayName("후보는 400개까지만 보고, 블로그가 모자라도 그 뒤 순위는 읽지 않는다")
+    void looksAtMostAtMaximumCandidates() {
         addMany("github-pr", 500, 0.9);
+        addMany("blog-post", 20, 0.1);
         givenRepositoryReturnsTopOfPool();
 
-        service.search(QUERY, null);
+        SectionedSearchHits result = service.search(QUERY, null);
 
+        assertThat(result.hits(ResourceSection.BLOG)).isEmpty();
+        verify(resourceSearchRepository, times(1)).findNearest(eq(vector), eq(MODEL), eq(null), anyInt());
         verify(resourceSearchRepository).findNearest(vector, MODEL, null, 400);
-        verify(resourceSearchRepository, times(4)).findNearest(eq(vector), eq(MODEL), eq(null), anyInt());
     }
 
     @Test
@@ -157,11 +209,11 @@ class SectionedResourceSearchServiceTest {
     @DisplayName("직군을 그대로 조회에 전달한다")
     void passesTrackToRepository() {
         givenEmbedding();
-        when(resourceSearchRepository.findNearest(vector, MODEL, ResourceTrack.BE, 60)).thenReturn(List.of());
+        when(resourceSearchRepository.findNearest(vector, MODEL, ResourceTrack.BE, 400)).thenReturn(List.of());
 
         service.search(QUERY, ResourceTrack.BE);
 
-        verify(resourceSearchRepository).findNearest(vector, MODEL, ResourceTrack.BE, 60);
+        verify(resourceSearchRepository).findNearest(vector, MODEL, ResourceTrack.BE, 400);
     }
 
     @ParameterizedTest
@@ -201,13 +253,35 @@ class SectionedResourceSearchServiceTest {
                 });
     }
 
+    // 바꾸기 전 동작이다. 후보 수를 두 배씩 늘려 조회를 다시 하고, 블로그 섹션이 차거나 후보가 바닥나면 멈췄다.
+    private SectionedSearchHits expandingOneQueryAtATime() {
+        int candidateLimit = 60;
+        while (true) {
+            List<ResourceSearchCandidate> candidates = pool.subList(0, Math.min(candidateLimit, pool.size()));
+            SectionedSearchHits hits = SectionedSearchHits.from(SearchHits.rank(candidates));
+            if (hits.isFull(ResourceSection.BLOG) || candidates.size() < candidateLimit || candidateLimit == 400) {
+                return hits;
+            }
+            candidateLimit = Math.min(400, candidateLimit * 2);
+        }
+    }
+
     private long add(String source, double score) {
         long id = nextId++;
-        pool.add(new ResourceSearchCandidate(
-                id, "key-" + id, null, null, "제목 " + id, "소개", source, ResourceTrack.BE,
-                "https://example.com/" + id, new MatchedChunk(id * 10, "intro", "조각", score)));
-        pool.sort((left, right) -> Double.compare(right.chunk().similarityScore(), left.chunk().similarityScore()));
+        sources.put(id, source);
+        addChunk(id, score);
         return id;
+    }
+
+    private void addChunk(long documentId, double score) {
+        long chunkId = nextChunkId++;
+        pool.add(new ResourceSearchCandidate(
+                documentId, "key-" + documentId, null, null, "제목 " + documentId, "소개", sources.get(documentId),
+                ResourceTrack.BE, "https://example.com/" + documentId,
+                new MatchedChunk(chunkId, "intro", "조각", score)));
+        pool.sort(Comparator.comparingDouble((ResourceSearchCandidate candidate) -> candidate.chunk().similarityScore())
+                .reversed()
+                .thenComparing(candidate -> candidate.chunk().chunkId()));
     }
 
     private void addMany(String source, int count, double score) {

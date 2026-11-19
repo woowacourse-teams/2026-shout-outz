@@ -5,6 +5,11 @@ spring:
     # 명시적인 프로필이 없을 때 local을 사용함.
     # 운영에서는 SPRING_PROFILES_ACTIVE=prod를 지정함.
     default: local
+  datasource:
+    hikari:
+      # 커넥션 풀이 찼을 때 커넥션을 기다리는 시간(ms). HikariCP 기본값과 같은 값을 적어 둔 것이다.
+      # 역량 매칭 기동 검사가 이 값을 처리 시간 합계에 넣어 lease와 비교한다.
+      connection-timeout: ${DB_CONNECTION_TIMEOUT_MS:30000}
   jpa:
     hibernate:
       ddl-auto: none
@@ -70,7 +75,8 @@ job-posting:
     # 운영자가 기다리는 요청 안에서 앞에서부터 호출하고 실패하면 다음 제공자로 넘어간다(BEDROCK_GPT, BEDROCK_CLAUDE, GEMINI, OPENAI).
     providers: ${JOB_POSTING_EXTRACTION_PROVIDERS:BEDROCK_GPT,BEDROCK_CLAUDE}
   # 역량마다 맞는 자료를 찾는 Worker. 환경마다 JOB_POSTING_MATCHING_ENABLED로 켠다.
-  # lease는 임베딩과 판정 제공자 제한 시간의 합보다 길어야 하며, 켤 때 기동 검사로 확인한다.
+  # lease는 역량 하나를 처리하는 데 걸릴 수 있는 시간의 합보다 길어야 하며, 켤 때 기동 검사로 확인한다.
+  # 합은 임베딩 제한 시간, 벡터 조회(자리 대기, 커넥션 대기, 쿼리 제한 시간), 판정 제공자별 제한 시간, 결과 저장의 커넥션 대기다.
   # 현재 임베딩 모델로 만든 자료 조각이 없으면 서버가 뜨지 않으므로, 자료를 적재한 뒤에 켠다.
   matching:
     enabled: ${JOB_POSTING_MATCHING_ENABLED:false}
@@ -91,8 +97,16 @@ resource:
     dimensions: ${RESOURCE_EMBEDDING_DIMENSIONS:1024}
     normalize: ${RESOURCE_EMBEDDING_NORMALIZE:true}
     api-key: ${RESOURCE_EMBEDDING_API_KEY:}
-    connect-timeout: ${RESOURCE_EMBEDDING_CONNECT_TIMEOUT:5s}
-    read-timeout: ${RESOURCE_EMBEDDING_READ_TIMEOUT:30s}
+    # 검색 요청이 임베딩 응답을 기다리는 시간이다. 평소 응답은 0.2초 안팎이라, 느려진 호출에 검색이 오래 붙잡히지 않게 짧게 둔다.
+    connect-timeout: ${RESOURCE_EMBEDDING_CONNECT_TIMEOUT:2s}
+    read-timeout: ${RESOURCE_EMBEDDING_READ_TIMEOUT:3s}
+  # 벡터 조회는 조각 전체를 읽어 DB 부하가 크다. 제한 시간을 넘긴 조회는 DB가 중단한다. query-timeout은 5초까지만 설정할 수 있다.
+  # 동시에 도는 조회는 max-concurrent 개까지만 받고, 자리가 없으면 acquire-timeout 만큼 기다린 뒤 조회를 시작하지 않는다.
+  # 제한에 걸리면 자료 검색 API는 503으로 응답하고, 프로젝트 검색은 글자 일치 결과로 응답하며, 역량 매칭은 실패로 기록해 다시 시도한다.
+  search:
+    query-timeout: ${RESOURCE_SEARCH_QUERY_TIMEOUT:3s}
+    max-concurrent: ${RESOURCE_SEARCH_MAX_CONCURRENT:2}
+    acquire-timeout: ${RESOURCE_SEARCH_ACQUIRE_TIMEOUT:1s}
 
 # 조회 결과를 앱 서버 메모리에 보관하는 로컬 캐시.
 # enabled를 끄면 보관하지 않고 매번 DB에서 읽는다. (부하 테스트에서 캐시 전후를 비교할 때 쓴다)

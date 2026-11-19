@@ -3527,6 +3527,7 @@ paths:
         그 이름이 기술 주제의 이름이나 별칭과도 같으면 프로젝트 자료 뒤에 그 프로젝트가 아닌 자료의 연관도 순 결과를 이어 준다. 이때 blogs와 documents는 최대 40건이고 talks도 채우며, nextCursor는 주지 않는다.
         검색어는 인기 검색어 집계에 방문자별로 하루 한 번 기록한다(VISITOR_ID 쿠키를 함께 보낸다).
         keyword가 없거나 50자를 넘거나, track이 BE, FE, AN이 아니면 400(VALIDATION_FAILED)으로 응답한다.
+        검색이 제한 시간을 넘기면 503(RESOURCE_SEARCH_TIMEOUT), 동시에 처리 중인 검색이 많으면 503(RESOURCE_SEARCH_BUSY)으로 응답한다. 결과를 일부만 주지 않으며, 잠시 뒤 다시 요청하면 된다.
       operationId: resource-search
       parameters:
       - name: keyword
@@ -3569,6 +3570,19 @@ paths:
                     :\"2025-09-05T09:00:00Z\",\"platform\":null,\"faviconUrl\":null,\"\
                     team\":null}],\"nextCursor\":null,\"hasNext\":false},\"matchedProjects\"\
                     :[]}}"
+        "503":
+          description: "503"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                resource-search-timeout:
+                  value: "{\"status\":\"error\",\"code\":\"RESOURCE_SEARCH_TIMEOUT\"\
+                    ,\"message\":\"자료 검색이 지연되고 있습니다. 잠시 후 다시 시도해 주세요.\"}"
+                resource-search-busy:
+                  value: "{\"status\":\"error\",\"code\":\"RESOURCE_SEARCH_BUSY\"\
+                    ,\"message\":\"자료 검색 요청이 많습니다. 잠시 후 다시 시도해 주세요.\"}"
   /api/v1/resources/topics:
     get:
       tags:

@@ -1,18 +1,24 @@
 package com.shoutoutz.api.resourcesearch.infrastructure;
 
+import com.shoutoutz.api.common.exception.custom.ServiceUnavailableException;
 import com.shoutoutz.api.resourcesearch.application.ResourceSearchRepository;
 import com.shoutoutz.api.resourcesearch.application.dto.MatchedChunk;
 import com.shoutoutz.api.resourcesearch.application.dto.ResourceSearchCandidate;
+import com.shoutoutz.api.resourcesearch.domain.ResourceSearchErrorCode;
 import com.shoutoutz.api.resourcesearch.domain.ResourceTrack;
+import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.List;
-import lombok.RequiredArgsConstructor;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
+import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 @Repository
-@RequiredArgsConstructor
 public class JdbcResourceSearchRepository implements ResourceSearchRepository {
 
     /**
@@ -31,8 +37,32 @@ public class JdbcResourceSearchRepository implements ResourceSearchRepository {
 
     private static final int VECTOR_DIMENSIONS = 1024;
 
-    private final NamedParameterJdbcTemplate jdbcTemplate;
+    // PostgreSQL이 statement_timeout으로 쿼리를 중단할 때 내는 SQLSTATE
+    private static final String QUERY_CANCELED = "57014";
 
+    private final NamedParameterJdbcTemplate jdbcTemplate;
+    private final ResourceSearchProperties properties;
+    private final TransactionTemplate readOnlyTransaction;
+    private final Semaphore slots;
+
+    public JdbcResourceSearchRepository(
+            NamedParameterJdbcTemplate jdbcTemplate,
+            ResourceSearchProperties properties,
+            PlatformTransactionManager transactionManager
+    ) {
+        this.jdbcTemplate = jdbcTemplate;
+        this.properties = properties;
+        this.readOnlyTransaction = new TransactionTemplate(transactionManager);
+        this.readOnlyTransaction.setReadOnly(true);
+        this.slots = new Semaphore(properties.maxConcurrent(), true);
+    }
+
+    /**
+     * 조각 전체를 읽는 무거운 조회라 두 가지로 막는다.
+     * 동시에 도는 조회 수를 제한해 검색이 커넥션 풀을 전부 차지하지 못하게 하고,
+     * 제한 시간을 넘긴 조회는 DB가 중단하게 해 느려진 조회가 끝까지 돌며 DB를 붙잡지 않게 한다.
+     * 자리를 얻은 뒤에 커넥션을 잡도록 트랜잭션을 메서드 안에서 연다.
+     */
     @Override
     public List<ResourceSearchCandidate> findNearest(
             float[] queryVector,
@@ -41,6 +71,34 @@ public class JdbcResourceSearchRepository implements ResourceSearchRepository {
             int candidateLimit
     ) {
         validateVector(queryVector);
+        acquireSlot();
+        try {
+            return readOnlyTransaction.execute(
+                    status -> findNearestWithinTimeout(queryVector, modelId, track, candidateLimit)
+            );
+        } finally {
+            slots.release();
+        }
+    }
+
+    private void acquireSlot() {
+        try {
+            if (!slots.tryAcquire(properties.acquireTimeout().toMillis(), TimeUnit.MILLISECONDS)) {
+                throw new ServiceUnavailableException(ResourceSearchErrorCode.RESOURCE_SEARCH_BUSY);
+            }
+        } catch (InterruptedException exception) {
+            Thread.currentThread().interrupt();
+            throw new ServiceUnavailableException(ResourceSearchErrorCode.RESOURCE_SEARCH_BUSY, exception);
+        }
+    }
+
+    // 제한 시간은 이 트랜잭션에만 건다. 바깥 트랜잭션에 섞여 불렸을 때 호출자가 걸어 둔 값을 지우지 않도록 조회 전 값으로 되돌린다.
+    private List<ResourceSearchCandidate> findNearestWithinTimeout(
+            float[] queryVector,
+            String modelId,
+            ResourceTrack track,
+            int candidateLimit
+    ) {
         String sql = """
                 SELECT d.id AS document_id, d.external_key, d.project_id, d.repo,
                        d.title, d.summary, d.source, d.track, d.url,
@@ -63,27 +121,53 @@ public class JdbcResourceSearchRepository implements ResourceSearchRepository {
         }
         sql += " ORDER BY similarity_score DESC, c.id LIMIT :candidateLimit";
 
-        return jdbcTemplate.query(
-                sql,
-                parameters,
-                (resultSet, rowNumber) -> new ResourceSearchCandidate(
-                        resultSet.getLong("document_id"),
-                        resultSet.getString("external_key"),
-                        resultSet.getObject("project_id", Long.class),
-                        resultSet.getString("repo"),
-                        resultSet.getString("title"),
-                        resultSet.getString("summary"),
-                        resultSet.getString("source"),
-                        ResourceTrack.from(resultSet.getString("track")),
-                        resultSet.getString("url"),
-                        new MatchedChunk(
-                                resultSet.getLong("chunk_id"),
-                                resultSet.getString("chunk_kind"),
-                                resultSet.getString("chunk_text"),
-                                resultSet.getDouble("similarity_score")
-                        )
-                )
-        );
+        String previousTimeout = jdbcTemplate.getJdbcTemplate()
+                .queryForObject("SELECT current_setting('statement_timeout')", String.class);
+        setLocalStatementTimeout(properties.queryTimeout().toMillis() + "ms");
+        List<ResourceSearchCandidate> candidates;
+        try {
+            candidates = jdbcTemplate.query(
+                    sql,
+                    parameters,
+                    (resultSet, rowNumber) -> new ResourceSearchCandidate(
+                            resultSet.getLong("document_id"),
+                            resultSet.getString("external_key"),
+                            resultSet.getObject("project_id", Long.class),
+                            resultSet.getString("repo"),
+                            resultSet.getString("title"),
+                            resultSet.getString("summary"),
+                            resultSet.getString("source"),
+                            ResourceTrack.from(resultSet.getString("track")),
+                            resultSet.getString("url"),
+                            new MatchedChunk(
+                                    resultSet.getLong("chunk_id"),
+                                    resultSet.getString("chunk_kind"),
+                                    resultSet.getString("chunk_text"),
+                                    resultSet.getDouble("similarity_score")
+                            )
+                    )
+            );
+        } catch (DataAccessException exception) {
+            if (isQueryCanceled(exception)) {
+                throw new ServiceUnavailableException(ResourceSearchErrorCode.RESOURCE_SEARCH_TIMEOUT, exception);
+            }
+            throw exception;
+        }
+        setLocalStatementTimeout(previousTimeout);
+        return candidates;
+    }
+
+    // set_config의 세 번째 인자가 true면 SET LOCAL과 같이 이 트랜잭션에만 적용된다.
+    private void setLocalStatementTimeout(String value) {
+        jdbcTemplate.getJdbcTemplate()
+                .queryForObject("SELECT set_config('statement_timeout', ?, true)", String.class, value);
+    }
+
+    private static boolean isQueryCanceled(DataAccessException exception) {
+        if (exception.getRootCause() instanceof SQLException sqlException) {
+            return QUERY_CANCELED.equals(sqlException.getSQLState());
+        }
+        return false;
     }
 
     private void validateVector(float[] vector) {

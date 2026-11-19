@@ -7,8 +7,8 @@ import org.springframework.boot.context.properties.bind.DefaultValue;
 @ConfigurationProperties(prefix = "resource.embedding")
 public record EmbeddingProperties(@DefaultValue("openai") String provider,
         @DefaultValue("text-embedding-3-small") String modelId, @DefaultValue("1024") int dimensions,
-        @DefaultValue("true") boolean normalize, String apiKey, @DefaultValue("5s") Duration connectTimeout,
-        @DefaultValue("30s") Duration readTimeout) {
+        @DefaultValue("true") boolean normalize, String apiKey, @DefaultValue("2s") Duration connectTimeout,
+        @DefaultValue("3s") Duration readTimeout) {
     public EmbeddingProperties {
         provider = provider == null || provider.isBlank() ? "openai" : provider;
         if (!"openai".equals(provider)) {
@@ -18,8 +18,8 @@ public record EmbeddingProperties(@DefaultValue("openai") String provider,
         if (dimensions <= 0) {
             throw new IllegalArgumentException("임베딩 차원은 양수여야 합니다.");
         }
-        connectTimeout = timeout(connectTimeout, Duration.ofSeconds(5));
-        readTimeout = timeout(readTimeout, Duration.ofSeconds(30));
+        connectTimeout = timeout(connectTimeout, Duration.ofSeconds(2));
+        readTimeout = timeout(readTimeout, Duration.ofSeconds(3));
     }
 
     /** resource_chunks.embedding_model 값. 모델이나 차원이 바뀌면 값도 바뀌어 이전 벡터와 섞이지 않는다. */

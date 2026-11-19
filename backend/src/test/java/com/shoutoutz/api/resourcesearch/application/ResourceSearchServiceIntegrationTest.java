@@ -81,7 +81,7 @@ class ResourceSearchServiceIntegrationTest {
     }
 
     @Test
-    void 실제_DB에서_후보를_확대해_요청한_문서수를_채운다() {
+    void 실제_DB에서_조회_한_번으로_후보_범위를_넓혀_요청한_문서수를_채운다() {
         for (int i = 0; i < 10; i++) {
             long document = fixture.document(ResourceTrack.BE);
             fixture.intro(document, vector(1, 0));
@@ -94,8 +94,7 @@ class ResourceSearchServiceIntegrationTest {
 
         assertThat(hits).hasSize(10);
         assertThat(hits).allSatisfy(hit -> assertThat(hit.matchedChunks()).hasSize(4));
-        verify(resourceSearchRepository).findNearest(queryVector, MODEL, ResourceTrack.BE, 20);
-        verify(resourceSearchRepository).findNearest(queryVector, MODEL, ResourceTrack.BE, 40);
+        verify(resourceSearchRepository, times(1)).findNearest(queryVector, MODEL, ResourceTrack.BE, 400);
         verify(embeddingClient, times(1)).embed("작업 복구");
     }
 

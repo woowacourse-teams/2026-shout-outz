@@ -10,6 +10,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.shoutoutz.api.common.embedding.EmbeddingException;
+import com.shoutoutz.api.common.exception.custom.ServiceUnavailableException;
 import com.shoutoutz.api.jobposting.application.JobRequirementMatchingException;
 import com.shoutoutz.api.jobposting.application.dto.CandidateChunk;
 import com.shoutoutz.api.jobposting.application.dto.ResourceCandidate;
@@ -18,6 +19,7 @@ import com.shoutoutz.api.jobposting.domain.MatchingFailure;
 import com.shoutoutz.api.resourcesearch.application.ResourceSearchService;
 import com.shoutoutz.api.resourcesearch.application.dto.MatchedChunk;
 import com.shoutoutz.api.resourcesearch.application.dto.SearchHit;
+import com.shoutoutz.api.resourcesearch.domain.ResourceSearchErrorCode;
 import com.shoutoutz.api.resourcesearch.domain.ResourceTrack;
 import java.util.List;
 import java.util.stream.Stream;
@@ -97,7 +99,9 @@ class ResourceSearchRequirementResourceSearcherTest {
         return Stream.of(
                 new EmbeddingException(503, "HTTP_503", true),
                 new EmbeddingException(null, "MISSING_API_KEY", false),
-                new DataAccessResourceFailureException("DB 연결 실패")
+                new DataAccessResourceFailureException("DB 연결 실패"),
+                new ServiceUnavailableException(ResourceSearchErrorCode.RESOURCE_SEARCH_TIMEOUT),
+                new ServiceUnavailableException(ResourceSearchErrorCode.RESOURCE_SEARCH_BUSY)
         );
     }
 
