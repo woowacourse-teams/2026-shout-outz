@@ -65,6 +65,15 @@ class PublicProjectNameFinderTest {
         assertThat(publicProjectNameFinder.findNamed(keyword)).isEmpty();
     }
 
+    @Test
+    @DisplayName("이름이 같은 프로젝트가 없으면 한글 이름이 받침 하나만 다른 프로젝트를 찾는다")
+    void findsNearlyNamedProject() {
+        givenPublicProjects();
+
+        assertThat(publicProjectNameFinder.findNamed("히어릳"))
+                .containsExactly(new MatchedProject(13L, "히어릿", "hearit"));
+    }
+
     @ParameterizedTest
     @ValueSource(strings = {"?!", "  ", "..."})
     @DisplayName("글자나 숫자가 없는 검색어는 프로젝트 이름과 비교하지 않는다")

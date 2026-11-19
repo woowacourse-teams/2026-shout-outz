@@ -13,6 +13,12 @@ import java.util.zip.CRC32;
  */
 public record NormalizedKeyword(String value) {
 
+    private static final int NEAR_NAME_MINIMUM_SYLLABLES = 3;
+    private static final char HANGUL_FIRST = '\uAC00';
+    private static final char HANGUL_LAST = '\uD7A3';
+    // 한글 음절 코드는 (초성, 중성) 조합마다 받침 없음을 포함해 28개씩 이어진다.
+    private static final int FINAL_CONSONANT_COUNT = 28;
+
     public NormalizedKeyword {
         Objects.requireNonNull(value, "정규화한 검색어는 null일 수 없습니다.");
     }
@@ -36,5 +42,33 @@ public record NormalizedKeyword(String value) {
 
     public boolean isEmpty() {
         return value.isEmpty();
+    }
+
+    /**
+     * 한글 이름의 받침 하나를 다르게 적은 검색어("샤라웃"과 "샤라웆")를 받아 주기 위한 비교.
+     * 둘 다 세 글자 이상의 한글이고 글자 수가 같으며, 한 글자의 받침만 다르면(바뀌거나 빠지거나 더해지면) 가까운 표기다.
+     * 초성이나 모음까지 허용하면 "레벨업"이 "데벨업"을 가리키고, 두 글자 이름은 "달록"과 "달력"처럼 다른 낱말과 겹쳐 제외한다.
+     */
+    public boolean isOneFinalConsonantApart(NormalizedKeyword other) {
+        if (!isHangulName() || !other.isHangulName() || value.length() != other.value.length()) {
+            return false;
+        }
+        int differentFinals = 0;
+        for (int index = 0; index < value.length(); index++) {
+            int syllable = value.charAt(index) - HANGUL_FIRST;
+            int otherSyllable = other.value.charAt(index) - HANGUL_FIRST;
+            if (syllable / FINAL_CONSONANT_COUNT != otherSyllable / FINAL_CONSONANT_COUNT) {
+                return false;
+            }
+            if (syllable != otherSyllable) {
+                differentFinals++;
+            }
+        }
+        return differentFinals == 1;
+    }
+
+    private boolean isHangulName() {
+        return value.length() >= NEAR_NAME_MINIMUM_SYLLABLES
+                && value.chars().allMatch(letter -> letter >= HANGUL_FIRST && letter <= HANGUL_LAST);
     }
 }

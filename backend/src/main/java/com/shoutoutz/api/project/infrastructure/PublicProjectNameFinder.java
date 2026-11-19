@@ -2,6 +2,7 @@ package com.shoutoutz.api.project.infrastructure;
 
 import com.shoutoutz.api.project.domain.NormalizedKeyword;
 import com.shoutoutz.api.project.domain.ProjectRepository;
+import com.shoutoutz.api.project.domain.PublicProjectName;
 import com.shoutoutz.api.resourcesearch.application.ProjectNameFinder;
 import com.shoutoutz.api.resourcesearch.application.dto.MatchedProject;
 import java.util.List;
@@ -23,8 +24,7 @@ public class PublicProjectNameFinder implements ProjectNameFinder {
         if (normalized.isEmpty()) {
             return List.of();
         }
-        return projectRepository.findPublicProjectNames().stream()
-                .filter(project -> project.isNamed(normalized))
+        return PublicProjectName.pointedBy(projectRepository.findPublicProjectNames(), normalized).stream()
                 .map(project -> new MatchedProject(project.id(), project.title(), project.slug()))
                 .toList();
     }
