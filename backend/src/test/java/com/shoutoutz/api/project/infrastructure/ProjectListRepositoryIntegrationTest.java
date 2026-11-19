@@ -439,6 +439,11 @@ class ProjectListRepositoryIntegrationTest {
                 .extracting(PublicProjectName::githubRepositoryUrl)
                 .asString()
                 .startsWith("https://github.com/woowacourse-teams/list-");
+        assertThat(titles).filteredOn(name -> name.id() == approved)
+                .singleElement()
+                .extracting(PublicProjectName::slug)
+                .asString()
+                .startsWith("list-");
         assertThat(titles).extracting(PublicProjectName::id).doesNotContain(pending, deleted);
     }
 

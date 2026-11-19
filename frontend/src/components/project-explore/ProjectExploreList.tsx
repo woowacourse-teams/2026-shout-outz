@@ -1,13 +1,17 @@
 import { useSuspenseInfiniteQuery, useSuspenseQuery } from '@tanstack/react-query';
-import { IconChevronDown } from '@tabler/icons-react';
 
 import {
   exploreProjectsQuery,
   projectTopicsQuery,
   type ExploreProjectFilter,
   type ProjectTopics,
+  type ExploreProject,
 } from '@/apis/project-explore';
-import { ExploreProjectCard } from '@/components/project-explore/ExploreProjectCard';
+import { ExploreMoreButton } from '@/components/explore/ExploreMoreButton';
+import {
+  ExploreProjectCard,
+  type ExploreProjectMatch,
+} from '@/components/project-explore/ExploreProjectCard';
 import type { ProjectSort } from '@/types/project';
 import { cn } from '@/utils/cn';
 
@@ -53,9 +57,21 @@ function ProjectList({
     exploreProjectsQuery({ keyword: filter.keyword, topicId, sort: filter.sort }),
   );
   const projects = query.data.pages.flatMap((page) => page.projects);
-  const totalCount = query.data.pages[0]?.meta.totalCount ?? projects.length;
+  const firstMeta = query.data.pages[0]?.meta;
+  const totalCount = firstMeta?.totalCount ?? projects.length;
   // 검색어와 기술 주제는 함께 걸리지 않는다(routes/index.tsx).
-  const searchedBy = filter.topic ?? filter.keyword.trim();
+  const keyword = filter.keyword.trim();
+  // 서버가 검색어를 기술 주제로 해석했으면 그 주제. 검색어와 다를 때만 따로 알려 준다.
+  const interpretedTopic = filter.topic ? null : (firstMeta?.matchedTopic?.name ?? null);
+  // 왼쪽 주제로 거른 경우, 또는 서버가 검색어를 기술 주제로 해석해 그 주제로 찾은 경우
+  const matchedTopic = filter.topic ?? firstMeta?.matchedTopic?.name ?? null;
+  const matchOf = (project: ExploreProject): ExploreProjectMatch | null => {
+    if (matchedTopic) return { kind: 'topic', topic: matchedTopic };
+    if (keyword && project.matchedResource) {
+      return { kind: 'resource', keyword, resource: project.matchedResource };
+    }
+    return null;
+  };
 
   return (
     <div>
@@ -64,10 +80,11 @@ function ProjectList({
           <h2 className="text-xl font-bold text-gray-900">
             프로젝트 <span className="font-medium text-gray-400">{totalCount}</span>
           </h2>
-          {searchedBy && (
-            <p className="mt-1 text-sm break-keep text-gray-500">
-              <b className="font-semibold text-gray-900">{searchedBy}</b> 키워드로 찾은 결과
-            </p>
+          {(filter.topic || keyword) && (
+            <SearchedBy
+              keyword={filter.topic ? `#${filter.topic}` : keyword}
+              interpretedTopic={interpretedTopic === keyword ? null : interpretedTopic}
+            />
           )}
         </div>
         <div
@@ -111,24 +128,49 @@ function ProjectList({
         >
           {projects.map((project) => (
             <li key={project.slug} className="min-w-0">
-              <ExploreProjectCard {...project} />
+              <ExploreProjectCard {...project} match={matchOf(project)} />
             </li>
           ))}
         </ul>
       )}
 
       {query.hasNextPage && (
-        <div className="mt-8 flex justify-center">
-          <button
-            type="button"
-            disabled={query.isFetchingNextPage}
-            onClick={() => void query.fetchNextPage({ cancelRefetch: false })}
-            className="focus-visible:outline-primary-600 inline-flex h-8.5 cursor-pointer items-center gap-1 rounded-full border border-gray-200 px-3.5 text-sm font-semibold text-gray-600 hover:bg-gray-50 focus-visible:outline-2 disabled:cursor-default disabled:opacity-50"
-          >
-            {query.isFetchingNextPage ? '불러오는 중…' : '더 보기'}
-            <IconChevronDown className="size-3.5" aria-hidden="true" />
-          </button>
-        </div>
+        <ExploreMoreButton
+          icon="down"
+          disabled={query.isFetchingNextPage}
+          onClick={() => void query.fetchNextPage({ cancelRefetch: false })}
+        >
+          {query.isFetchingNextPage ? '불러오는 중…' : '더 보기'}
+        </ExploreMoreButton>
+      )}
+    </div>
+  );
+}
+
+/**
+ * 목록 위 "무엇으로 찾았는지". 카드마다 같은 주제를 반복하지 않고 여기서 한 번 강조한다.
+ * 검색어를 서버가 기술 주제로 해석했으면 그 주제도 덧붙인다.
+ */
+function SearchedBy({
+  keyword,
+  interpretedTopic,
+}: {
+  keyword: string;
+  interpretedTopic: string | null;
+}) {
+  return (
+    <div className="mt-2.5">
+      <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-base break-keep text-gray-700">
+        <b className="bg-primary-50 text-primary-600 rounded-lg px-2.5 py-1 font-bold break-all">
+          {keyword}
+        </b>{' '}
+        키워드로 찾은 결과
+      </p>
+      {interpretedTopic && (
+        <p className="mt-1.5 text-xs text-gray-500">
+          <b className="font-semibold text-gray-700">#{interpretedTopic}</b> 주제를 다룬 프로젝트를
+          모았어요
+        </p>
       )}
     </div>
   );

@@ -5,15 +5,17 @@ import java.util.Optional;
 import java.util.Set;
 
 public enum ResourceSection {
-    BLOG(20, Set.of("blog-post")),
-    DOCUMENT(20, Set.of("github-pr", "github-teamdoc", "github-wiki", "github-discussion")),
-    TALK(6, Set.of("youtube-tekotalk"));
+    BLOG(20, 60, Set.of("blog-post")),
+    DOCUMENT(20, 60, Set.of("github-pr", "github-teamdoc", "github-wiki", "github-discussion")),
+    TALK(6, 6, Set.of("youtube-tekotalk"));
 
     private final int limit;
+    private final int depth;
     private final Set<String> sources;
 
-    ResourceSection(int limit, Set<String> sources) {
+    ResourceSection(int limit, int depth, Set<String> sources) {
         this.limit = limit;
+        this.depth = depth;
         this.sources = sources;
     }
 
@@ -28,6 +30,13 @@ public enum ResourceSection {
 
     public int limit() {
         return limit;
+    }
+
+    /**
+     * 한 검색에서 이 섹션에 이어 읽기까지 내보내는 자료 수의 상한
+     */
+    public int depth() {
+        return depth;
     }
 
     public Set<String> sources() {

@@ -13,9 +13,16 @@ interface ProjectDetailPageProps {
   slug: string;
   tab: ProjectDetailTab;
   onTabChange: (tab: ProjectDetailTab) => void;
+  /** 자료 탭에서 먼저 고를 기술 주제 이름 */
+  materialTopic?: string;
 }
 
-export function ProjectDetailPage({ slug, tab, onTabChange }: ProjectDetailPageProps) {
+export function ProjectDetailPage({
+  slug,
+  tab,
+  onTabChange,
+  materialTopic,
+}: ProjectDetailPageProps) {
   return (
     <div className="bg-background flex min-h-dvh flex-col text-gray-900">
       <AppGnb />
@@ -48,7 +55,12 @@ export function ProjectDetailPage({ slug, tab, onTabChange }: ProjectDetailPageP
             );
           }}
         >
-          <ProjectDetailContent slug={slug} tab={tab} onTabChange={onTabChange} />
+          <ProjectDetailContent
+            slug={slug}
+            tab={tab}
+            onTabChange={onTabChange}
+            materialTopic={materialTopic}
+          />
         </AsyncBoundary>
       </main>
       <Footer />

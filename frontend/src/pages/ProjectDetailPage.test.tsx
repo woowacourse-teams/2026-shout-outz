@@ -256,6 +256,51 @@ describe('프로젝트 상세 탭', () => {
     ).toBeInTheDocument();
   });
 
+  test('로그인한 사용자의 분야에 맞는 직군 탭을 먼저 보여 주고, 직접 고른 탭은 유지한다', async () => {
+    const me = await (await fetch('http://localhost/api/v1/users/me')).json();
+    server.use(
+      http.get('/api/v1/users/me', () =>
+        HttpResponse.json({ status: 'success', data: { ...me.data, track: 'FRONTEND' } }),
+      ),
+    );
+    renderPage('/projects/@shout-outz');
+
+    const roles = await screen.findByRole('tablist', { name: '직군' });
+    await waitFor(() =>
+      expect(within(roles).getByRole('tab', { name: '프론트엔드' })).toHaveAttribute(
+        'aria-selected',
+        'true',
+      ),
+    );
+    expect(
+      within(screen.getByRole('list', { name: '경험' })).getByRole('heading', {
+        name: '모달을 overlay-kit으로 통일',
+      }),
+    ).toBeInTheDocument();
+
+    await userEvent.click(within(roles).getByRole('tab', { name: '백엔드' }));
+    expect(within(roles).getByRole('tab', { name: '백엔드' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+  });
+
+  test('분야의 경험이 없으면 첫 직군 탭을 보여 준다', async () => {
+    const me = await (await fetch('http://localhost/api/v1/users/me')).json();
+    server.use(
+      http.get('/api/v1/users/me', () =>
+        HttpResponse.json({ status: 'success', data: { ...me.data, track: 'ANDROID' } }),
+      ),
+    );
+    renderPage('/projects/@shout-outz');
+
+    const roles = await screen.findByRole('tablist', { name: '직군' });
+    expect(within(roles).getByRole('tab', { name: '백엔드' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+  });
+
   test('경험 카드를 누르면 경험 상세에서 포트폴리오 글, 연관 자료, 다른 경험을 보여준다', async () => {
     renderPage('/projects/@shout-outz');
 
@@ -335,6 +380,27 @@ describe('프로젝트 상세 탭', () => {
       expect(router.state.location.pathname).toBe('/projects/@shout-outz/materials'),
     );
     expect(router.state.location.search).toEqual({});
+    expect(
+      await screen.findByRole('heading', { level: 2, name: '인덱스/쿼리 최적화' }),
+    ).toBeInTheDocument();
+  });
+
+  test('주소에 주제가 있으면 자료 탭에서 그 주제를 고른 상태로 보여 준다', async () => {
+    renderPage(`/projects/@shout-outz/materials?topic=${encodeURIComponent('무중단 배포')}`);
+
+    expect(
+      await screen.findByRole('heading', { level: 2, name: '무중단 배포' }),
+    ).toBeInTheDocument();
+    const nav = screen.getByRole('navigation', { name: '주제' });
+    const selected = within(nav)
+      .getAllByRole('button')
+      .filter((button) => button.getAttribute('aria-current') === 'true');
+    expect(selected[0]).toHaveAccessibleName(/무중단 배포/);
+  });
+
+  test('주소의 주제가 이 프로젝트 자료에 없으면 첫 주제를 보여 준다', async () => {
+    renderPage(`/projects/@shout-outz/materials?topic=${encodeURIComponent('없는 주제')}`);
+
     expect(
       await screen.findByRole('heading', { level: 2, name: '인덱스/쿼리 최적화' }),
     ).toBeInTheDocument();

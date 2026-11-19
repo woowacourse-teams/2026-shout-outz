@@ -76,6 +76,13 @@ public final class TopicAliases {
         return Optional.of(bestTopics.getFirst());
     }
 
+    /**
+     * 검색어가 별칭 하나와 정확히 같은지. match 와 달리 일부만 겹치는 검색어는 별칭으로 보지 않는다.
+     */
+    public boolean isAlias(NormalizedKeyword keyword) {
+        return topicIdByAlias.containsKey(keyword.value());
+    }
+
     private static int score(String alias, String keyword) {
         if (alias.equals(keyword)) {
             return EXACT;

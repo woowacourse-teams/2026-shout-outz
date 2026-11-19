@@ -19,12 +19,7 @@ function readRouteId(routeFilePath) {
 // dist/build-assets.json에 main entry의 scripts/styles와, 라우트 id별로 그 라우트를 그리는 데 필요한
 // 청크 파일 목록(routeChunks)을 남깁니다. ssg/generate.ts는 이 목록으로 페이지별 HTML에 preload를 넣어
 // main과 라우트 청크를 병렬로 내려받게 합니다.
-// importRequests에 적은 동적 import의 청크는 라우트와 무관하게 importChunks에 import 경로별로 남깁니다.
 export class BuildAssetsPlugin {
-  constructor({ importRequests = [] } = {}) {
-    this.importRequests = importRequests;
-  }
-
   apply(compiler) {
     const { Compilation, sources } = compiler.webpack;
 
@@ -59,29 +54,10 @@ export class BuildAssetsPlugin {
             }
           }
 
-          // 동적 import 경로(예: 'posthog-js')로 만들어진 청크 그룹을 찾습니다. swc-loader가 주석을 지워
-          // webpackChunkName 매직 주석은 쓸 수 없어 import 경로를 기준으로 삼습니다.
-          const importChunks = {};
-          for (const request of this.importRequests) {
-            const chunkGroup = compilation.chunkGroups.find((group) =>
-              group.origins.some((origin) => origin.request === request),
-            );
-            if (!chunkGroup) {
-              throw new Error(
-                `${PLUGIN_NAME}: import('${request}')로 만든 청크를 찾지 못했습니다.`,
-              );
-            }
-            importChunks[request] = chunkGroup
-              .getFiles()
-              .filter((file) => file.endsWith('.js') && !entryFiles.has(file))
-              .map((file) => `/${file}`);
-          }
-
           const manifest = {
             scripts: scripts.map((file) => `/${file}`),
             styles: styles.map((file) => `/${file}`),
             routeChunks,
-            importChunks,
           };
           compilation.emitAsset(
             'build-assets.json',

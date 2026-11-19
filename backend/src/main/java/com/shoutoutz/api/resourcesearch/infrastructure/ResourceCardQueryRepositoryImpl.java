@@ -1,8 +1,10 @@
 package com.shoutoutz.api.resourcesearch.infrastructure;
 
 import com.shoutoutz.api.resourcesearch.application.ResourceCardQueryRepository;
+import com.shoutoutz.api.resourcesearch.application.dto.ProjectResourceCursor;
 import com.shoutoutz.api.resourcesearch.application.dto.ResourceCard;
 import com.shoutoutz.api.resourcesearch.domain.ResourceSection;
+import com.shoutoutz.api.resourcesearch.domain.ResourceTrack;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
@@ -49,7 +51,8 @@ public class ResourceCardQueryRepositoryImpl implements ResourceCardQueryReposit
                 %s
                 WHERE d.id IN (:resourceIds)
                   AND d.deleted_at IS NULL
-                """.formatted(CARD_COLUMNS, VISIBLE_PROJECT_JOIN);
+                  %s
+                """.formatted(CARD_COLUMNS, VISIBLE_PROJECT_JOIN, JdbcResourceSearchRepository.NOT_REMOVED_BY_REPORT);
         List<ResourceCard> cards = jdbcTemplate.query(
                 sql,
                 new MapSqlParameterSource("resourceIds", resourceIds),
@@ -88,6 +91,80 @@ public class ResourceCardQueryRepositoryImpl implements ResourceCardQueryReposit
                         .addValue("size", size),
                 (resultSet, rowNumber) -> mapCard(resultSet)
         );
+    }
+
+    @Override
+    public List<ResourceCard> findLatestByProjects(
+            List<Long> projectIds,
+            ResourceSection section,
+            ResourceTrack track,
+            ProjectResourceCursor cursor,
+            int size
+    ) {
+        if (projectIds.isEmpty()) {
+            return List.of();
+        }
+        MapSqlParameterSource parameters = new MapSqlParameterSource("limit", size);
+        String sql = "SELECT " + CARD_COLUMNS + projectResourcesFrom(projectIds, section, track, parameters)
+                + afterCursor(cursor, parameters)
+                + " ORDER BY d.published_at DESC NULLS LAST, d.id DESC LIMIT :limit";
+        return jdbcTemplate.query(sql, parameters, (resultSet, rowNumber) -> mapCard(resultSet));
+    }
+
+    @Override
+    public long countByProjects(List<Long> projectIds, ResourceSection section, ResourceTrack track) {
+        if (projectIds.isEmpty()) {
+            return 0;
+        }
+        MapSqlParameterSource parameters = new MapSqlParameterSource();
+        String sql = "SELECT count(*) " + projectResourcesFrom(projectIds, section, track, parameters);
+        return jdbcTemplate.queryForObject(sql, parameters, Long.class);
+    }
+
+    private String projectResourcesFrom(
+            List<Long> projectIds,
+            ResourceSection section,
+            ResourceTrack track,
+            MapSqlParameterSource parameters
+    ) {
+        String sql = """
+                FROM resource_documents d
+                %s
+                WHERE d.project_id IN (:projectIds)
+                  AND p.id IS NOT NULL
+                  AND d.source IN (:sources)
+                  AND d.deleted_at IS NULL
+                  %s
+                """.formatted(VISIBLE_PROJECT_JOIN, JdbcResourceSearchRepository.NOT_REMOVED_BY_REPORT);
+        parameters.addValue("projectIds", projectIds)
+                .addValue("sources", section.sources());
+        if (track != null && track != ResourceTrack.ALL) {
+            sql += " AND (d.track = :track OR d.track = :commonTrack OR d.track IS NULL)";
+            parameters.addValue("track", track.name())
+                    .addValue("commonTrack", ResourceTrack.ALL.name());
+        }
+        return sql;
+    }
+
+    /**
+     * 정렬이 발행 시각 내림차순(없는 자료는 맨 뒤), ID 내림차순이라 커서 뒤는 세 구간이다.
+     * 발행 시각이 더 이른 자료, 발행 시각이 같고 ID가 더 작은 자료, 발행 시각이 없는 자료.
+     * 커서가 이미 발행 시각이 없는 구간이면 그 안에서 ID가 더 작은 자료만 남는다.
+     */
+    private String afterCursor(ProjectResourceCursor cursor, MapSqlParameterSource parameters) {
+        if (cursor == null) {
+            return "";
+        }
+        parameters.addValue("cursorId", cursor.resourceId());
+        if (cursor.publishedAt() == null) {
+            return " AND d.published_at IS NULL AND d.id < :cursorId";
+        }
+        parameters.addValue("cursorPublishedAt", Timestamp.from(cursor.publishedAt()));
+        return """
+                 AND (d.published_at < :cursorPublishedAt
+                      OR (d.published_at = :cursorPublishedAt AND d.id < :cursorId)
+                      OR d.published_at IS NULL)
+                """;
     }
 
     private String onePerAuthorKey(ResourceSection kind) {

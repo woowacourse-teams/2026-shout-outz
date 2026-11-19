@@ -33,7 +33,7 @@ const SEARCH_BY_TAB: Record<
   job: {
     label: '채용공고 검색',
     placeholder: '회사, 직무, 기술로 검색 (예: 토스, 프론트엔드, Kafka)',
-    suggestionLabel: '이런 공고를 찾아보세요',
+    suggestionLabel: '추천 키워드',
     suggestions: ['토스뱅크', '토스증권', 'Kotlin', 'Spring', 'TypeScript'],
   },
   project: {

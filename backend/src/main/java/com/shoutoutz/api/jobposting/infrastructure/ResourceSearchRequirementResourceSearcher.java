@@ -1,6 +1,7 @@
 package com.shoutoutz.api.jobposting.infrastructure;
 
 import com.shoutoutz.api.common.embedding.EmbeddingException;
+import com.shoutoutz.api.common.exception.custom.ServiceUnavailableException;
 import com.shoutoutz.api.jobposting.application.JobRequirementMatchingException;
 import com.shoutoutz.api.jobposting.application.RequirementResourceSearcher;
 import com.shoutoutz.api.jobposting.application.dto.CandidateChunk;
@@ -35,7 +36,7 @@ public class ResourceSearchRequirementResourceSearcher implements RequirementRes
             hits = resourceSearchService.search(query, toTrack(jobRole), limit);
         } catch (IllegalArgumentException exception) {
             throw new JobRequirementMatchingException(MatchingFailure.INVALID_QUERY, exception);
-        } catch (EmbeddingException | DataAccessException exception) {
+        } catch (EmbeddingException | DataAccessException | ServiceUnavailableException exception) {
             throw new JobRequirementMatchingException(MatchingFailure.SEARCH_FAILED, exception);
         }
         return hits.stream().map(this::toCandidate).toList();

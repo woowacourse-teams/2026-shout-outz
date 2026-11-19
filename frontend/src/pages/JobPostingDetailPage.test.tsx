@@ -17,6 +17,8 @@ describe('JobPostingDetailPage', () => {
       await screen.findByRole('heading', { level: 1, name: 'Frontend Developer' }),
     ).toBeVisible();
     expect(screen.getByText('토스증권 · 상시 채용')).toBeVisible();
+    // 로고가 없는 회사는 같은 크기의 회색 자리를 둔다.
+    expect(screen.getByRole('img', { name: '토스증권 로고' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: '공고 원문 보기 ↗' })).toHaveAttribute(
       'target',
       '_blank',

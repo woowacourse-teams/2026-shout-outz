@@ -25,13 +25,23 @@ export const PROJECT_TAB_PATHS = {
 } as const satisfies Record<ProjectDetailTab, string>;
 
 /** 세 탭 라우트가 함께 쓰는 라우팅 컴포넌트. 탭을 누르면 그 탭의 주소로 바꾼다. */
-export function ProjectDetailRoute({ slug, tab }: { slug: string; tab: ProjectDetailTab }) {
+export function ProjectDetailRoute({
+  slug,
+  tab,
+  materialTopic,
+}: {
+  slug: string;
+  tab: ProjectDetailTab;
+  /** 자료 탭에서 먼저 고를 기술 주제 이름 */
+  materialTopic?: string;
+}) {
   const navigate = useNavigate();
 
   return (
     <ProjectDetailPage
       slug={toProjectSlug(slug)}
       tab={tab}
+      materialTopic={materialTopic}
       onTabChange={(next) => {
         analytics.track({
           name: 'project_detail_tab_changed',

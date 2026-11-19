@@ -6,10 +6,14 @@ import { AsyncBoundary } from '@/components/AsyncBoundary';
 import { ExploreHero, type ExploreTab } from '@/components/explore/ExploreHero';
 import { exploreHead } from '@/components/explore/exploreHead';
 import { ExploreHome } from '@/components/explore/ExploreHome';
-import { ExploreSearchResult } from '@/components/explore/ExploreSearchResult';
+import {
+  ExploreSearchResult,
+  type SearchResultKind,
+} from '@/components/explore/ExploreSearchResult';
 import { Footer } from '@/components/Footer';
 import { JobPostingList } from '@/components/job-postings/JobPostingList';
 import { ProjectExplore } from '@/components/project-explore/ProjectExplore';
+import type { JobPostingSort } from '@/apis/job-posting';
 import { analytics, type ExploreSearchSource } from '@/utils/analytics';
 import type { ProjectSort } from '@/types/project';
 
@@ -22,8 +26,14 @@ interface ExplorePageProps {
   /** 프로젝트 탭의 기술 주제 */
   topic: string | null;
   onTopicChange: (topic: string | null) => void;
+  /** 프로젝트 탭 정렬 */
   sort: ProjectSort;
-  onSortChange: (sort: ProjectSort) => void;
+  /** 채용공고 탭 정렬 */
+  jobSort: JobPostingSort;
+  onSortChange: (sort: ProjectSort | JobPostingSort) => void;
+  /** 키워드 탭 검색 결과의 자료 종류. null이면 전체 */
+  kind: SearchResultKind | null;
+  onKindChange: (kind: SearchResultKind | null) => void;
 }
 
 export function ExplorePage({
@@ -34,7 +44,10 @@ export function ExplorePage({
   topic,
   onTopicChange,
   sort,
+  jobSort,
   onSortChange,
+  kind,
+  onKindChange,
 }: ExplorePageProps) {
   const popularKeywords = useQuery({ ...popularKeywordsQuery(), enabled: tab === 'keyword' });
   // 프로젝트 탭에서 기술 주제를 고르면 그 주제로 검색한 것으로 보고 검색창에 주제 이름을 넣는다.
@@ -96,18 +109,17 @@ export function ExplorePage({
             }}
           />
         ) : tab === 'job' ? (
-          <div className="mt-10">
+          <div className="mt-14">
             <AsyncBoundary>
-              <JobPostingList keyword={query} />
+              <JobPostingList keyword={query} sort={jobSort} onSortChange={onSortChange} />
             </AsyncBoundary>
           </div>
         ) : (
           <div className="mx-auto max-w-4xl">
             {query ? (
               <div className="mt-10" aria-live="polite">
-                <AsyncBoundary>
-                  {/* 검색어가 바뀌면 종류 탭을 '전체'로 되돌린다. */}
-                  <ExploreSearchResult key={query} query={query} />
+                <AsyncBoundary fallback={<SearchResultSkeleton />}>
+                  <ExploreSearchResult query={query} kind={kind} onKindChange={onKindChange} />
                 </AsyncBoundary>
               </div>
             ) : (
@@ -119,6 +131,24 @@ export function ExplorePage({
         )}
       </main>
       <Footer />
+    </div>
+  );
+}
+
+function SearchResultSkeleton() {
+  return (
+    <div
+      role="status"
+      aria-label="검색 결과 불러오는 중"
+      className="animate-pulse motion-reduce:animate-none"
+    >
+      <div className="h-4 w-32 rounded bg-gray-100" />
+      <div className="mt-4 h-8 w-64 max-w-full rounded bg-gray-100" />
+      <div className="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        {[0, 1, 2].map((item) => (
+          <div key={item} className="aspect-[8/5] rounded-xl bg-gray-100" />
+        ))}
+      </div>
     </div>
   );
 }
