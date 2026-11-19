@@ -382,6 +382,19 @@ class JdbcResourceSearchRepositoryIntegrationTest {
         assertThat(setting("jit")).isEqualTo("off");
     }
 
+    @Test
+    void 조각을_넣으면_반정밀도_벡터가_원본에서_계산되어_함께_저장된다() {
+        long chunkId = fixture.intro(fixture.document(ResourceTrack.BE), vector(0.8f, 0.6f));
+
+        Boolean same = jdbcTemplate.queryForObject(
+                "SELECT embedding_half = embedding::halfvec(1024) FROM resource_chunks WHERE id = ?",
+                Boolean.class,
+                chunkId
+        );
+
+        assertThat(same).isTrue();
+    }
+
     private List<ResourceSearchCandidate> search(ResourceTrack track, int limit) {
         return resourceSearchRepository.findCandidates(vector(1, 0), MODEL, track, limit, List.of()).nearest();
     }
