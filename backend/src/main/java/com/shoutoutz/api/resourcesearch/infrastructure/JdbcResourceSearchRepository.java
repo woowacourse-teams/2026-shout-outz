@@ -5,6 +5,7 @@ import com.shoutoutz.api.resourcesearch.application.ResourceSearchRepository;
 import com.shoutoutz.api.resourcesearch.application.dto.LexicalChunk;
 import com.shoutoutz.api.resourcesearch.application.dto.MatchedChunk;
 import com.shoutoutz.api.resourcesearch.application.dto.ResourceSearchCandidate;
+import com.shoutoutz.api.resourcesearch.application.dto.SearchCandidates;
 import com.shoutoutz.api.resourcesearch.domain.ResourceSearchErrorCode;
 import com.shoutoutz.api.resourcesearch.domain.ResourceTrack;
 import java.sql.SQLException;
@@ -13,6 +14,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
@@ -84,12 +86,6 @@ public class JdbcResourceSearchRepository implements ResourceSearchRepository {
         this.slots = new Semaphore(properties.maxConcurrent(), true);
     }
 
-    /**
-     * DB 메모리가 모자라면 인덱스 조회도 느려지므로 두 가지로 막는다.
-     * 동시에 도는 조회 수를 제한해 검색이 커넥션 풀을 전부 차지하지 못하게 하고,
-     * 제한 시간을 넘긴 조회는 DB가 중단하게 해 느려진 조회가 끝까지 돌며 DB를 붙잡지 않게 한다.
-     * 자리를 얻은 뒤에 커넥션을 잡도록 트랜잭션을 메서드 안에서 연다.
-     */
     @Override
     public List<ResourceSearchCandidate> findNearest(
             float[] queryVector,
@@ -97,11 +93,29 @@ public class JdbcResourceSearchRepository implements ResourceSearchRepository {
             ResourceTrack track,
             int candidateLimit
     ) {
+        return findCandidates(queryVector, modelId, track, candidateLimit, List.of()).nearest();
+    }
+
+    /**
+     * DB 메모리가 모자라면 인덱스 조회도 느려지므로 두 가지로 막는다.
+     * 동시에 도는 조회 수를 제한해 검색이 커넥션 풀을 전부 차지하지 못하게 하고,
+     * 제한 시간을 넘긴 조회는 DB가 중단하게 해 느려진 조회가 끝까지 돌며 DB를 붙잡지 않게 한다.
+     * 자리를 얻은 뒤에 커넥션을 잡도록 트랜잭션을 메서드 안에서 연다.
+     * 단어 검색이 찾은 조각을 따로 조회하지 않고 같은 쿼리에 묶는다. 조회가 둘이면 자리와 커넥션을 두 번 기다릴 수 있다.
+     */
+    @Override
+    public SearchCandidates findCandidates(
+            float[] queryVector,
+            String modelId,
+            ResourceTrack track,
+            int candidateLimit,
+            List<Long> lexicalChunkIds
+    ) {
         validateVector(queryVector);
         acquireSlot();
         try {
             return readOnlyTransaction.execute(
-                    status -> findNearestWithinTimeout(queryVector, modelId, track, candidateLimit)
+                    status -> findCandidatesWithinTimeout(queryVector, modelId, track, candidateLimit, lexicalChunkIds)
             );
         } finally {
             slots.release();
@@ -120,70 +134,82 @@ public class JdbcResourceSearchRepository implements ResourceSearchRepository {
     }
 
     // 제한 시간은 이 트랜잭션에만 건다. 바깥 트랜잭션에 섞여 불렸을 때 호출자가 걸어 둔 값을 지우지 않도록 조회 전 값으로 되돌린다.
-    private List<ResourceSearchCandidate> findNearestWithinTimeout(
+    private SearchCandidates findCandidatesWithinTimeout(
             float[] queryVector,
             String modelId,
             ResourceTrack track,
-            int candidateLimit
+            int candidateLimit,
+            List<Long> lexicalChunkIds
     ) {
-        // 인덱스는 embedding::halfvec(1024) 식의 거리를 오름차순으로 정렬할 때만 쓰인다. 식이 다르거나 유사도 내림차순이면 조각 전체를 읽는다.
-        String sql = """
-                WITH nearest AS MATERIALIZED (
-                    SELECT d.id AS document_id, d.external_key, d.project_id, d.repo,
-                           d.title, d.summary, d.source, d.track, d.url,
-                           c.id AS chunk_id, c.chunk_kind, c.chunk_text,
-                           c.embedding::halfvec(1024) <=> CAST(:queryVector AS halfvec(1024)) AS distance
-                    FROM resource_chunks c
-                    JOIN resource_documents d ON d.id = c.document_id
-                    WHERE c.deleted_at IS NULL
-                      AND d.deleted_at IS NULL
-                      AND c.embedding_model = :modelId
+        String columns = """
+                SELECT d.id AS document_id, d.external_key, d.project_id, d.repo,
+                       d.title, d.summary, d.source, d.track, d.url,
+                       c.id AS chunk_id, c.chunk_kind, c.chunk_text,
+                       c.embedding::halfvec(1024) <=> CAST(:queryVector AS halfvec(1024)) AS distance
+                FROM resource_chunks c
+                JOIN resource_documents d ON d.id = c.document_id
+                WHERE c.deleted_at IS NULL
+                  AND d.deleted_at IS NULL
+                  AND c.embedding_model = :modelId
                 """ + NOT_REMOVED_BY_REPORT;
         MapSqlParameterSource parameters = new MapSqlParameterSource()
                 .addValue("queryVector", Arrays.toString(queryVector))
                 .addValue("modelId", modelId)
-                .addValue("candidateLimit", candidateLimit);
+                .addValue("candidateLimit", candidateLimit)
+                .addValue("lexicalChunkIds", toArrayLiteral(lexicalChunkIds));
+        String trackCondition = "";
         if (track != null && track != ResourceTrack.ALL) {
-            sql += " AND (c.track = :track OR c.track = :commonTrack OR c.track IS NULL)";
+            trackCondition = " AND (c.track = :track OR c.track = :commonTrack OR c.track IS NULL)";
             parameters.addValue("track", track.name())
                     .addValue("commonTrack", ResourceTrack.ALL.name());
         }
-        sql += """
+        // 인덱스는 embedding::halfvec(1024) 식의 거리를 오름차순으로 정렬할 때만 쓰인다. 식이 다르거나 유사도 내림차순이면 조각 전체를 읽는다.
+        // 단어 검색이 찾은 조각은 색인을 만들 때 이미 트랙으로 걸렀으므로 트랙 조건을 다시 걸지 않는다.
+        String sql = "WITH nearest AS MATERIALIZED (" + columns + trackCondition + """
                     ORDER BY distance
                     LIMIT :candidateLimit
+                ), lexical_only AS (
+                """ + columns + """
+                      AND c.id = ANY(CAST(:lexicalChunkIds AS bigint[]))
+                      AND NOT EXISTS (SELECT 1 FROM nearest WHERE nearest.chunk_id = c.id)
                 )
-                SELECT nearest.*, 1 - distance AS similarity_score
-                FROM nearest
-                ORDER BY distance, chunk_id
+                SELECT nearest.*, 1 - distance AS similarity_score, TRUE AS is_nearest FROM nearest
+                UNION ALL
+                SELECT lexical_only.*, 1 - distance AS similarity_score, FALSE AS is_nearest FROM lexical_only
+                ORDER BY is_nearest DESC, distance, chunk_id
                 """;
 
         String previousTimeout = jdbcTemplate.getJdbcTemplate()
                 .queryForObject("SELECT current_setting('statement_timeout')", String.class);
         setLocalStatementTimeout(properties.queryTimeout().toMillis() + "ms");
         jdbcTemplate.getJdbcTemplate().execute(USE_VECTOR_INDEX);
-        List<ResourceSearchCandidate> candidates;
+        List<ResourceSearchCandidate> nearest = new ArrayList<>();
+        List<ResourceSearchCandidate> lexicalOnly = new ArrayList<>();
         try {
-            candidates = jdbcTemplate.query(
-                    sql,
-                    parameters,
-                    (resultSet, rowNumber) -> new ResourceSearchCandidate(
-                            resultSet.getLong("document_id"),
-                            resultSet.getString("external_key"),
-                            resultSet.getObject("project_id", Long.class),
-                            resultSet.getString("repo"),
-                            resultSet.getString("title"),
-                            resultSet.getString("summary"),
-                            resultSet.getString("source"),
-                            ResourceTrack.from(resultSet.getString("track")),
-                            resultSet.getString("url"),
-                            new MatchedChunk(
-                                    resultSet.getLong("chunk_id"),
-                                    resultSet.getString("chunk_kind"),
-                                    resultSet.getString("chunk_text"),
-                                    resultSet.getDouble("similarity_score")
-                            )
-                    )
-            );
+            jdbcTemplate.query(sql, parameters, resultSet -> {
+                ResourceSearchCandidate candidate = new ResourceSearchCandidate(
+                        resultSet.getLong("document_id"),
+                        resultSet.getString("external_key"),
+                        resultSet.getObject("project_id", Long.class),
+                        resultSet.getString("repo"),
+                        resultSet.getString("title"),
+                        resultSet.getString("summary"),
+                        resultSet.getString("source"),
+                        ResourceTrack.from(resultSet.getString("track")),
+                        resultSet.getString("url"),
+                        new MatchedChunk(
+                                resultSet.getLong("chunk_id"),
+                                resultSet.getString("chunk_kind"),
+                                resultSet.getString("chunk_text"),
+                                resultSet.getDouble("similarity_score")
+                        )
+                );
+                if (resultSet.getBoolean("is_nearest")) {
+                    nearest.add(candidate);
+                    return;
+                }
+                lexicalOnly.add(candidate);
+            });
         } catch (DataAccessException exception) {
             if (isQueryCanceled(exception)) {
                 throw new ServiceUnavailableException(ResourceSearchErrorCode.RESOURCE_SEARCH_TIMEOUT, exception);
@@ -192,7 +218,13 @@ public class JdbcResourceSearchRepository implements ResourceSearchRepository {
         }
         jdbcTemplate.getJdbcTemplate().execute(RESTORE_SETTINGS);
         setLocalStatementTimeout(previousTimeout);
-        return candidates;
+        return new SearchCandidates(nearest, lexicalOnly);
+    }
+
+    private static String toArrayLiteral(List<Long> ids) {
+        return ids.stream()
+                .map(String::valueOf)
+                .collect(Collectors.joining(",", "{", "}"));
     }
 
     /**
