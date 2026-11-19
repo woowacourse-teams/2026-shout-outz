@@ -48,7 +48,7 @@ public class JdbcResourceSearchRepository implements ResourceSearchRepository {
     private static final String QUERY_CANCELED = "57014";
 
     /**
-     * 벡터 조회가 halfvec 인덱스(resource_chunks_embedding_half_idx)를 쓰게 하는 설정이다. 트랜잭션 안에서만 적용된다.
+     * 벡터 조회가 반정밀도 벡터 열의 인덱스(resource_chunks_embedding_half_col_idx)를 쓰게 하는 설정이다. 트랜잭션 안에서만 적용된다.
      * <ul>
      *     <li>ef_search 1000: 조각 400개를 뽑을 때 검색어 40개 모두에서 가까운 60개가 전체 비교와 같아진 값이다.
      *     400이면 40개 중 33개만 같았고, 한 건의 조회 시간은 약 3ms 차이였다.</li>
@@ -136,7 +136,7 @@ public class JdbcResourceSearchRepository implements ResourceSearchRepository {
                 SELECT d.id AS document_id, d.external_key, d.project_id, d.repo,
                        d.title, d.summary, d.source, d.track, d.url,
                        c.id AS chunk_id, c.chunk_kind, c.chunk_text,
-                       c.embedding::halfvec(1024) <=> CAST(:queryVector AS halfvec(1024)) AS distance
+                       c.embedding_half <=> CAST(:queryVector AS halfvec(1024)) AS distance
                 FROM resource_chunks c
                 JOIN resource_documents d ON d.id = c.document_id
                 WHERE c.deleted_at IS NULL
@@ -154,7 +154,8 @@ public class JdbcResourceSearchRepository implements ResourceSearchRepository {
             parameters.addValue("track", track.name())
                     .addValue("commonTrack", ResourceTrack.ALL.name());
         }
-        // 인덱스는 embedding::halfvec(1024) 식의 거리를 오름차순으로 정렬할 때만 쓰인다. 식이 다르거나 유사도 내림차순이면 조각 전체를 읽는다.
+        // 인덱스는 embedding_half 열의 거리를 오름차순으로 정렬할 때만 쓰인다. 식이 다르거나 유사도 내림차순이면 조각 전체를 읽는다.
+        // 거리를 원본 벡터(embedding)로 계산하면 조각마다 행 밖에 저장된 원본을 읽으므로 행 안의 embedding_half 로만 계산한다.
         // 단어 검색이 찾은 조각은 색인을 만들 때 이미 트랙으로 걸렀으므로 트랙 조건을 다시 걸지 않는다.
         String sql = "WITH nearest AS MATERIALIZED (" + columns + trackCondition + """
                     ORDER BY distance

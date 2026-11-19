@@ -15,6 +15,7 @@ import com.shoutoutz.api.resourcesearch.domain.ResourceTrack;
 import com.shoutoutz.api.resourcesearch.support.ResourceDocumentFixture;
 import com.shoutoutz.api.resourcesearch.support.ResourceSearchFixture;
 import java.util.List;
+import java.util.Random;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -343,15 +344,27 @@ class JdbcResourceSearchRepositoryIntegrationTest {
     }
 
     @Test
-    void 가까운_조각을_halfvec_인덱스로_찾는다() {
+    void 가까운_조각을_저장한_반정밀도_벡터_열의_인덱스로_찾는다() {
         fixture.intro(fixture.document(ResourceTrack.BE), vector(1, 0));
 
         search(null, 10);
 
-        assertThat(jdbcTemplate.queryForObject(
-                "SELECT pg_stat_get_xact_numscans('resource_chunks_embedding_half_idx'::regclass)",
-                Long.class
-        )).isPositive();
+        assertThat(scans("resource_chunks_embedding_half_col_idx")).isPositive();
+        assertThat(scans("resource_chunks_embedding_half_idx")).isZero();
+    }
+
+    @Test
+    void 조회는_행_밖에_저장된_원본_벡터를_읽지_않는다() {
+        long nearest = fixture.intro(fixture.document(ResourceTrack.BE), incompressibleVector(1));
+        long lexicalOnly = fixture.intro(fixture.document(ResourceTrack.BE), incompressibleVector(2));
+        long before = toastBlocksFetched();
+
+        SearchCandidates result = resourceSearchRepository.findCandidates(
+                incompressibleVector(1), MODEL, null, 1, List.of(lexicalOnly));
+
+        assertThat(result.nearest()).extracting(candidate -> candidate.chunk().chunkId()).containsExactly(nearest);
+        assertThat(result.lexicalOnly()).extracting(candidate -> candidate.chunk().chunkId()).containsExactly(lexicalOnly);
+        assertThat(toastBlocksFetched()).isEqualTo(before);
     }
 
     @Test
@@ -397,6 +410,29 @@ class JdbcResourceSearchRepositoryIntegrationTest {
 
     private List<ResourceSearchCandidate> search(ResourceTrack track, int limit) {
         return resourceSearchRepository.findCandidates(vector(1, 0), MODEL, track, limit, List.of()).nearest();
+    }
+
+    private Long scans(String indexName) {
+        return jdbcTemplate.queryForObject("SELECT pg_stat_get_xact_numscans(?::regclass)", Long.class, indexName);
+    }
+
+    // 이 트랜잭션이 조각 테이블의 행 밖 저장 공간(TOAST)에서 읽은 블록 수
+    private Long toastBlocksFetched() {
+        return jdbcTemplate.queryForObject("""
+                SELECT pg_stat_get_xact_blocks_fetched(reltoastrelid)
+                FROM pg_class
+                WHERE relname = 'resource_chunks'
+                """, Long.class);
+    }
+
+    // 0이 많은 벡터는 압축되어 행 안에 남는다. 실제 임베딩처럼 압축되지 않아 행 밖에 저장되는 벡터를 만든다.
+    private float[] incompressibleVector(long seed) {
+        Random random = new Random(seed);
+        float[] values = new float[1024];
+        for (int index = 0; index < values.length; index++) {
+            values[index] = random.nextFloat() - 0.5f;
+        }
+        return values;
     }
 
     private String setting(String name) {

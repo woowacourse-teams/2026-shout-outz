@@ -17,29 +17,43 @@ class ResourceChunkVectorIndexIntegrationTest {
     private JdbcTemplate jdbcTemplate;
 
     @Test
-    void 조각의_벡터_인덱스는_halfvec_하나만_있다() {
-        List<String> definitions = jdbcTemplate.queryForList("""
+    void 조회가_쓰는_벡터_인덱스는_저장한_반정밀도_벡터_열에_걸려_있다() {
+        String definition = jdbcTemplate.queryForObject("""
                 SELECT indexdef
+                FROM pg_indexes
+                WHERE tablename = 'resource_chunks' AND indexname = 'resource_chunks_embedding_half_col_idx'
+                """, String.class);
+
+        assertThat(definition)
+                .contains("USING hnsw (embedding_half halfvec_cosine_ops)")
+                .contains("m='16'")
+                .contains("ef_construction='64'");
+    }
+
+    @Test
+    void 이전_버전의_조회가_쓰는_표현식_인덱스를_남겨_둔다() {
+        List<String> names = jdbcTemplate.queryForList("""
+                SELECT indexname
                 FROM pg_indexes
                 WHERE tablename = 'resource_chunks' AND indexdef LIKE '%USING hnsw%'
                 """, String.class);
 
-        assertThat(definitions).singleElement().asString()
-                .contains("resource_chunks_embedding_half_idx")
-                .contains("halfvec(1024)")
-                .contains("halfvec_cosine_ops");
+        assertThat(names).containsExactlyInAnyOrder(
+                "resource_chunks_embedding_half_col_idx",
+                "resource_chunks_embedding_half_idx"
+        );
     }
 
     @Test
     void 벡터_인덱스는_쓸_수_있는_상태다() {
-        Boolean valid = jdbcTemplate.queryForObject("""
+        List<Boolean> usable = jdbcTemplate.queryForList("""
                 SELECT i.indisvalid AND i.indisready
                 FROM pg_index i
                 JOIN pg_class c ON c.oid = i.indexrelid
-                WHERE c.relname = 'resource_chunks_embedding_half_idx'
+                WHERE c.relname IN ('resource_chunks_embedding_half_col_idx', 'resource_chunks_embedding_half_idx')
                 """, Boolean.class);
 
-        assertThat(valid).isTrue();
+        assertThat(usable).containsExactly(true, true);
     }
 
     @Test
