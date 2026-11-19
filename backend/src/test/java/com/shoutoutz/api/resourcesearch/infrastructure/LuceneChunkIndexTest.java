@@ -43,6 +43,17 @@ class LuceneChunkIndexTest {
     }
 
     @Test
+    void 본문의_전각_문자도_검색어와_같은_규칙으로_정리해_찾는다() {
+        try (LuceneChunkIndex index = LuceneChunkIndex.of(List.of(
+                chunk(1, "Ｒｅｄｉｓ 로 분산 락을 구현했다", ResourceTrack.BE),
+                chunk(2, "Redis 캐시를 붙였다", ResourceTrack.BE)
+        ))) {
+            assertThat(chunkIds(index.search("Ｒｅｄｉｓ", null, 10))).containsExactlyInAnyOrder(1L, 2L);
+            assertThat(chunkIds(index.search("redis", null, 10))).containsExactlyInAnyOrder(1L, 2L);
+        }
+    }
+
+    @Test
     void 일부_단어만_일치해도_찾고_더_많이_일치한_조각을_앞에_둔다() {
         try (LuceneChunkIndex index = LuceneChunkIndex.of(List.of(
                 chunk(1, "인덱스 추가로 조회 성능을 개선했다", ResourceTrack.BE),

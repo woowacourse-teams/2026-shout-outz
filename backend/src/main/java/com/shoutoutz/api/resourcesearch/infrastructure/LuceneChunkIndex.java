@@ -139,7 +139,7 @@ public final class LuceneChunkIndex implements AutoCloseable {
         Document document = new Document();
         document.add(new StoredField(CHUNK_ID, chunk.chunkId()));
         document.add(new NumericDocValuesField(CHUNK_ORDER, chunk.chunkId()));
-        document.add(new TextField(BODY, chunk.text(), Field.Store.NO));
+        document.add(new TextField(BODY, normalize(chunk.text()), Field.Store.NO));
         document.add(new StringField(TRACK, trackValue(chunk.track()), Field.Store.NO));
         return document;
     }
@@ -151,9 +151,9 @@ public final class LuceneChunkIndex implements AutoCloseable {
         return track.name();
     }
 
-    // 전각 문자와 대소문자 차이로 같은 기술명을 놓치지 않게 한다.
-    private static String normalize(String query) {
-        return Normalizer.normalize(query, Normalizer.Form.NFKC)
+    // 전각 문자와 대소문자 차이로 같은 기술명을 놓치지 않게 한다. 본문과 검색어에 똑같이 적용해야 서로 맞는다.
+    private static String normalize(String text) {
+        return Normalizer.normalize(text, Normalizer.Form.NFKC)
                 .strip()
                 .toLowerCase(Locale.ROOT)
                 .replaceAll("\\s+", " ");
