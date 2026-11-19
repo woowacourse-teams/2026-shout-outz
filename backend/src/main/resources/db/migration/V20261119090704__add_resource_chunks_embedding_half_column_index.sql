@@ -5,14 +5,9 @@
 -- CONCURRENTLY는 트랜잭션 밖에서 단계마다 확정되므로 실패해도 자동으로 되돌아가지 않는다.
 -- 생성 도중 배포가 끊기면 쓸 수 없는 인덱스가 남고, 그대로 다시 실행하면 이름이 겹쳐 실패한다.
 -- 그래서 남아 있을 수 있는 인덱스를 먼저 지운다. 스키마를 지정하지 않은 DROP INDEX 는 지금 스키마에 그 이름이 없으면
--- search_path 를 따라 다른 스키마의 같은 이름 인덱스를 지우므로, 지금 스키마로 한정한다.
--- 스키마 이름을 넣으려면 동적 SQL이 필요하고 동적 SQL 안에서는 CONCURRENTLY 를 쓸 수 없다.
--- 남은 인덱스를 지우는 일이라 테이블 잠금은 순간이다.
-DO $$
-BEGIN
-    EXECUTE format('DROP INDEX IF EXISTS %I.resource_chunks_embedding_half_col_idx', current_schema());
-END
-$$;
+-- search_path 를 따라 다른 스키마의 같은 이름 인덱스를 지우므로, Flyway 가 마이그레이션을 적용하는 스키마로 한정한다.
+-- 일반 DROP INDEX 는 테이블에 ACCESS EXCLUSIVE 잠금을 걸어 다른 트랜잭션을 기다리는 동안 읽기와 쓰기를 막으므로 CONCURRENTLY 로 지운다.
+DROP INDEX CONCURRENTLY IF EXISTS "${flyway:defaultSchema}".resource_chunks_embedding_half_col_idx;
 
 CREATE INDEX CONCURRENTLY resource_chunks_embedding_half_col_idx
     ON resource_chunks USING hnsw (embedding_half halfvec_cosine_ops) WITH (m = 16, ef_construction = 64);
