@@ -59,7 +59,7 @@ class JdbcResourceSearchRepositoryIterativeScanIntegrationTest {
         }
 
         List<ResourceSearchCandidate> result =
-                resourceSearchRepository.findNearest(vector(1, 0), MODEL, ResourceTrack.BE, 40);
+                resourceSearchRepository.findCandidates(vector(1, 0), MODEL, ResourceTrack.BE, 40, List.of()).nearest();
 
         assertThat(result).hasSize(40)
                 .allMatch(candidate -> candidate.track() == ResourceTrack.BE)

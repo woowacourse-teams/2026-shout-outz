@@ -53,7 +53,7 @@ class JdbcResourceSearchRepositoryGuardIntegrationTest {
             }
             long startedAt = System.nanoTime();
 
-            assertThatThrownBy(() -> resourceSearchRepository.findNearest(vector(1, 0), MODEL, null, 10))
+            assertThatThrownBy(() -> resourceSearchRepository.findCandidates(vector(1, 0), MODEL, null, 10, List.of()).nearest())
                     .isInstanceOf(ServiceUnavailableException.class)
                     .extracting(exception -> ((ServiceUnavailableException) exception).getErrorCode())
                     .isEqualTo(ResourceSearchErrorCode.RESOURCE_SEARCH_TIMEOUT);
@@ -70,12 +70,12 @@ class JdbcResourceSearchRepositoryGuardIntegrationTest {
             try (Statement statement = blocker.createStatement()) {
                 statement.execute("LOCK TABLE resource_chunks IN ACCESS EXCLUSIVE MODE");
             }
-            assertThatThrownBy(() -> resourceSearchRepository.findNearest(vector(1, 0), MODEL, null, 10))
+            assertThatThrownBy(() -> resourceSearchRepository.findCandidates(vector(1, 0), MODEL, null, 10, List.of()).nearest())
                     .isInstanceOf(ServiceUnavailableException.class);
             blocker.rollback();
         }
 
-        assertThat(resourceSearchRepository.findNearest(vector(1, 0), MODEL, null, 10)).isEmpty();
+        assertThat(resourceSearchRepository.findCandidates(vector(1, 0), MODEL, null, 10, List.of()).nearest()).isEmpty();
         assertThat(jdbcTemplate.queryForObject("SELECT current_setting('statement_timeout')", String.class))
                 .isEqualTo("0");
     }
@@ -91,7 +91,7 @@ class JdbcResourceSearchRepositoryGuardIntegrationTest {
             waitUntilSearchIsBlocked(blocker);
             long startedAt = System.nanoTime();
 
-            assertThatThrownBy(() -> resourceSearchRepository.findNearest(vector(1, 0), MODEL, null, 10))
+            assertThatThrownBy(() -> resourceSearchRepository.findCandidates(vector(1, 0), MODEL, null, 10, List.of()).nearest())
                     .isInstanceOf(ServiceUnavailableException.class)
                     .extracting(exception -> ((ServiceUnavailableException) exception).getErrorCode())
                     .isEqualTo(ResourceSearchErrorCode.RESOURCE_SEARCH_BUSY);
@@ -109,13 +109,13 @@ class JdbcResourceSearchRepositoryGuardIntegrationTest {
             try (Statement statement = blocker.createStatement()) {
                 statement.execute("LOCK TABLE resource_chunks IN ACCESS EXCLUSIVE MODE");
             }
-            assertThatThrownBy(() -> resourceSearchRepository.findNearest(vector(1, 0), MODEL, null, 10))
+            assertThatThrownBy(() -> resourceSearchRepository.findCandidates(vector(1, 0), MODEL, null, 10, List.of()).nearest())
                     .isInstanceOf(ServiceUnavailableException.class);
             blocker.rollback();
         }
 
-        List<ResourceSearchCandidate> first = resourceSearchRepository.findNearest(vector(1, 0), MODEL, null, 10);
-        List<ResourceSearchCandidate> second = resourceSearchRepository.findNearest(vector(1, 0), MODEL, null, 10);
+        List<ResourceSearchCandidate> first = resourceSearchRepository.findCandidates(vector(1, 0), MODEL, null, 10, List.of()).nearest();
+        List<ResourceSearchCandidate> second = resourceSearchRepository.findCandidates(vector(1, 0), MODEL, null, 10, List.of()).nearest();
 
         assertThat(first).isEmpty();
         assertThat(second).isEmpty();
@@ -123,7 +123,7 @@ class JdbcResourceSearchRepositoryGuardIntegrationTest {
 
     private Throwable searchFailure() {
         try {
-            resourceSearchRepository.findNearest(vector(1, 0), MODEL, null, 10);
+            resourceSearchRepository.findCandidates(vector(1, 0), MODEL, null, 10, List.of()).nearest();
             return null;
         } catch (RuntimeException exception) {
             return exception;

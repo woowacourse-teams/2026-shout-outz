@@ -173,7 +173,7 @@ public class JobRequirementMatchingRepositoryImpl implements JobRequirementMatch
         return true;
     }
 
-    /** 자료 검색(JdbcResourceSearchRepository.findNearest)과 같은 조건으로 확인한다. 조건이 바뀌면 함께 바꾼다. */
+    /** 자료 검색(JdbcResourceSearchRepository.findCandidates)과 같은 조건으로 확인한다. 조건이 바뀌면 함께 바꾼다. */
     @Override
     public boolean hasSearchableChunks(String embeddingModel) {
         return Boolean.TRUE.equals(jdbcTemplate.queryForObject("""

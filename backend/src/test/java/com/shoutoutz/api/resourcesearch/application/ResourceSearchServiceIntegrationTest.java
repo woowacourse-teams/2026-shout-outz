@@ -94,7 +94,7 @@ class ResourceSearchServiceIntegrationTest {
 
         assertThat(hits).hasSize(10);
         assertThat(hits).allSatisfy(hit -> assertThat(hit.matchedChunks()).hasSize(4));
-        verify(resourceSearchRepository, times(1)).findNearest(queryVector, MODEL, ResourceTrack.BE, 400);
+        verify(resourceSearchRepository, times(1)).findCandidates(queryVector, MODEL, ResourceTrack.BE, 400, List.of());
         verify(embeddingClient, times(1)).embed("작업 복구");
     }
 

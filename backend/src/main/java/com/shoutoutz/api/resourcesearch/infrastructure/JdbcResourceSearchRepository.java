@@ -86,16 +86,6 @@ public class JdbcResourceSearchRepository implements ResourceSearchRepository {
         this.slots = new Semaphore(properties.maxConcurrent(), true);
     }
 
-    @Override
-    public List<ResourceSearchCandidate> findNearest(
-            float[] queryVector,
-            String modelId,
-            ResourceTrack track,
-            int candidateLimit
-    ) {
-        return findCandidates(queryVector, modelId, track, candidateLimit, List.of()).nearest();
-    }
-
     /**
      * DB 메모리가 모자라면 인덱스 조회도 느려지므로 두 가지로 막는다.
      * 동시에 도는 조회 수를 제한해 검색이 커넥션 풀을 전부 차지하지 못하게 하고,
