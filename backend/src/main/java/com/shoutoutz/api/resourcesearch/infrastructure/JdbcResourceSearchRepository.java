@@ -65,13 +65,9 @@ public class JdbcResourceSearchRepository implements ResourceSearchRepository {
             SET LOCAL jit = off
             """;
 
-    // 호출한 쪽의 트랜잭션에 참여했을 때 뒤따르는 쿼리의 실행 계획이 바뀌지 않도록 되돌린다.
-    private static final String RESTORE_SETTINGS = """
-            SET LOCAL hnsw.ef_search TO DEFAULT;
-            SET LOCAL hnsw.iterative_scan TO DEFAULT;
-            SET LOCAL enable_sort TO DEFAULT;
-            SET LOCAL jit TO DEFAULT
-            """;
+    // 조회하는 동안 바꾸는 설정. 호출한 쪽의 트랜잭션에 참여했을 때 호출자가 걸어 둔 값을 지우지 않도록 조회 전 값으로 되돌린다.
+    private static final List<String> SEARCH_SETTINGS =
+            List.of("statement_timeout", "hnsw.ef_search", "hnsw.iterative_scan", "enable_sort", "jit");
 
     private final NamedParameterJdbcTemplate jdbcTemplate;
     private final ResourceSearchProperties properties;
@@ -127,7 +123,7 @@ public class JdbcResourceSearchRepository implements ResourceSearchRepository {
         }
     }
 
-    // 제한 시간은 이 트랜잭션에만 건다. 바깥 트랜잭션에 섞여 불렸을 때 호출자가 걸어 둔 값을 지우지 않도록 조회 전 값으로 되돌린다.
+    // 제한 시간과 탐색 설정은 이 트랜잭션에만 건다.
     private SearchCandidates findCandidatesWithinTimeout(
             float[] queryVector,
             String modelId,
@@ -173,9 +169,8 @@ public class JdbcResourceSearchRepository implements ResourceSearchRepository {
                 ORDER BY is_nearest DESC, distance, chunk_id
                 """;
 
-        String previousTimeout = jdbcTemplate.getJdbcTemplate()
-                .queryForObject("SELECT current_setting('statement_timeout')", String.class);
-        setLocalStatementTimeout(properties.queryTimeout().toMillis() + "ms");
+        List<String> previousSettings = currentSettings();
+        setLocal("statement_timeout", properties.queryTimeout().toMillis() + "ms");
         jdbcTemplate.getJdbcTemplate().execute(USE_VECTOR_INDEX);
         List<ResourceSearchCandidate> nearest = new ArrayList<>();
         List<ResourceSearchCandidate> lexicalOnly = new ArrayList<>();
@@ -210,8 +205,9 @@ public class JdbcResourceSearchRepository implements ResourceSearchRepository {
             }
             throw exception;
         }
-        jdbcTemplate.getJdbcTemplate().execute(RESTORE_SETTINGS);
-        setLocalStatementTimeout(previousTimeout);
+        for (int index = 0; index < SEARCH_SETTINGS.size(); index++) {
+            setLocal(SEARCH_SETTINGS.get(index), previousSettings.get(index));
+        }
         return new SearchCandidates(nearest, lexicalOnly);
     }
 
@@ -253,10 +249,20 @@ public class JdbcResourceSearchRepository implements ResourceSearchRepository {
         return List.copyOf(chunks);
     }
 
-    // set_config의 세 번째 인자가 true면 SET LOCAL과 같이 이 트랜잭션에만 적용된다.
-    private void setLocalStatementTimeout(String value) {
+    // pgvector 를 아직 쓰지 않은 연결에서는 hnsw 설정이 없어 null 이 온다.
+    private List<String> currentSettings() {
+        List<String> values = new ArrayList<>();
+        for (String name : SEARCH_SETTINGS) {
+            values.add(jdbcTemplate.getJdbcTemplate()
+                    .queryForObject("SELECT current_setting(?, true)", String.class, name));
+        }
+        return values;
+    }
+
+    // set_config의 세 번째 인자가 true면 SET LOCAL과 같이 이 트랜잭션에만 적용된다. 값이 null 이면 기본값으로 돌아간다.
+    private void setLocal(String name, String value) {
         jdbcTemplate.getJdbcTemplate()
-                .queryForObject("SELECT set_config('statement_timeout', ?, true)", String.class, value);
+                .queryForObject("SELECT set_config(?, ?, true)", String.class, name, value);
     }
 
     private static boolean isQueryCanceled(DataAccessException exception) {

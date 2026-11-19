@@ -360,6 +360,22 @@ class JdbcResourceSearchRepositoryIntegrationTest {
         assertThat(setting("jit")).isEqualTo("on");
     }
 
+    @Test
+    void 조회를_마치면_호출자가_같은_트랜잭션에_걸어_둔_탐색_설정으로_되돌린다() {
+        fixture.intro(fixture.document(ResourceTrack.BE), vector(1, 0));
+        jdbcTemplate.execute("SET LOCAL hnsw.ef_search = 77");
+        jdbcTemplate.execute("SET LOCAL hnsw.iterative_scan = strict_order");
+        jdbcTemplate.execute("SET LOCAL enable_sort = off");
+        jdbcTemplate.execute("SET LOCAL jit = off");
+
+        search(null, 10);
+
+        assertThat(setting("hnsw.ef_search")).isEqualTo("77");
+        assertThat(setting("hnsw.iterative_scan")).isEqualTo("strict_order");
+        assertThat(setting("enable_sort")).isEqualTo("off");
+        assertThat(setting("jit")).isEqualTo("off");
+    }
+
     private List<ResourceSearchCandidate> search(ResourceTrack track, int limit) {
         return resourceSearchRepository.findCandidates(vector(1, 0), MODEL, track, limit, List.of()).nearest();
     }
