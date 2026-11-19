@@ -15,7 +15,7 @@ import com.shoutoutz.api.resourcesearch.application.dto.LexicalMatch;
 import com.shoutoutz.api.resourcesearch.application.dto.MatchedChunk;
 import com.shoutoutz.api.resourcesearch.application.dto.ResourceSearchCandidate;
 import com.shoutoutz.api.resourcesearch.application.dto.SearchCandidates;
-import com.shoutoutz.api.resourcesearch.application.dto.SearchHit;
+import com.shoutoutz.api.resourcesearch.application.dto.RankedResource;
 import com.shoutoutz.api.resourcesearch.application.dto.SectionedSearchHits;
 import com.shoutoutz.api.resourcesearch.domain.ResourceSection;
 import com.shoutoutz.api.resourcesearch.domain.ResourceTrack;
@@ -324,6 +324,6 @@ class SectionedResourceSearchServiceTest {
     }
 
     private List<Long> ids(SectionedSearchHits result, ResourceSection section) {
-        return result.hits(section).stream().map(SearchHit::documentId).toList();
+        return result.hits(section).stream().map(RankedResource::documentId).toList();
     }
 }
