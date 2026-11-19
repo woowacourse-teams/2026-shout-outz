@@ -12,8 +12,10 @@ import static org.mockito.Mockito.when;
 
 import com.shoutoutz.api.common.embedding.EmbeddingClient;
 import com.shoutoutz.api.common.embedding.EmbeddingException;
+import com.shoutoutz.api.resourcesearch.application.dto.LexicalMatch;
 import com.shoutoutz.api.resourcesearch.application.dto.MatchedChunk;
 import com.shoutoutz.api.resourcesearch.application.dto.ResourceSearchCandidate;
+import com.shoutoutz.api.resourcesearch.application.dto.SearchCandidates;
 import com.shoutoutz.api.resourcesearch.application.dto.SearchHit;
 import com.shoutoutz.api.resourcesearch.domain.ResourceTrack;
 import java.util.ArrayList;
@@ -28,14 +30,13 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataAccessResourceFailureException;
 import tools.jackson.databind.json.JsonMapper;
 
 @ExtendWith(MockitoExtension.class)
-class VectorResourceSearchServiceTest {
+class HybridResourceSearchServiceTest {
 
     @Mock
     private EmbeddingClient embeddingClient;
@@ -43,8 +44,10 @@ class VectorResourceSearchServiceTest {
     @Mock
     private ResourceSearchRepository resourceSearchRepository;
 
-    @InjectMocks
-    private VectorResourceSearchService resourceSearchService;
+    @Mock
+    private LexicalChunkSearch lexicalChunkSearch;
+
+    private HybridResourceSearchService resourceSearchService;
 
     private float[] vector;
 
@@ -52,16 +55,19 @@ class VectorResourceSearchServiceTest {
     void setUp() {
         vector = new float[1024];
         vector[0] = 1;
+        resourceSearchService = new HybridResourceSearchService(
+                embeddingClient, new HybridResourceRanker(resourceSearchRepository, lexicalChunkSearch)
+        );
     }
 
     @Test
     void 질의와_모델_트랙을_전달하고_문서별_최고_점수와_조각을_반환한다() {
         givenEmbedding();
-        when(resourceSearchRepository.findNearest(vector, "model@1024", ResourceTrack.BE, 400)).thenReturn(List.of(
+        when(resourceSearchRepository.findCandidates(vector, "model@1024", ResourceTrack.BE, 400, List.of())).thenReturn(nearestOnly(List.of(
                 candidate(1, 11, "intro", 0.7),
                 candidate(2, 21, "experience", 0.8),
                 candidate(1, 12, "experience", 0.9)
-        ));
+        )));
 
         List<SearchHit> hits = resourceSearchService.search("작업 유실 방지", ResourceTrack.BE, 10);
 
@@ -80,12 +86,12 @@ class VectorResourceSearchServiceTest {
     @Test
     void 문서수로_제한하고_동점은_문서ID와_조각ID로_정렬한다() {
         givenEmbedding();
-        when(resourceSearchRepository.findNearest(vector, "model@1024", null, 400)).thenReturn(List.of(
+        when(resourceSearchRepository.findCandidates(vector, "model@1024", null, 400, List.of())).thenReturn(nearestOnly(List.of(
                 candidate(3, 31, "experience", 0.8),
                 candidate(2, 22, "intro", 0.8),
                 candidate(1, 12, "experience", 0.9),
                 candidate(1, 11, "intro", 0.9)
-        ));
+        )));
 
         List<SearchHit> hits = resourceSearchService.search("질의", null, 2);
 
@@ -102,7 +108,7 @@ class VectorResourceSearchServiceTest {
 
         assertThat(hits).hasSize(10);
         verify(embeddingClient, times(1)).embed("질의");
-        verify(resourceSearchRepository, times(1)).findNearest(vector, "model@1024", null, 400);
+        verify(resourceSearchRepository, times(1)).findCandidates(vector, "model@1024", null, 400, List.of());
     }
 
     @Test
@@ -129,7 +135,7 @@ class VectorResourceSearchServiceTest {
         givenNearest(List.of(candidate(1, 1, "intro", 0.9)));
 
         assertThat(resourceSearchService.search("질의", null, 10)).hasSize(1);
-        verify(resourceSearchRepository, times(1)).findNearest(any(), eq("model@1024"), eq(null), anyInt());
+        verify(resourceSearchRepository, times(1)).findCandidates(any(), eq("model@1024"), eq(null), anyInt(), any());
     }
 
     @Test
@@ -138,8 +144,8 @@ class VectorResourceSearchServiceTest {
         givenNearest(candidates(100));
 
         assertThat(resourceSearchService.search("질의", null, 200)).hasSize(100);
-        verify(resourceSearchRepository, times(1)).findNearest(any(), eq("model@1024"), eq(null), anyInt());
-        verify(resourceSearchRepository).findNearest(vector, "model@1024", null, 400);
+        verify(resourceSearchRepository, times(1)).findCandidates(any(), eq("model@1024"), eq(null), anyInt(), any());
+        verify(resourceSearchRepository).findCandidates(vector, "model@1024", null, 400, List.of());
     }
 
     @ParameterizedTest
@@ -164,18 +170,34 @@ class VectorResourceSearchServiceTest {
     }
 
     @Test
+    void 단어_검색으로만_찾은_자료도_담고_두_검색이_모두_찾은_자료를_앞에_둔다() {
+        givenEmbedding();
+        when(lexicalChunkSearch.search("질의", null, 400))
+                .thenReturn(List.of(new LexicalMatch(21L, 2.0), new LexicalMatch(31L, 1.0)));
+        when(resourceSearchRepository.findCandidates(vector, "model@1024", null, 400, List.of(21L, 31L)))
+                .thenReturn(new SearchCandidates(
+                        List.of(candidate(1, 11, "intro", 0.9), candidate(2, 21, "intro", 0.8)),
+                        List.of(candidate(3, 31, "intro", 0.1))
+                ));
+
+        List<SearchHit> hits = resourceSearchService.search("질의", null, 10);
+
+        assertThat(hits).extracting(SearchHit::documentId).containsExactly(2L, 1L, 3L);
+    }
+
+    @Test
     void 매우_큰_limit도_후보_상한을_넘기거나_정수_오버플로를_일으키지_않는다() {
         givenEmbedding();
-        when(resourceSearchRepository.findNearest(vector, "model@1024", null, 400)).thenReturn(List.of());
+        when(resourceSearchRepository.findCandidates(vector, "model@1024", null, 400, List.of())).thenReturn(noCandidates());
 
         assertThat(resourceSearchService.search("질의", null, Integer.MAX_VALUE)).isEmpty();
-        verify(resourceSearchRepository).findNearest(vector, "model@1024", null, 400);
+        verify(resourceSearchRepository).findCandidates(vector, "model@1024", null, 400, List.of());
     }
 
     @Test
     void 검색_결과가_없으면_빈_목록을_반환한다() {
         givenEmbedding();
-        when(resourceSearchRepository.findNearest(vector, "model@1024", ResourceTrack.ALL, 400)).thenReturn(List.of());
+        when(resourceSearchRepository.findCandidates(vector, "model@1024", ResourceTrack.ALL, 400, List.of())).thenReturn(noCandidates());
 
         assertThat(resourceSearchService.search("질의", ResourceTrack.ALL, 5)).isEmpty();
     }
@@ -186,18 +208,18 @@ class VectorResourceSearchServiceTest {
     void 빈_질의는_외부_호출_전에_거절한다(String query) {
         assertThatThrownBy(() -> resourceSearchService.search(query, null, 1))
                 .isInstanceOf(IllegalArgumentException.class);
-        verifyNoInteractions(embeddingClient, resourceSearchRepository);
+        verifyNoInteractions(embeddingClient, resourceSearchRepository, lexicalChunkSearch);
     }
 
     @ParameterizedTest
     @EnumSource(ResourceTrack.class)
     void 트랙_enum을_조회에_전달한다(ResourceTrack track) {
         givenEmbedding();
-        when(resourceSearchRepository.findNearest(vector, "model@1024", track, 400)).thenReturn(List.of());
+        when(resourceSearchRepository.findCandidates(vector, "model@1024", track, 400, List.of())).thenReturn(noCandidates());
 
         assertThat(resourceSearchService.search("query", track, 1)).isEmpty();
 
-        verify(resourceSearchRepository).findNearest(vector, "model@1024", track, 400);
+        verify(resourceSearchRepository).findCandidates(vector, "model@1024", track, 400, List.of());
     }
 
     @ParameterizedTest
@@ -205,7 +227,7 @@ class VectorResourceSearchServiceTest {
     void 양수가_아닌_문서수는_외부_호출_전에_거절한다(int limit) {
         assertThatThrownBy(() -> resourceSearchService.search("질의", ResourceTrack.BE, limit))
                 .isInstanceOf(IllegalArgumentException.class);
-        verifyNoInteractions(embeddingClient, resourceSearchRepository);
+        verifyNoInteractions(embeddingClient, resourceSearchRepository, lexicalChunkSearch);
     }
 
     @Test
@@ -214,7 +236,7 @@ class VectorResourceSearchServiceTest {
         when(embeddingClient.embed("질의")).thenThrow(failure);
 
         assertThatThrownBy(() -> resourceSearchService.search("질의", ResourceTrack.BE, 10)).isSameAs(failure);
-        verifyNoInteractions(resourceSearchRepository);
+        verifyNoInteractions(resourceSearchRepository, lexicalChunkSearch);
         verify(embeddingClient, times(1)).embed("질의");
     }
 
@@ -222,13 +244,13 @@ class VectorResourceSearchServiceTest {
     void DB_실패를_빈_결과로_숨기지_않는다() {
         givenEmbedding();
         DataAccessResourceFailureException failure = new DataAccessResourceFailureException("test failure");
-        when(resourceSearchRepository.findNearest(vector, "model@1024", null, 400)).thenThrow(failure);
+        when(resourceSearchRepository.findCandidates(vector, "model@1024", null, 400, List.of())).thenThrow(failure);
 
         assertThatThrownBy(() -> resourceSearchService.search("질의", null, 1)).isSameAs(failure);
     }
 
     private void givenNearest(List<ResourceSearchCandidate> nearest) {
-        when(resourceSearchRepository.findNearest(vector, "model@1024", null, 400)).thenReturn(nearest);
+        when(resourceSearchRepository.findCandidates(vector, "model@1024", null, 400, List.of())).thenReturn(nearestOnly(nearest));
     }
 
     // 바꾸기 전 동작이다. 후보 수를 두 배씩 늘려 조회를 다시 하고, 문서 수가 차거나 후보가 바닥나면 멈췄다.
@@ -242,6 +264,14 @@ class VectorResourceSearchServiceTest {
             }
             candidateLimit = Math.min(400, candidateLimit * 2);
         }
+    }
+
+    private static SearchCandidates nearestOnly(List<ResourceSearchCandidate> nearest) {
+        return new SearchCandidates(nearest, List.of());
+    }
+
+    private static SearchCandidates noCandidates() {
+        return new SearchCandidates(List.of(), List.of());
     }
 
     private void givenEmbedding() {

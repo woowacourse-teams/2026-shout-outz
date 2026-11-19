@@ -7,7 +7,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.within;
 
 import com.shoutoutz.api.resourcesearch.application.ResourceSearchRepository;
+import com.shoutoutz.api.resourcesearch.application.dto.LexicalChunk;
 import com.shoutoutz.api.resourcesearch.application.dto.ResourceSearchCandidate;
+import com.shoutoutz.api.resourcesearch.application.dto.SearchCandidates;
 import com.shoutoutz.api.resourcesearch.domain.ResourceTrack;
 import com.shoutoutz.api.resourcesearch.support.ResourceDocumentFixture;
 import com.shoutoutz.api.resourcesearch.support.ResourceSearchFixture;
@@ -51,7 +53,8 @@ class JdbcResourceSearchRepositoryIntegrationTest {
 
         assertThat(result).extracting(candidate -> candidate.chunk().chunkId()).containsExactly(nearest, middle);
         assertThat(result.getFirst().chunk().similarityScore()).isCloseTo(1, within(0.000001));
-        assertThat(result.getLast().chunk().similarityScore()).isCloseTo(0.8, within(0.000001));
+        // 점수는 16비트 실수(halfvec)로 계산해 원본 정밀도와 소수 넷째 자리쯤에서 달라진다.
+        assertThat(result.getLast().chunk().similarityScore()).isCloseTo(0.8, within(0.001));
         assertThat(result).noneMatch(candidate -> candidate.chunk().chunkId() == distant);
     }
 
@@ -144,8 +147,148 @@ class JdbcResourceSearchRepositoryIntegrationTest {
     void 벡터의_크기가_달라도_방향이_같으면_유사도는_같다() {
         fixture.intro(fixture.document(ResourceTrack.BE), vector(4, 0));
 
-        assertThat(resourceSearchRepository.findNearest(vector(2, 0), MODEL, null, 1)
+        assertThat(resourceSearchRepository.findCandidates(vector(2, 0), MODEL, null, 1, List.of()).nearest()
                 .getFirst().chunk().similarityScore()).isCloseTo(1, within(0.000001));
+    }
+
+    @Test
+    void 색인할_조각을_본문과_트랙과_함께_ID순으로_읽는다() {
+        long beChunk = fixture.chunk(fixture.document(ResourceTrack.BE), 0, "intro", "캐시 무효화", vector(1, 0), MODEL);
+        long unclassifiedChunk = fixture.chunk(fixture.document(null), 0, "intro", "분산 락", vector(1, 0), MODEL);
+
+        assertThat(resourceSearchRepository.findLexicalChunks(MODEL)).containsExactly(
+                new LexicalChunk(beChunk, "캐시 무효화", ResourceTrack.BE),
+                new LexicalChunk(unclassifiedChunk, "분산 락", null)
+        );
+    }
+
+    @Test
+    void 색인할_조각에서_삭제된_문서와_조각_및_다른_모델을_제외한다() {
+        long deletedDocument = fixture.document(ResourceTrack.BE);
+        fixture.intro(deletedDocument, vector(1, 0));
+        jdbcTemplate.update("UPDATE resource_documents SET deleted_at = now() WHERE id = ?", deletedDocument);
+        long deletedChunk = fixture.intro(fixture.document(ResourceTrack.BE), vector(1, 0));
+        jdbcTemplate.update("UPDATE resource_chunks SET deleted_at = now() WHERE id = ?", deletedChunk);
+        fixture.chunk(fixture.document(ResourceTrack.BE), 0, "intro", "다른 모델", vector(1, 0), "other@1024");
+        long available = fixture.intro(fixture.document(ResourceTrack.BE), vector(0, 1));
+
+        assertThat(resourceSearchRepository.findLexicalChunks(MODEL))
+                .extracting(LexicalChunk::chunkId).containsExactly(available);
+    }
+
+    @Test
+    void 색인할_조각에서_제보로_삭제가_승인된_자료를_제외한다() {
+        long accepted = fixture.document(ResourceTrack.BE);
+        fixture.intro(accepted, vector(1, 0));
+        documents.removalReport(accepted, "ACCEPTED");
+        long open = fixture.document(ResourceTrack.BE);
+        long openChunk = fixture.intro(open, vector(1, 0));
+        documents.removalReport(open, "OPEN");
+
+        assertThat(resourceSearchRepository.findLexicalChunks(MODEL))
+                .extracting(LexicalChunk::chunkId).containsExactly(openChunk);
+    }
+
+    @Test
+    void 색인할_조각에서_본문이_공백뿐인_조각을_제외한다() {
+        fixture.chunk(fixture.document(ResourceTrack.BE), 0, "intro", "   ", vector(1, 0), MODEL);
+        long available = fixture.intro(fixture.document(ResourceTrack.BE), vector(0, 1));
+
+        assertThat(resourceSearchRepository.findLexicalChunks(MODEL))
+                .extracting(LexicalChunk::chunkId).containsExactly(available);
+    }
+
+    @Test
+    void 색인할_조각에서_본문이_개행과_탭뿐인_조각을_제외한다() {
+        fixture.chunk(fixture.document(ResourceTrack.BE), 0, "intro", "\n\t", vector(1, 0), MODEL);
+        long available = fixture.intro(fixture.document(ResourceTrack.BE), vector(0, 1));
+
+        assertThat(resourceSearchRepository.findLexicalChunks(MODEL))
+                .extracting(LexicalChunk::chunkId).containsExactly(available);
+    }
+
+    @Test
+    void 색인할_조각에서_트랙을_알_수_없는_조각만_제외한다() {
+        long unknownDocument = fixture.document(ResourceTrack.BE);
+        fixture.intro(unknownDocument, vector(1, 0));
+        jdbcTemplate.update("UPDATE resource_chunks SET track = 'UNKNOWN' WHERE document_id = ?", unknownDocument);
+        long available = fixture.intro(fixture.document(ResourceTrack.BE), vector(0, 1));
+
+        assertThat(resourceSearchRepository.findLexicalChunks(MODEL))
+                .extracting(LexicalChunk::chunkId).containsExactly(available);
+    }
+
+    @Test
+    void 단어_검색이_찾은_조각_중_가까운_조각에_없는_것을_문서_정보와_유사도와_함께_읽는다() {
+        long nearDocument = fixture.document(ResourceTrack.BE);
+        long near = fixture.chunk(nearDocument, 0, "intro", "캐시 적재", vector(1, 0), MODEL);
+        long farDocument = fixture.document(ResourceTrack.FE);
+        long far = fixture.chunk(farDocument, 0, "intro", "캐시 무효화", vector(0.8f, 0.6f), MODEL);
+
+        SearchCandidates result = resourceSearchRepository.findCandidates(vector(1, 0), MODEL, null, 1, List.of(near, far));
+
+        assertThat(result.nearest()).extracting(candidate -> candidate.chunk().chunkId()).containsExactly(near);
+        assertThat(result.lexicalOnly()).extracting(candidate -> candidate.chunk().chunkId()).containsExactly(far);
+        ResourceSearchCandidate lexicalOnly = result.lexicalOnly().getFirst();
+        assertThat(lexicalOnly.documentId()).isEqualTo(farDocument);
+        assertThat(lexicalOnly.track()).isEqualTo(ResourceTrack.FE);
+        assertThat(lexicalOnly.chunk().text()).isEqualTo("캐시 무효화");
+        assertThat(lexicalOnly.chunk().similarityScore()).isCloseTo(0.8, within(0.001));
+    }
+
+    @Test
+    void 단어_검색이_찾은_조각은_트랙_조건과_상관없이_읽는다() {
+        long frontend = fixture.intro(fixture.document(ResourceTrack.FE), vector(0, 1));
+        fixture.intro(fixture.document(ResourceTrack.BE), vector(1, 0));
+
+        SearchCandidates result = resourceSearchRepository.findCandidates(
+                vector(1, 0), MODEL, ResourceTrack.BE, 10, List.of(frontend)
+        );
+
+        assertThat(result.lexicalOnly()).extracting(candidate -> candidate.chunk().chunkId()).containsExactly(frontend);
+    }
+
+    @Test
+    void 단어_검색이_찾은_조각에서_삭제된_문서와_조각_및_다른_모델을_제외한다() {
+        long deletedDocument = fixture.document(ResourceTrack.BE);
+        long chunkOfDeletedDocument = fixture.intro(deletedDocument, vector(1, 0));
+        jdbcTemplate.update("UPDATE resource_documents SET deleted_at = now() WHERE id = ?", deletedDocument);
+        long deletedChunk = fixture.intro(fixture.document(ResourceTrack.BE), vector(1, 0));
+        jdbcTemplate.update("UPDATE resource_chunks SET deleted_at = now() WHERE id = ?", deletedChunk);
+        long otherModel = fixture.chunk(fixture.document(ResourceTrack.BE), 0, "intro", "다른 모델", vector(1, 0), "other@1024");
+        long available = fixture.intro(fixture.document(ResourceTrack.BE), vector(0, 1));
+        fixture.intro(fixture.document(ResourceTrack.BE), vector(1, 0));
+
+        SearchCandidates result = resourceSearchRepository.findCandidates(
+                vector(1, 0), MODEL, null, 1, List.of(chunkOfDeletedDocument, deletedChunk, otherModel, available)
+        );
+
+        assertThat(result.lexicalOnly()).extracting(candidate -> candidate.chunk().chunkId()).containsExactly(available);
+    }
+
+    @Test
+    void 단어_검색이_찾은_조각에서_제보로_삭제가_승인된_자료를_제외한다() {
+        long accepted = fixture.document(ResourceTrack.BE);
+        long acceptedChunk = fixture.intro(accepted, vector(0, 1));
+        documents.removalReport(accepted, "ACCEPTED");
+        long openChunk = fixture.intro(fixture.document(ResourceTrack.BE), vector(0, 1));
+        fixture.intro(fixture.document(ResourceTrack.BE), vector(1, 0));
+
+        SearchCandidates result = resourceSearchRepository.findCandidates(
+                vector(1, 0), MODEL, null, 1, List.of(acceptedChunk, openChunk)
+        );
+
+        assertThat(result.lexicalOnly()).extracting(candidate -> candidate.chunk().chunkId()).containsExactly(openChunk);
+    }
+
+    @Test
+    void 단어_검색이_찾은_조각이_없으면_가까운_조각만_읽는다() {
+        fixture.intro(fixture.document(ResourceTrack.BE), vector(1, 0));
+
+        SearchCandidates result = resourceSearchRepository.findCandidates(vector(1, 0), MODEL, null, 10, List.of());
+
+        assertThat(result.nearest()).hasSize(1);
+        assertThat(result.lexicalOnly()).isEmpty();
     }
 
     @Test
@@ -168,16 +311,16 @@ class JdbcResourceSearchRepositoryIntegrationTest {
 
     @Test
     void 차원과_영벡터_및_유한하지_않은_벡터를_거절한다() {
-        assertThatThrownBy(() -> resourceSearchRepository.findNearest(new float[2], MODEL, null, 1))
+        assertThatThrownBy(() -> resourceSearchRepository.findCandidates(new float[2], MODEL, null, 1, List.of()))
                 .isInstanceOf(InvalidDataAccessApiUsageException.class)
                 .hasCauseInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> resourceSearchRepository.findNearest(new float[1024], MODEL, null, 1))
+        assertThatThrownBy(() -> resourceSearchRepository.findCandidates(new float[1024], MODEL, null, 1, List.of()))
                 .isInstanceOf(InvalidDataAccessApiUsageException.class)
                 .hasCauseInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> resourceSearchRepository.findNearest(vector(Float.NaN, 0), MODEL, null, 1))
+        assertThatThrownBy(() -> resourceSearchRepository.findCandidates(vector(Float.NaN, 0), MODEL, null, 1, List.of()))
                 .isInstanceOf(InvalidDataAccessApiUsageException.class)
                 .hasCauseInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> resourceSearchRepository.findNearest(vector(Float.POSITIVE_INFINITY, 0), MODEL, null, 1))
+        assertThatThrownBy(() -> resourceSearchRepository.findCandidates(vector(Float.POSITIVE_INFINITY, 0), MODEL, null, 1, List.of()))
                 .isInstanceOf(InvalidDataAccessApiUsageException.class)
                 .hasCauseInstanceOf(IllegalArgumentException.class);
     }
@@ -193,7 +336,51 @@ class JdbcResourceSearchRepositoryIntegrationTest {
                 .isEqualTo("750ms");
     }
 
+    @Test
+    void 가까운_조각을_halfvec_인덱스로_찾는다() {
+        fixture.intro(fixture.document(ResourceTrack.BE), vector(1, 0));
+
+        search(null, 10);
+
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT pg_stat_get_xact_numscans('resource_chunks_embedding_half_idx'::regclass)",
+                Long.class
+        )).isPositive();
+    }
+
+    @Test
+    void 조회를_마치면_같은_트랜잭션의_탐색_설정을_되돌린다() {
+        fixture.intro(fixture.document(ResourceTrack.BE), vector(1, 0));
+
+        search(null, 10);
+
+        assertThat(setting("hnsw.ef_search")).isEqualTo("40");
+        assertThat(setting("hnsw.iterative_scan")).isEqualTo("off");
+        assertThat(setting("enable_sort")).isEqualTo("on");
+        assertThat(setting("jit")).isEqualTo("on");
+    }
+
+    @Test
+    void 조회를_마치면_호출자가_같은_트랜잭션에_걸어_둔_탐색_설정으로_되돌린다() {
+        fixture.intro(fixture.document(ResourceTrack.BE), vector(1, 0));
+        jdbcTemplate.execute("SET LOCAL hnsw.ef_search = 77");
+        jdbcTemplate.execute("SET LOCAL hnsw.iterative_scan = strict_order");
+        jdbcTemplate.execute("SET LOCAL enable_sort = off");
+        jdbcTemplate.execute("SET LOCAL jit = off");
+
+        search(null, 10);
+
+        assertThat(setting("hnsw.ef_search")).isEqualTo("77");
+        assertThat(setting("hnsw.iterative_scan")).isEqualTo("strict_order");
+        assertThat(setting("enable_sort")).isEqualTo("off");
+        assertThat(setting("jit")).isEqualTo("off");
+    }
+
     private List<ResourceSearchCandidate> search(ResourceTrack track, int limit) {
-        return resourceSearchRepository.findNearest(vector(1, 0), MODEL, track, limit);
+        return resourceSearchRepository.findCandidates(vector(1, 0), MODEL, track, limit, List.of()).nearest();
+    }
+
+    private String setting(String name) {
+        return jdbcTemplate.queryForObject("SELECT current_setting(?)", String.class, name);
     }
 }
