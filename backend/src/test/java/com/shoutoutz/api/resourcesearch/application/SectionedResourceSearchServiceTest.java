@@ -2,6 +2,7 @@ package com.shoutoutz.api.resourcesearch.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.times;
@@ -10,8 +11,10 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.shoutoutz.api.common.embedding.EmbeddingClient;
+import com.shoutoutz.api.resourcesearch.application.dto.LexicalMatch;
 import com.shoutoutz.api.resourcesearch.application.dto.MatchedChunk;
 import com.shoutoutz.api.resourcesearch.application.dto.ResourceSearchCandidate;
+import com.shoutoutz.api.resourcesearch.application.dto.SearchCandidates;
 import com.shoutoutz.api.resourcesearch.application.dto.SearchHit;
 import com.shoutoutz.api.resourcesearch.application.dto.SectionedSearchHits;
 import com.shoutoutz.api.resourcesearch.domain.ResourceSection;
@@ -29,7 +32,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -45,11 +47,14 @@ class SectionedResourceSearchServiceTest {
     @Mock
     private ResourceSearchRepository resourceSearchRepository;
 
-    @InjectMocks
+    @Mock
+    private LexicalChunkSearch lexicalChunkSearch;
+
     private SectionedResourceSearchService service;
 
     private float[] vector;
     private List<ResourceSearchCandidate> pool;
+    private List<ResourceSearchCandidate> lexicalOnly;
     private Map<Long, String> sources;
     private long nextId;
     private long nextChunkId;
@@ -62,6 +67,10 @@ class SectionedResourceSearchServiceTest {
         sources = new HashMap<>();
         nextId = 1;
         nextChunkId = 1;
+        lexicalOnly = new ArrayList<>();
+        service = new SectionedResourceSearchService(
+                embeddingClient, new HybridResourceRanker(resourceSearchRepository, lexicalChunkSearch)
+        );
     }
 
     @Test
@@ -106,7 +115,7 @@ class SectionedResourceSearchServiceTest {
 
         assertThat(result.hits(ResourceSection.BLOG)).hasSize(20);
         verify(embeddingClient, times(1)).embed(QUERY);
-        verify(resourceSearchRepository, times(1)).findNearest(vector, MODEL, null, 400);
+        verify(resourceSearchRepository, times(1)).findCandidates(vector, MODEL, null, 400, List.of());
     }
 
     @Test
@@ -161,7 +170,7 @@ class SectionedResourceSearchServiceTest {
         SectionedSearchHits result = service.search(QUERY, null);
 
         assertThat(result.hits(ResourceSection.BLOG)).hasSize(3);
-        verify(resourceSearchRepository, times(1)).findNearest(eq(vector), eq(MODEL), eq(null), anyInt());
+        verify(resourceSearchRepository, times(1)).findCandidates(eq(vector), eq(MODEL), eq(null), anyInt(), any());
         assertThat(result.hits(ResourceSection.DOCUMENT)).hasSize(10);
     }
 
@@ -175,8 +184,8 @@ class SectionedResourceSearchServiceTest {
         SectionedSearchHits result = service.search(QUERY, null);
 
         assertThat(result.hits(ResourceSection.BLOG)).isEmpty();
-        verify(resourceSearchRepository, times(1)).findNearest(eq(vector), eq(MODEL), eq(null), anyInt());
-        verify(resourceSearchRepository).findNearest(vector, MODEL, null, 400);
+        verify(resourceSearchRepository, times(1)).findCandidates(eq(vector), eq(MODEL), eq(null), anyInt(), any());
+        verify(resourceSearchRepository).findCandidates(vector, MODEL, null, 400, List.of());
     }
 
     @Test
@@ -209,11 +218,35 @@ class SectionedResourceSearchServiceTest {
     @DisplayName("직군을 그대로 조회에 전달한다")
     void passesTrackToRepository() {
         givenEmbedding();
-        when(resourceSearchRepository.findNearest(vector, MODEL, ResourceTrack.BE, 400)).thenReturn(List.of());
+        when(lexicalChunkSearch.search(QUERY, ResourceTrack.BE, 400)).thenReturn(List.of(new LexicalMatch(7L, 1.0)));
+        when(resourceSearchRepository.findCandidates(vector, MODEL, ResourceTrack.BE, 400, List.of(7L)))
+                .thenReturn(new SearchCandidates(List.of(), List.of()));
 
         service.search(QUERY, ResourceTrack.BE);
 
-        verify(resourceSearchRepository).findNearest(vector, MODEL, ResourceTrack.BE, 400);
+        verify(lexicalChunkSearch).search(QUERY, ResourceTrack.BE, 400);
+        verify(resourceSearchRepository).findCandidates(vector, MODEL, ResourceTrack.BE, 400, List.of(7L));
+    }
+
+    @Test
+    @DisplayName("단어 검색으로만 찾은 자료도 섹션에 담고, 두 검색이 모두 찾은 자료를 앞에 둔다")
+    void includesDocumentsFoundOnlyByLexicalSearch() {
+        long semanticOnly = add("blog-post", 0.9);
+        long both = add("blog-post", 0.8);
+        long bothChunk = nextChunkId - 1;
+        long lexicalOnlyDocument = nextId++;
+        long lexicalOnlyChunk = nextChunkId++;
+        lexicalOnly.add(new ResourceSearchCandidate(
+                lexicalOnlyDocument, "key-" + lexicalOnlyDocument, null, null, "제목", "소개", "blog-post",
+                ResourceTrack.BE, "https://example.com/" + lexicalOnlyDocument,
+                new MatchedChunk(lexicalOnlyChunk, "intro", "조각", 0.1)));
+        when(lexicalChunkSearch.search(QUERY, null, 400))
+                .thenReturn(List.of(new LexicalMatch(bothChunk, 2.0), new LexicalMatch(lexicalOnlyChunk, 1.0)));
+        givenRepositoryReturnsTopOfPool();
+
+        SectionedSearchHits result = service.search(QUERY, null);
+
+        assertThat(ids(result, ResourceSection.BLOG)).containsExactly(both, semanticOnly, lexicalOnlyDocument);
     }
 
     @ParameterizedTest
@@ -224,7 +257,7 @@ class SectionedResourceSearchServiceTest {
         assertThatThrownBy(() -> service.search(query, null))
                 .isInstanceOf(IllegalArgumentException.class);
 
-        verifyNoInteractions(embeddingClient, resourceSearchRepository);
+        verifyNoInteractions(embeddingClient, resourceSearchRepository, lexicalChunkSearch);
     }
 
     @Test
@@ -246,10 +279,10 @@ class SectionedResourceSearchServiceTest {
 
     private void givenRepositoryReturnsTopOfPool() {
         givenEmbedding();
-        when(resourceSearchRepository.findNearest(eq(vector), eq(MODEL), eq(null), anyInt()))
+        when(resourceSearchRepository.findCandidates(eq(vector), eq(MODEL), eq(null), anyInt(), any()))
                 .thenAnswer(invocation -> {
                     int limit = invocation.getArgument(3);
-                    return List.copyOf(pool.subList(0, Math.min(limit, pool.size())));
+                    return new SearchCandidates(pool.subList(0, Math.min(limit, pool.size())), lexicalOnly);
                 });
     }
 
