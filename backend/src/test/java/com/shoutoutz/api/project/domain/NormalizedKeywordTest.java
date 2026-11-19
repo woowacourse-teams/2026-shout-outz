@@ -49,4 +49,33 @@ class NormalizedKeywordTest {
         assertThat(NormalizedKeyword.of(" ?! ").isEmpty()).isTrue();
         assertThat(NormalizedKeyword.of("Knot").isEmpty()).isFalse();
     }
+
+    @ParameterizedTest
+    @CsvSource({
+            "샤라웃, 샤라웆",
+            "샤라우, 샤라웆",
+            "샤라웆, 샤라웃",
+            "히어릿, 히어릳"
+    })
+    @DisplayName("세 글자 이상의 한글 이름은 받침 하나가 바뀌거나 빠지거나 더해진 표기를 가까운 표기로 본다.")
+    void isOneFinalConsonantApartForHangulNames(String keyword, String name) {
+        assertThat(NormalizedKeyword.of(keyword).isOneFinalConsonantApart(NormalizedKeyword.of(name))).isTrue();
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "샤라웆, 샤라웆",
+            "샤라옷, 샤라웆",
+            "레벨업, 데벨업",
+            "하루를, 하루들",
+            "샤라윳, 샤라웃",
+            "달력, 달록",
+            "knot, know",
+            "리로그, rilog",
+            "하루스터디, 하루들"
+    })
+    @DisplayName("같은 표기, 받침이 아닌 자모가 다른 표기, 자모 둘 이상이 다른 표기, 두 글자 이름, 한글이 아닌 이름은 가까운 표기로 보지 않는다.")
+    void isNotOneFinalConsonantApart(String keyword, String name) {
+        assertThat(NormalizedKeyword.of(keyword).isOneFinalConsonantApart(NormalizedKeyword.of(name))).isFalse();
+    }
 }

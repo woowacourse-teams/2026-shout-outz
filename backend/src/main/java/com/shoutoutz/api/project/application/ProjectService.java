@@ -403,8 +403,8 @@ public class ProjectService {
         if (keyword.isEmpty()) {
             return ResolvedKeyword.of(condition, KeywordMatch.PLAIN);
         }
-        List<Long> nameMatchedIds = projectRepository.findPublicProjectNames().stream()
-                .filter(project -> project.isNamed(keyword))
+        List<Long> nameMatchedIds = PublicProjectName.pointedBy(projectRepository.findPublicProjectNames(), keyword)
+                .stream()
                 .map(PublicProjectName::id)
                 .toList();
         if (!nameMatchedIds.isEmpty()) {
