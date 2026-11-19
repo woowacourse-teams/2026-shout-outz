@@ -2,14 +2,17 @@ package com.shoutoutz.api.resourcesearch.infrastructure;
 
 import com.shoutoutz.api.resourcesearch.application.dto.LexicalChunk;
 import com.shoutoutz.api.resourcesearch.application.dto.LexicalMatch;
+import com.shoutoutz.api.resourcesearch.application.dto.RankedResource;
 import com.shoutoutz.api.resourcesearch.domain.ResourceTrack;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import org.apache.lucene.analysis.ko.KoreanAnalyzer;
 import org.apache.lucene.document.Document;
@@ -46,6 +49,9 @@ public final class LuceneChunkIndex implements AutoCloseable {
     private static final String TRACK = "track";
     private static final String CHUNK_ID = "chunkId";
     private static final String CHUNK_ORDER = "chunkOrder";
+    private static final String DOCUMENT_ID = "documentId";
+    private static final String PROJECT_ID = "projectId";
+    private static final String SOURCE = "source";
     // 트랙이 없는 조각도 트랙 조건으로 찾을 수 있게 색인에 넣는 값이다.
     private static final String UNCLASSIFIED = "UNCLASSIFIED";
     private static final float K1 = 1.2f;
@@ -86,6 +92,24 @@ public final class LuceneChunkIndex implements AutoCloseable {
     }
 
     public List<LexicalMatch> search(String query, ResourceTrack track, int limit) {
+        List<LexicalMatch> matches = new ArrayList<>();
+        for (ScoredDocument scored : find(query, track, limit)) {
+            long chunkId = scored.document().getField(CHUNK_ID).numericValue().longValue();
+            matches.add(new LexicalMatch(chunkId, scored.score()));
+        }
+        return List.copyOf(matches);
+    }
+
+    public List<RankedResource> searchResources(String query, ResourceTrack track, int limit) {
+        Map<Long, RankedResource> resources = new LinkedHashMap<>();
+        for (ScoredDocument scored : find(query, track, limit)) {
+            RankedResource resource = toResource(scored.document());
+            resources.putIfAbsent(resource.documentId(), resource);
+        }
+        return List.copyOf(resources.values());
+    }
+
+    private List<ScoredDocument> find(String query, ResourceTrack track, int limit) {
         if (query == null || query.isBlank()) {
             throw new IllegalArgumentException("검색어는 비어 있을 수 없습니다.");
         }
@@ -99,15 +123,29 @@ public final class LuceneChunkIndex implements AutoCloseable {
         try {
             ScoreDoc[] hits = searcher.search(withTrack(words, track), limit, SCORE_THEN_CHUNK_ID, true).scoreDocs;
             StoredFields storedFields = searcher.storedFields();
-            List<LexicalMatch> matches = new ArrayList<>(hits.length);
+            List<ScoredDocument> found = new ArrayList<>(hits.length);
             for (ScoreDoc hit : hits) {
-                long chunkId = storedFields.document(hit.doc).getField(CHUNK_ID).numericValue().longValue();
-                matches.add(new LexicalMatch(chunkId, hit.score));
+                found.add(new ScoredDocument(storedFields.document(hit.doc), hit.score));
             }
-            return List.copyOf(matches);
+            return found;
         } catch (IOException exception) {
             throw new UncheckedIOException("렉시컬 색인을 읽지 못했습니다.", exception);
         }
+    }
+
+    private static RankedResource toResource(Document document) {
+        Long projectId = null;
+        if (document.getField(PROJECT_ID) != null) {
+            projectId = document.getField(PROJECT_ID).numericValue().longValue();
+        }
+        return new RankedResource(
+                document.getField(DOCUMENT_ID).numericValue().longValue(),
+                projectId,
+                document.get(SOURCE)
+        );
+    }
+
+    private record ScoredDocument(Document document, double score) {
     }
 
     public int size() {
@@ -141,6 +179,13 @@ public final class LuceneChunkIndex implements AutoCloseable {
         document.add(new NumericDocValuesField(CHUNK_ORDER, chunk.chunkId()));
         document.add(new TextField(BODY, normalize(chunk.text()), Field.Store.NO));
         document.add(new StringField(TRACK, trackValue(chunk.track()), Field.Store.NO));
+        document.add(new StoredField(DOCUMENT_ID, chunk.resource().documentId()));
+        if (chunk.resource().projectId() != null) {
+            document.add(new StoredField(PROJECT_ID, chunk.resource().projectId()));
+        }
+        if (chunk.resource().source() != null) {
+            document.add(new StoredField(SOURCE, chunk.resource().source()));
+        }
         return document;
     }
 

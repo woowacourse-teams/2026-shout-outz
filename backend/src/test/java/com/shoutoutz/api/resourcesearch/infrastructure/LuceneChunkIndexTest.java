@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.shoutoutz.api.resourcesearch.application.dto.LexicalChunk;
 import com.shoutoutz.api.resourcesearch.application.dto.LexicalMatch;
+import com.shoutoutz.api.resourcesearch.application.dto.RankedResource;
 import com.shoutoutz.api.resourcesearch.domain.ResourceTrack;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -119,6 +120,35 @@ class LuceneChunkIndexTest {
     }
 
     @Test
+    void 조각이_속한_자료를_순위대로_한_번씩_돌려준다() {
+        RankedResource blog = new RankedResource(7L, 42L, "blog-post");
+        RankedResource pullRequest = new RankedResource(8L, null, "github-pr");
+        try (LuceneChunkIndex index = LuceneChunkIndex.of(List.of(
+                chunk(1, "캐시 무효화", ResourceTrack.BE, pullRequest),
+                chunk(2, "캐시 캐시 캐시 적재와 캐시 무효화", ResourceTrack.BE, blog),
+                chunk(3, "캐시 만료 시간", ResourceTrack.BE, blog),
+                chunk(4, "배포 스크립트", ResourceTrack.BE, new RankedResource(9L, null, "github-pr"))
+        ))) {
+            assertThat(index.searchResources("캐시", null, 10)).containsExactlyInAnyOrder(blog, pullRequest);
+            assertThat(index.searchResources("캐시", null, 10)).doesNotHaveDuplicates();
+            assertThat(index.searchResources("캐시 적재", null, 10).getFirst()).isEqualTo(blog);
+        }
+    }
+
+    @Test
+    void 자료를_찾을_때도_트랙_조건과_조각_수_상한을_지킨다() {
+        RankedResource backend = new RankedResource(7L, null, "blog-post");
+        RankedResource frontend = new RankedResource(8L, null, "blog-post");
+        try (LuceneChunkIndex index = LuceneChunkIndex.of(List.of(
+                chunk(1, "캐시 무효화", ResourceTrack.BE, backend),
+                chunk(2, "캐시 무효화", ResourceTrack.FE, frontend)
+        ))) {
+            assertThat(index.searchResources("캐시", ResourceTrack.BE, 10)).containsExactly(backend);
+            assertThat(index.searchResources("캐시", null, 1)).containsExactly(backend);
+        }
+    }
+
+    @Test
     void 분석하면_단어가_남지_않는_검색어는_아무것도_찾지_않는다() {
         try (LuceneChunkIndex index = LuceneChunkIndex.of(List.of(chunk(1, "캐시", ResourceTrack.BE)))) {
             assertThat(index.search("!!! ???", null, 10)).isEmpty();
@@ -159,8 +189,13 @@ class LuceneChunkIndexTest {
         ))).isInstanceOf(IllegalArgumentException.class);
     }
 
+    // 자료 ID를 따로 주지 않으면 조각마다 다른 자료(조각 ID + 1000)에 속한 것으로 둔다.
     private static LexicalChunk chunk(long chunkId, String text, ResourceTrack track) {
-        return new LexicalChunk(chunkId, text, track);
+        return chunk(chunkId, text, track, new RankedResource(chunkId + 1000, null, "github-pr"));
+    }
+
+    private static LexicalChunk chunk(long chunkId, String text, ResourceTrack track, RankedResource resource) {
+        return new LexicalChunk(chunkId, text, track, resource);
     }
 
     private static List<Long> chunkIds(List<LexicalMatch> matches) {
