@@ -49,8 +49,8 @@ class SectionedSearchHitsTest {
                 .toList();
     }
 
-    private List<Long> ids(List<SearchHit> hits) {
-        return hits.stream().map(SearchHit::documentId).toList();
+    private List<Long> ids(List<RankedResource> hits) {
+        return hits.stream().map(RankedResource::documentId).toList();
     }
 
     private List<Long> range(long first, long last) {

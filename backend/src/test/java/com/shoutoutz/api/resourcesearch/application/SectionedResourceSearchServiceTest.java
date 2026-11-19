@@ -5,18 +5,22 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.shoutoutz.api.common.embedding.EmbeddingClient;
+import com.shoutoutz.api.common.embedding.EmbeddingException;
+import com.shoutoutz.api.common.exception.custom.ServiceUnavailableException;
 import com.shoutoutz.api.resourcesearch.application.dto.LexicalMatch;
 import com.shoutoutz.api.resourcesearch.application.dto.MatchedChunk;
 import com.shoutoutz.api.resourcesearch.application.dto.ResourceSearchCandidate;
 import com.shoutoutz.api.resourcesearch.application.dto.SearchCandidates;
-import com.shoutoutz.api.resourcesearch.application.dto.SearchHit;
+import com.shoutoutz.api.resourcesearch.application.dto.RankedResource;
 import com.shoutoutz.api.resourcesearch.application.dto.SectionedSearchHits;
+import com.shoutoutz.api.resourcesearch.domain.ResourceSearchErrorCode;
 import com.shoutoutz.api.resourcesearch.domain.ResourceSection;
 import com.shoutoutz.api.resourcesearch.domain.ResourceTrack;
 import java.util.ArrayList;
@@ -30,10 +34,12 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DataAccessResourceFailureException;
 
 @ExtendWith(MockitoExtension.class)
 class SectionedResourceSearchServiceTest {
@@ -69,7 +75,7 @@ class SectionedResourceSearchServiceTest {
         nextChunkId = 1;
         lexicalOnly = new ArrayList<>();
         service = new SectionedResourceSearchService(
-                embeddingClient, new HybridResourceRanker(resourceSearchRepository, lexicalChunkSearch)
+                embeddingClient, new HybridResourceRanker(resourceSearchRepository, lexicalChunkSearch), lexicalChunkSearch
         );
     }
 
@@ -272,6 +278,83 @@ class SectionedResourceSearchServiceTest {
         assertThat(result.hits(ResourceSection.TALK)).isUnmodifiable();
     }
 
+    @Test
+    @DisplayName("임베딩 호출이 실패하면 벡터 조회 없이 단어 검색 순위로 섹션을 채운다")
+    void answersWithLexicalRankingWhenEmbeddingFails() {
+        when(embeddingClient.embed(QUERY)).thenThrow(new EmbeddingException(503, "UPSTREAM_TIMEOUT", true));
+        when(lexicalChunkSearch.searchResources(QUERY, ResourceTrack.BE, 400)).thenReturn(List.of(
+                new RankedResource(3L, null, "github-pr"),
+                new RankedResource(1L, 42L, "blog-post"),
+                new RankedResource(2L, null, "blog-post"),
+                new RankedResource(4L, null, "youtube-tekotalk")
+        ));
+
+        SectionedSearchHits result = service.search(QUERY, ResourceTrack.BE);
+
+        assertThat(ids(result, ResourceSection.BLOG)).containsExactly(1L, 2L);
+        assertThat(ids(result, ResourceSection.DOCUMENT)).containsExactly(3L);
+        assertThat(ids(result, ResourceSection.TALK)).containsExactly(4L);
+        assertThat(result.hits(ResourceSection.BLOG).getFirst().projectId()).isEqualTo(42L);
+        verifyNoInteractions(resourceSearchRepository);
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = ResourceSearchErrorCode.class, names = {"RESOURCE_SEARCH_TIMEOUT", "RESOURCE_SEARCH_BUSY"})
+    @DisplayName("벡터 조회가 시간 제한에 걸리거나 자리가 없으면 단어 검색 순위로 응답한다")
+    void answersWithLexicalRankingWhenVectorSearchIsUnavailable(ResourceSearchErrorCode errorCode) {
+        givenEmbedding();
+        when(resourceSearchRepository.findCandidates(eq(vector), eq(MODEL), eq(null), anyInt(), any()))
+                .thenThrow(new ServiceUnavailableException(errorCode));
+        when(lexicalChunkSearch.searchResources(QUERY, null, 400))
+                .thenReturn(List.of(new RankedResource(1L, null, "blog-post")));
+
+        SectionedSearchHits result = service.search(QUERY, null);
+
+        assertThat(ids(result, ResourceSection.BLOG)).containsExactly(1L);
+    }
+
+    @Test
+    @DisplayName("단어 검색도 찾은 자료가 없으면 원래 실패를 그대로 알린다")
+    void rethrowsOriginalFailureWhenLexicalSearchFindsNothing() {
+        EmbeddingException embeddingFailure = new EmbeddingException(429, "RATE_LIMIT", true);
+        when(embeddingClient.embed(QUERY)).thenThrow(embeddingFailure);
+        when(lexicalChunkSearch.searchResources(QUERY, null, 400)).thenReturn(List.of());
+
+        assertThatThrownBy(() -> service.search(QUERY, null)).isSameAs(embeddingFailure);
+    }
+
+    @Test
+    @DisplayName("단어 검색도 찾은 자료가 없으면 벡터 조회의 지연 오류를 그대로 알린다")
+    void rethrowsTimeoutWhenLexicalSearchFindsNothing() {
+        givenEmbedding();
+        ServiceUnavailableException timeout = new ServiceUnavailableException(ResourceSearchErrorCode.RESOURCE_SEARCH_TIMEOUT);
+        when(resourceSearchRepository.findCandidates(eq(vector), eq(MODEL), eq(null), anyInt(), any())).thenThrow(timeout);
+
+        assertThatThrownBy(() -> service.search(QUERY, null)).isSameAs(timeout);
+    }
+
+    @Test
+    @DisplayName("검색 지연이나 혼잡이 아닌 서비스 오류는 단어 검색으로 대신하지 않는다")
+    void doesNotFallBackOnOtherServiceErrors() {
+        givenEmbedding();
+        ServiceUnavailableException other = new ServiceUnavailableException(ResourceSearchErrorCode.RESOURCE_NOT_FOUND);
+        when(resourceSearchRepository.findCandidates(eq(vector), eq(MODEL), eq(null), anyInt(), any())).thenThrow(other);
+
+        assertThatThrownBy(() -> service.search(QUERY, null)).isSameAs(other);
+        verify(lexicalChunkSearch, never()).searchResources(any(), any(), anyInt());
+    }
+
+    @Test
+    @DisplayName("DB 장애는 단어 검색으로 대신하지 않는다. 카드도 DB에서 읽어야 해서 응답을 만들 수 없다")
+    void doesNotFallBackOnDatabaseFailure() {
+        givenEmbedding();
+        DataAccessResourceFailureException failure = new DataAccessResourceFailureException("DB 연결 실패");
+        when(resourceSearchRepository.findCandidates(eq(vector), eq(MODEL), eq(null), anyInt(), any())).thenThrow(failure);
+
+        assertThatThrownBy(() -> service.search(QUERY, null)).isSameAs(failure);
+        verify(lexicalChunkSearch, never()).searchResources(any(), any(), anyInt());
+    }
+
     private void givenEmbedding() {
         when(embeddingClient.embed(QUERY)).thenReturn(vector);
         when(embeddingClient.modelId()).thenReturn(MODEL);
@@ -324,6 +407,6 @@ class SectionedResourceSearchServiceTest {
     }
 
     private List<Long> ids(SectionedSearchHits result, ResourceSection section) {
-        return result.hits(section).stream().map(SearchHit::documentId).toList();
+        return result.hits(section).stream().map(RankedResource::documentId).toList();
     }
 }

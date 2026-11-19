@@ -7,7 +7,7 @@ import com.shoutoutz.api.resourcesearch.application.dto.ProjectResourceSlice;
 import com.shoutoutz.api.resourcesearch.application.dto.ResourceCard;
 import com.shoutoutz.api.resourcesearch.application.dto.ResourceCardImages;
 import com.shoutoutz.api.resourcesearch.application.dto.ResourceSearchCursor;
-import com.shoutoutz.api.resourcesearch.application.dto.SearchHit;
+import com.shoutoutz.api.resourcesearch.application.dto.RankedResource;
 import com.shoutoutz.api.resourcesearch.application.dto.SectionedSearchHits;
 import com.shoutoutz.api.resourcesearch.domain.ResourceSearchErrorCode;
 import com.shoutoutz.api.resourcesearch.domain.ResourceSection;
@@ -187,7 +187,7 @@ public class ResourceQueryService {
      */
     private SectionedSearchHits hitsOfOthers(ResourceSearchRequest request, List<Long> projectIds) {
         SectionedSearchHits hits = sectionedResourceSearchService.search(request.keyword(), request.track());
-        return SectionedSearchHits.from(Arrays.stream(ResourceSection.values())
+        return SectionedSearchHits.fromRanked(Arrays.stream(ResourceSection.values())
                 .flatMap(section -> Stream.concat(hits.hits(section).stream(), hits.rest(section).stream()))
                 .filter(hit -> !projectIds.contains(hit.projectId()))
                 .toList());
@@ -230,7 +230,7 @@ public class ResourceQueryService {
 
     private String rankedCursorOf(SectionedSearchHits hits, ResourceSection section) {
         List<Long> restIds = hits.rest(section).stream()
-                .map(SearchHit::documentId)
+                .map(RankedResource::documentId)
                 .toList();
         return rankedCursorOf(restIds, hits.hits(section).size() + restIds.size());
     }
@@ -253,7 +253,7 @@ public class ResourceQueryService {
     private Map<Long, ResourceCard> cardsOf(SectionedSearchHits hits) {
         List<Long> resourceIds = Arrays.stream(ResourceSection.values())
                 .flatMap(section -> hits.hits(section).stream())
-                .map(SearchHit::documentId)
+                .map(RankedResource::documentId)
                 .toList();
         return resourceCardQueryRepository.findByIds(resourceIds).stream()
                 .collect(Collectors.toMap(ResourceCard::resourceId, Function.identity()));
