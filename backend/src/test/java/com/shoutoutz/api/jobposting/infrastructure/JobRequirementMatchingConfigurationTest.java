@@ -31,6 +31,7 @@ class JobRequirementMatchingConfigurationTest {
     private static final ResourceSearchProperties SEARCH = new ResourceSearchProperties(
             Duration.ofSeconds(3), 2, Duration.ofSeconds(1)
     );
+    private static final long CONNECTION_TIMEOUT_MILLIS = 30_000;
 
     private final ApplicationContextRunner contextRunner = contextRunner("embedding-key");
 
@@ -45,7 +46,7 @@ class JobRequirementMatchingConfigurationTest {
                 .withBean(RequirementJudge.class, () -> mock(RequirementJudge.class))
                 .withBean(Clock.class, Clock::systemUTC)
                 .withBean(LlmProperties.class, () -> new LlmProperties(null, null, null))
-                .withBean(EmbeddingProperties.class, () -> embedding(embeddingApiKey, Duration.ofSeconds(30)))
+                .withBean(EmbeddingProperties.class, () -> embedding(embeddingApiKey, Duration.ofSeconds(3)))
                 .withBean(ResourceSearchProperties.class, () -> SEARCH)
                 .withUserConfiguration(
                         JobRequirementMatchingConfiguration.class,
@@ -98,7 +99,7 @@ class JobRequirementMatchingConfigurationTest {
                 .withBean("claude", LlmClient.class, () -> llmClient(LlmProvider.BEDROCK_CLAUDE))
                 .withBean(ObjectMapper.class, ObjectMapper::new)
                 .withBean(LlmProperties.class, () -> new LlmProperties(null, null, null))
-                .withBean(EmbeddingProperties.class, () -> embedding("embedding-key", Duration.ofSeconds(30)))
+                .withBean(EmbeddingProperties.class, () -> embedding("embedding-key", Duration.ofSeconds(3)))
                 .withBean(ResourceSearchProperties.class, () -> SEARCH)
                 .withUserConfiguration(
                         JobRequirementMatchingConfiguration.class,
@@ -129,7 +130,7 @@ class JobRequirementMatchingConfigurationTest {
     @Test
     void 기본_제한_시간과_Bedrock_제공자는_키_없이_검사를_통과한다() {
         assertThatCode(() -> validate(properties(Duration.ofSeconds(180), LlmProvider.BEDROCK_GPT,
-                LlmProvider.BEDROCK_CLAUDE), new LlmProperties(null, null, null), embedding("key", Duration.ofSeconds(30))))
+                LlmProvider.BEDROCK_CLAUDE), new LlmProperties(null, null, null), embedding("key", Duration.ofSeconds(3))))
                 .doesNotThrowAnyException();
     }
 
@@ -149,16 +150,47 @@ class JobRequirementMatchingConfigurationTest {
 
     @Test
     void 임베딩과_벡터_조회와_판정의_제한_시간_합이_lease에_닿으면_기동에_실패한다() {
-        // 임베딩 5초 + 30초, 벡터 조회 6번 x (자리 대기 1초 + 쿼리 3초) = 24초, 제공자 2개 50초씩으로 합이 159초다.
-        JobRequirementMatchingProperties justEnough = properties(Duration.ofSeconds(160),
+        // 임베딩 5초 + 30초, 벡터 조회 한 번(자리 대기 1초 + 커넥션 대기 30초 + 쿼리 3초) 34초, 제공자 2개 50초씩,
+        // 결과 저장의 커넥션 대기 30초로 합이 199초다.
+        JobRequirementMatchingProperties justEnough = properties(Duration.ofSeconds(200),
                 LlmProvider.BEDROCK_GPT, LlmProvider.BEDROCK_CLAUDE);
-        JobRequirementMatchingProperties tooShort = properties(Duration.ofSeconds(159),
+        JobRequirementMatchingProperties tooShort = properties(Duration.ofSeconds(199),
                 LlmProvider.BEDROCK_GPT, LlmProvider.BEDROCK_CLAUDE);
         LlmProperties llm = new LlmProperties(null, null, null);
         EmbeddingProperties embedding = embedding("key", Duration.ofSeconds(30));
 
         assertThatCode(() -> validate(justEnough, llm, embedding)).doesNotThrowAnyException();
         assertThatThrownBy(() -> validate(tooShort, llm, embedding)).hasMessageContaining("lease");
+    }
+
+    @Test
+    void 커넥션_획득_제한_시간_설정을_읽어_lease_검사에_쓴다() {
+        ApplicationContextRunner enabled = contextRunner("embedding-key")
+                .withPropertyValues("job-posting.matching.enabled=true", "job-posting.matching.lease=100s",
+                        "job-posting.matching.providers=BEDROCK_GPT");
+
+        // 임베딩 8초 + 벡터 조회 4초 + 제공자 1개 50초로 62초다. 커넥션 대기는 벡터 조회와 결과 저장에서 한 번씩 더한다.
+        // 1초면 64초, 18초면 98초로 통과하고 19초면 100초라 lease 100초에 닿는다.
+        enabled.withPropertyValues("spring.datasource.hikari.connection-timeout=1000")
+                .run(context -> assertThat(context).hasNotFailed());
+        enabled.withPropertyValues("spring.datasource.hikari.connection-timeout=18000")
+                .run(context -> assertThat(context).hasNotFailed());
+        enabled.withPropertyValues("spring.datasource.hikari.connection-timeout=19000")
+                .run(context -> assertThat(context).getFailure().rootCause().hasMessageContaining("lease"));
+    }
+
+    @Test
+    void 커넥션_획득_제한_시간이_0이면_무제한으로_기다리므로_기동에_실패한다() {
+        JobRequirementMatchingProperties properties = properties(Duration.ofHours(1), LlmProvider.BEDROCK_GPT);
+        LlmProperties llm = new LlmProperties(null, null, null);
+        EmbeddingProperties embedding = embedding("key", Duration.ofSeconds(30));
+        JobRequirementMatchingRepository repository = mock(JobRequirementMatchingRepository.class);
+        when(repository.hasSearchableChunks(embedding.label())).thenReturn(true);
+        JobRequirementMatchingConfiguration configuration = new JobRequirementMatchingConfiguration();
+
+        assertThatThrownBy(() -> configuration
+                .jobRequirementMatchingSettingsValidator(properties, llm, embedding, SEARCH, 0, repository)
+                .afterPropertiesSet()).hasMessageContaining("connection-timeout");
     }
 
     @Test
@@ -186,7 +218,7 @@ class JobRequirementMatchingConfigurationTest {
     private void validate(JobRequirementMatchingProperties properties, LlmProperties llm, EmbeddingProperties embedding,
             JobRequirementMatchingRepository repository) throws Exception {
         new JobRequirementMatchingConfiguration()
-                .jobRequirementMatchingSettingsValidator(properties, llm, embedding, SEARCH, repository)
+                .jobRequirementMatchingSettingsValidator(properties, llm, embedding, SEARCH, CONNECTION_TIMEOUT_MILLIS, repository)
                 .afterPropertiesSet();
     }
 
