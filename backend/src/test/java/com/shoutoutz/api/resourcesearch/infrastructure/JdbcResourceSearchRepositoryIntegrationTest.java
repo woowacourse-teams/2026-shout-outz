@@ -357,6 +357,7 @@ class JdbcResourceSearchRepositoryIntegrationTest {
         assertThat(setting("hnsw.ef_search")).isEqualTo("40");
         assertThat(setting("hnsw.iterative_scan")).isEqualTo("off");
         assertThat(setting("enable_sort")).isEqualTo("on");
+        assertThat(setting("jit")).isEqualTo("on");
     }
 
     private List<ResourceSearchCandidate> search(ResourceTrack track, int limit) {

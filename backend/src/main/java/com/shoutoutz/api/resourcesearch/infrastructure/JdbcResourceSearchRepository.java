@@ -54,19 +54,23 @@ public class JdbcResourceSearchRepository implements ResourceSearchRepository {
      *     <li>iterative_scan: 트랙, 삭제, 제보 조건에 걸러진 만큼 인덱스를 더 읽어 후보 수를 채운다.
      *     relaxed_order 는 strict_order 보다 놓치는 조각이 적고, 어긋난 순서는 바깥 쿼리에서 다시 정렬한다.</li>
      *     <li>enable_sort off: 끄지 않으면 플래너가 조각 전체를 읽고 정렬하는 계획을 고른다.</li>
+     *     <li>jit off: 정렬을 끄면 마지막 정렬 단계의 예상 비용이 크게 잡혀 JIT 컴파일이 돈다. 400행을 다루는 쿼리라 얻는 것이 없고
+     *     컴파일에만 약 250ms가 걸렸다.</li>
      * </ul>
      */
     private static final String USE_VECTOR_INDEX = """
             SET LOCAL hnsw.ef_search = 1000;
             SET LOCAL hnsw.iterative_scan = relaxed_order;
-            SET LOCAL enable_sort = off
+            SET LOCAL enable_sort = off;
+            SET LOCAL jit = off
             """;
 
     // 호출한 쪽의 트랜잭션에 참여했을 때 뒤따르는 쿼리의 실행 계획이 바뀌지 않도록 되돌린다.
     private static final String RESTORE_SETTINGS = """
             SET LOCAL hnsw.ef_search TO DEFAULT;
             SET LOCAL hnsw.iterative_scan TO DEFAULT;
-            SET LOCAL enable_sort TO DEFAULT
+            SET LOCAL enable_sort TO DEFAULT;
+            SET LOCAL jit TO DEFAULT
             """;
 
     private final NamedParameterJdbcTemplate jdbcTemplate;
