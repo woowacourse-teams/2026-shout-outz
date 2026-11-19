@@ -4,6 +4,7 @@ import com.shoutoutz.api.common.embedding.EmbeddingClient;
 import com.shoutoutz.api.resourcesearch.application.LexicalChunkSearch;
 import com.shoutoutz.api.resourcesearch.application.ResourceSearchRepository;
 import com.shoutoutz.api.resourcesearch.application.dto.LexicalMatch;
+import com.shoutoutz.api.resourcesearch.application.dto.RankedResource;
 import com.shoutoutz.api.resourcesearch.domain.ResourceTrack;
 import jakarta.annotation.PostConstruct;
 import java.util.List;
@@ -50,6 +51,11 @@ public class ReloadingLexicalChunkSearch implements LexicalChunkSearch {
     @Override
     public List<LexicalMatch> search(String query, ResourceTrack track, int limit) {
         return index.search(query, track, limit);
+    }
+
+    @Override
+    public List<RankedResource> searchResources(String query, ResourceTrack track, int limit) {
+        return index.searchResources(query, track, limit);
     }
 
     private static long elapsedMillis(long startedAt) {

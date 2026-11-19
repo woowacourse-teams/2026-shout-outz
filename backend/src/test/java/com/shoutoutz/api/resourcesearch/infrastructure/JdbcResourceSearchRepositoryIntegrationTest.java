@@ -8,6 +8,7 @@ import static org.assertj.core.api.Assertions.within;
 
 import com.shoutoutz.api.resourcesearch.application.ResourceSearchRepository;
 import com.shoutoutz.api.resourcesearch.application.dto.LexicalChunk;
+import com.shoutoutz.api.resourcesearch.application.dto.RankedResource;
 import com.shoutoutz.api.resourcesearch.application.dto.ResourceSearchCandidate;
 import com.shoutoutz.api.resourcesearch.application.dto.SearchCandidates;
 import com.shoutoutz.api.resourcesearch.domain.ResourceTrack;
@@ -153,12 +154,17 @@ class JdbcResourceSearchRepositoryIntegrationTest {
 
     @Test
     void 색인할_조각을_본문과_트랙과_함께_ID순으로_읽는다() {
-        long beChunk = fixture.chunk(fixture.document(ResourceTrack.BE), 0, "intro", "캐시 무효화", vector(1, 0), MODEL);
-        long unclassifiedChunk = fixture.chunk(fixture.document(null), 0, "intro", "분산 락", vector(1, 0), MODEL);
+        long beDocument = fixture.document("blog-post", ResourceTrack.BE, 42L, "example/repo", "캐시 기록");
+        long beChunk = fixture.chunk(beDocument, 0, "intro", "캐시 무효화", vector(1, 0), MODEL);
+        long unclassifiedDocument = fixture.document(null);
+        long unclassifiedChunk = fixture.chunk(unclassifiedDocument, 0, "intro", "분산 락", vector(1, 0), MODEL);
+        String unclassifiedSource = jdbcTemplate.queryForObject(
+                "SELECT source FROM resource_documents WHERE id = ?", String.class, unclassifiedDocument);
 
         assertThat(resourceSearchRepository.findLexicalChunks(MODEL)).containsExactly(
-                new LexicalChunk(beChunk, "캐시 무효화", ResourceTrack.BE),
-                new LexicalChunk(unclassifiedChunk, "분산 락", null)
+                new LexicalChunk(beChunk, "캐시 무효화", ResourceTrack.BE, new RankedResource(beDocument, 42L, "blog-post")),
+                new LexicalChunk(unclassifiedChunk, "분산 락", null,
+                        new RankedResource(unclassifiedDocument, null, unclassifiedSource))
         );
     }
 

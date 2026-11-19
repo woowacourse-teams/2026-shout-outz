@@ -4,6 +4,7 @@ import com.shoutoutz.api.common.exception.custom.ServiceUnavailableException;
 import com.shoutoutz.api.resourcesearch.application.ResourceSearchRepository;
 import com.shoutoutz.api.resourcesearch.application.dto.LexicalChunk;
 import com.shoutoutz.api.resourcesearch.application.dto.MatchedChunk;
+import com.shoutoutz.api.resourcesearch.application.dto.RankedResource;
 import com.shoutoutz.api.resourcesearch.application.dto.ResourceSearchCandidate;
 import com.shoutoutz.api.resourcesearch.application.dto.SearchCandidates;
 import com.shoutoutz.api.resourcesearch.domain.ResourceSearchErrorCode;
@@ -225,7 +226,7 @@ public class JdbcResourceSearchRepository implements ResourceSearchRepository {
     @Override
     public List<LexicalChunk> findLexicalChunks(String modelId) {
         String sql = """
-                SELECT c.id AS chunk_id, c.chunk_text, c.track
+                SELECT c.id AS chunk_id, c.chunk_text, c.track, d.id AS document_id, d.project_id, d.source
                 FROM resource_chunks c
                 JOIN resource_documents d ON d.id = c.document_id
                 WHERE c.deleted_at IS NULL
@@ -241,7 +242,16 @@ public class JdbcResourceSearchRepository implements ResourceSearchRepository {
             }
             long chunkId = resultSet.getLong("chunk_id");
             try {
-                chunks.add(new LexicalChunk(chunkId, text, ResourceTrack.from(resultSet.getString("track"))));
+                chunks.add(new LexicalChunk(
+                        chunkId,
+                        text,
+                        ResourceTrack.from(resultSet.getString("track")),
+                        new RankedResource(
+                                resultSet.getLong("document_id"),
+                                resultSet.getObject("project_id", Long.class),
+                                resultSet.getString("source")
+                        )
+                ));
             } catch (IllegalArgumentException exception) {
                 log.warn("Lexical chunk skipped: chunkId={}, reason={}", chunkId, exception.getMessage());
             }
