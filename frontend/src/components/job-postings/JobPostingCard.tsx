@@ -1,6 +1,7 @@
 import { Link } from '@tanstack/react-router';
 
 import type { JobPostingListItem } from '@/apis/job-posting';
+import { CompanyLogo } from '@/components/job-postings/CompanyLogo';
 import { deadlineBadge, JOB_ROLE_LABELS } from '@/components/job-postings/jobPostingFormat';
 import { analytics } from '@/utils/analytics';
 
@@ -28,8 +29,13 @@ export function JobPostingCard({
       }
       className={`${CARD} focus-visible:outline-primary-600 transition-colors hover:bg-gray-50 focus-visible:outline-2`}
     >
-      {/* TODO(채용공고 후속 PR): 서버가 회사 로고(companyLogoUrl)를 주면 회사 이름 앞에 48px 로고를 다시 둔다. */}
       <div className="flex items-center gap-3">
+        <CompanyLogo
+          companyName={jobPosting.companyName}
+          logoUrl={jobPosting.companyLogoUrl}
+          decorative
+          className="size-12 rounded-xl"
+        />
         <div className="min-w-0">
           <p className="truncate text-sm text-gray-700">{jobPosting.companyName}</p>
           <p className="text-primary-600 mt-0.5 flex flex-wrap gap-x-2 text-xs font-medium">
@@ -42,7 +48,7 @@ export function JobPostingCard({
         </span>
       </div>
       <h2 className="mt-4 text-lg font-bold text-gray-900">{jobPosting.title}</h2>
-      {/* TODO(채용공고 후속 PR): 서버가 해시태그(tags)를 주면 제목 아래에 "#Kotlin #Spring"처럼 다시 둔다. */}
+      {/* PROTOTYPE-DIFF: 제목 아래 해시태그("#Kotlin #Spring")는 서버 응답에 없어 뺐다. 서버가 tags를 주면 다시 둔다. */}
       <p className="mt-auto pt-4 text-sm font-semibold text-gray-700">
         찾는 역량 {jobPosting.requirementCount}개 →
       </p>
@@ -55,6 +61,9 @@ export function UpcomingJobPostingCard() {
   return (
     <div aria-hidden="true" className={`${CARD} opacity-50`}>
       <div className="flex items-center gap-3">
+        <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-gray-100 text-xs text-gray-500">
+          ?
+        </div>
         <div className="min-w-0">
           <p className="truncate text-sm text-gray-500">기업명</p>
           <p className="mt-0.5 text-xs font-medium text-gray-400">신입 | 개발 | 정규직</p>

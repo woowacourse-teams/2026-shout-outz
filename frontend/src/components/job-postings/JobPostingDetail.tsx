@@ -2,6 +2,7 @@ import { useSuspenseQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 
 import { jobPostingQuery } from '@/apis/job-posting';
+import { CompanyLogo } from '@/components/job-postings/CompanyLogo';
 import { deadlineText } from '@/components/job-postings/jobPostingFormat';
 import { RequirementRecommendations } from '@/components/job-postings/RequirementRecommendations';
 import { analytics } from '@/utils/analytics';
@@ -31,8 +32,13 @@ export function JobPostingDetail({ jobPostingId }: { jobPostingId: number }) {
       {/* 오른쪽 "연관 질문" 칸은 없앴다. 본문이 그 자리까지 넓게 쓴다. */}
       <div className="min-w-0">
         <section className="flex flex-col gap-2.5">
-          {/* TODO(채용공고 후속 PR): 서버가 회사 로고(companyLogoUrl)를 주면 제목 앞에 로고(모바일 80px, 데스크톱 112px)를 다시 둔다. */}
-          <div className="flex items-center gap-5 md:gap-7">
+          {/* 모바일은 로고를 제목 위에, 데스크톱은 제목 왼쪽에 둔다. */}
+          <div className="flex flex-col items-start gap-5 md:flex-row md:gap-6.5">
+            <CompanyLogo
+              companyName={jobPosting.companyName}
+              logoUrl={jobPosting.companyLogoUrl}
+              className="size-21 rounded-2xl md:size-31.5 md:rounded-3xl"
+            />
             <div className="flex min-w-0 flex-col gap-2">
               <h1 className="text-2xl leading-tight font-extrabold tracking-tight md:text-3xl">
                 {jobPosting.title}
