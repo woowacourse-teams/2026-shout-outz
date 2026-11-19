@@ -52,7 +52,8 @@ class JdbcResourceSearchRepositoryIntegrationTest {
 
         assertThat(result).extracting(candidate -> candidate.chunk().chunkId()).containsExactly(nearest, middle);
         assertThat(result.getFirst().chunk().similarityScore()).isCloseTo(1, within(0.000001));
-        assertThat(result.getLast().chunk().similarityScore()).isCloseTo(0.8, within(0.000001));
+        // 점수는 16비트 실수(halfvec)로 계산해 원본 정밀도와 소수 넷째 자리쯤에서 달라진다.
+        assertThat(result.getLast().chunk().similarityScore()).isCloseTo(0.8, within(0.001));
         assertThat(result).noneMatch(candidate -> candidate.chunk().chunkId() == distant);
     }
 
@@ -261,7 +262,34 @@ class JdbcResourceSearchRepositoryIntegrationTest {
                 .isEqualTo("750ms");
     }
 
+    @Test
+    void 가까운_조각을_halfvec_인덱스로_찾는다() {
+        fixture.intro(fixture.document(ResourceTrack.BE), vector(1, 0));
+
+        search(null, 10);
+
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT pg_stat_get_xact_numscans('resource_chunks_embedding_half_idx'::regclass)",
+                Long.class
+        )).isPositive();
+    }
+
+    @Test
+    void 조회를_마치면_같은_트랜잭션의_탐색_설정을_되돌린다() {
+        fixture.intro(fixture.document(ResourceTrack.BE), vector(1, 0));
+
+        search(null, 10);
+
+        assertThat(setting("hnsw.ef_search")).isEqualTo("40");
+        assertThat(setting("hnsw.iterative_scan")).isEqualTo("off");
+        assertThat(setting("enable_sort")).isEqualTo("on");
+    }
+
     private List<ResourceSearchCandidate> search(ResourceTrack track, int limit) {
         return resourceSearchRepository.findNearest(vector(1, 0), MODEL, track, limit);
+    }
+
+    private String setting(String name) {
+        return jdbcTemplate.queryForObject("SELECT current_setting(?)", String.class, name);
     }
 }

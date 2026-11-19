@@ -44,6 +44,29 @@ public class JdbcResourceSearchRepository implements ResourceSearchRepository {
     // PostgreSQL이 statement_timeout으로 쿼리를 중단할 때 내는 SQLSTATE
     private static final String QUERY_CANCELED = "57014";
 
+    /**
+     * 벡터 조회가 halfvec 인덱스(resource_chunks_embedding_half_idx)를 쓰게 하는 설정이다. 트랜잭션 안에서만 적용된다.
+     * <ul>
+     *     <li>ef_search 1000: 조각 400개를 뽑을 때 검색어 40개 모두에서 가까운 60개가 전체 비교와 같아진 값이다.
+     *     400이면 40개 중 33개만 같았고, 한 건의 조회 시간은 약 3ms 차이였다.</li>
+     *     <li>iterative_scan: 트랙, 삭제, 제보 조건에 걸러진 만큼 인덱스를 더 읽어 후보 수를 채운다.
+     *     relaxed_order 는 strict_order 보다 놓치는 조각이 적고, 어긋난 순서는 바깥 쿼리에서 다시 정렬한다.</li>
+     *     <li>enable_sort off: 끄지 않으면 플래너가 조각 전체를 읽고 정렬하는 계획을 고른다.</li>
+     * </ul>
+     */
+    private static final String USE_VECTOR_INDEX = """
+            SET LOCAL hnsw.ef_search = 1000;
+            SET LOCAL hnsw.iterative_scan = relaxed_order;
+            SET LOCAL enable_sort = off
+            """;
+
+    // 호출한 쪽의 트랜잭션에 참여했을 때 뒤따르는 쿼리의 실행 계획이 바뀌지 않도록 되돌린다.
+    private static final String RESTORE_SETTINGS = """
+            SET LOCAL hnsw.ef_search TO DEFAULT;
+            SET LOCAL hnsw.iterative_scan TO DEFAULT;
+            SET LOCAL enable_sort TO DEFAULT
+            """;
+
     private final NamedParameterJdbcTemplate jdbcTemplate;
     private final ResourceSearchProperties properties;
     private final TransactionTemplate readOnlyTransaction;
@@ -62,7 +85,7 @@ public class JdbcResourceSearchRepository implements ResourceSearchRepository {
     }
 
     /**
-     * 조각 전체를 읽는 무거운 조회라 두 가지로 막는다.
+     * DB 메모리가 모자라면 인덱스 조회도 느려지므로 두 가지로 막는다.
      * 동시에 도는 조회 수를 제한해 검색이 커넥션 풀을 전부 차지하지 못하게 하고,
      * 제한 시간을 넘긴 조회는 DB가 중단하게 해 느려진 조회가 끝까지 돌며 DB를 붙잡지 않게 한다.
      * 자리를 얻은 뒤에 커넥션을 잡도록 트랜잭션을 메서드 안에서 연다.
@@ -103,16 +126,18 @@ public class JdbcResourceSearchRepository implements ResourceSearchRepository {
             ResourceTrack track,
             int candidateLimit
     ) {
+        // 인덱스는 embedding::halfvec(1024) 식의 거리를 오름차순으로 정렬할 때만 쓰인다. 식이 다르거나 유사도 내림차순이면 조각 전체를 읽는다.
         String sql = """
-                SELECT d.id AS document_id, d.external_key, d.project_id, d.repo,
-                       d.title, d.summary, d.source, d.track, d.url,
-                       c.id AS chunk_id, c.chunk_kind, c.chunk_text,
-                       1 - (c.embedding <=> CAST(:queryVector AS vector)) AS similarity_score
-                FROM resource_chunks c
-                JOIN resource_documents d ON d.id = c.document_id
-                WHERE c.deleted_at IS NULL
-                  AND d.deleted_at IS NULL
-                  AND c.embedding_model = :modelId
+                WITH nearest AS MATERIALIZED (
+                    SELECT d.id AS document_id, d.external_key, d.project_id, d.repo,
+                           d.title, d.summary, d.source, d.track, d.url,
+                           c.id AS chunk_id, c.chunk_kind, c.chunk_text,
+                           c.embedding::halfvec(1024) <=> CAST(:queryVector AS halfvec(1024)) AS distance
+                    FROM resource_chunks c
+                    JOIN resource_documents d ON d.id = c.document_id
+                    WHERE c.deleted_at IS NULL
+                      AND d.deleted_at IS NULL
+                      AND c.embedding_model = :modelId
                 """ + NOT_REMOVED_BY_REPORT;
         MapSqlParameterSource parameters = new MapSqlParameterSource()
                 .addValue("queryVector", Arrays.toString(queryVector))
@@ -123,11 +148,19 @@ public class JdbcResourceSearchRepository implements ResourceSearchRepository {
             parameters.addValue("track", track.name())
                     .addValue("commonTrack", ResourceTrack.ALL.name());
         }
-        sql += " ORDER BY similarity_score DESC, c.id LIMIT :candidateLimit";
+        sql += """
+                    ORDER BY distance
+                    LIMIT :candidateLimit
+                )
+                SELECT nearest.*, 1 - distance AS similarity_score
+                FROM nearest
+                ORDER BY distance, chunk_id
+                """;
 
         String previousTimeout = jdbcTemplate.getJdbcTemplate()
                 .queryForObject("SELECT current_setting('statement_timeout')", String.class);
         setLocalStatementTimeout(properties.queryTimeout().toMillis() + "ms");
+        jdbcTemplate.getJdbcTemplate().execute(USE_VECTOR_INDEX);
         List<ResourceSearchCandidate> candidates;
         try {
             candidates = jdbcTemplate.query(
@@ -157,6 +190,7 @@ public class JdbcResourceSearchRepository implements ResourceSearchRepository {
             }
             throw exception;
         }
+        jdbcTemplate.getJdbcTemplate().execute(RESTORE_SETTINGS);
         setLocalStatementTimeout(previousTimeout);
         return candidates;
     }
