@@ -19,42 +19,39 @@ async function loadAboutStylesheets() {
   });
 }
 
-test('/about의 기존 서비스 링크는 프로토타입으로 연결된다', async () => {
+test('/about 본문의 예시 링크는 프로토타입으로 연결된다', async () => {
   renderRoute('/about');
   await loadAboutStylesheets();
   const prototypeUrl = 'https://project-after-psi.vercel.app/#/projects';
   const projects = await screen.findByRole('list', { name: '추천 프로젝트' });
   for (const link of within(projects).getAllByRole('link'))
     expect(link).toHaveAttribute('href', prototypeUrl);
-  for (const link of screen.getAllByRole('link'))
+  for (const link of within(screen.getByRole('main')).getAllByRole('link'))
     expect(link.getAttribute('href')).not.toMatch(/^\/(projects|community|magazines|news)(\/|$)/);
-  for (const link of within(
-    screen.getByRole('navigation', { name: '서비스 바로가기' }),
-  ).getAllByRole('link'))
-    expect(link).toHaveAttribute('href', prototypeUrl);
 });
 
-test('/about의 GNB는 프로젝트만 프로토타입으로 연결하고 나머지 탭은 잠근다', async () => {
+test('/about에서도 서비스 GNB와 푸터로 다른 화면에 갈 수 있다', async () => {
   renderRoute('/about');
   await loadAboutStylesheets();
-  const nav = await screen.findByRole('navigation', { name: '주요 메뉴' });
+  const banner = await screen.findByRole('banner');
 
+  expect(within(banner).getByRole('link', { name: 'shout-outz' })).toHaveAttribute('href', '/');
+  const nav = within(banner).getByRole('navigation', { name: '서비스 메뉴' });
   expect(
     within(nav)
       .getAllByRole('link')
-      .map((link) => link.textContent),
-  ).toEqual(['프로젝트']);
-  expect(within(nav).getByRole('link', { name: '프로젝트' })).toHaveAttribute(
+      .map((link) => [link.textContent, link.getAttribute('href')]),
+  ).toEqual([
+    ['탐색', '/'],
+    ['커뮤니티', '/community'],
+    ['매거진', '/magazines'],
+    ['소식', '/news'],
+  ]);
+  expect(banner.querySelector('[inert]')).toBeNull();
+
+  const footer = screen.getByRole('navigation', { name: '서비스 바로가기' });
+  expect(within(footer).getByRole('link', { name: '커뮤니티' })).toHaveAttribute(
     'href',
-    'https://project-after-psi.vercel.app/#/projects',
+    '/community',
   );
-  expect(screen.queryByRole('link', { name: 'shout-outz' })).not.toBeInTheDocument();
-  // jsdom은 inert의 접근성 트리 제외를 구현하지 않으므로 속성을 확인한다.
-  const banner = screen.getByRole('banner');
-  for (const button of within(banner).getAllByRole('button')) {
-    expect(button.closest('[inert]')).not.toBeNull();
-  }
-  for (const label of ['홈', '커뮤니티', '매거진', '소식']) {
-    expect(within(nav).getByText(label)).toHaveAttribute('aria-disabled', 'true');
-  }
 });
