@@ -2,6 +2,7 @@ package com.shoutoutz.api.user.infrastructure;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.tuple;
 
 import com.shoutoutz.api.media.domain.MediaMetadata;
 import com.shoutoutz.api.media.domain.MediaMetadataRepository;
@@ -17,6 +18,7 @@ import com.shoutoutz.api.cohort.domain.Cohort;
 import com.shoutoutz.api.user.infrastructure.jpa.UserProfileJpaRepository;
 import jakarta.persistence.EntityManager;
 import java.time.Instant;
+import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -132,6 +134,23 @@ class UserProfileRepositoryIntegrationTest {
     @DisplayName("존재하지 않는 사용자의 프로필을 조회하면 빈 결과를 반환한다")
     void returnsEmptyWhenUserProfileDoesNotExist() {
         assertThat(userProfileRepository.findByUserId(Long.MAX_VALUE)).isEmpty();
+    }
+
+    @Test
+    @DisplayName("여러 사용자의 프로필을 한 번에 조회하고, 프로필이 없는 사용자는 빼고 반환한다")
+    void findsUserProfilesByUserIds() {
+        User first = userRepository.save(User.initialize("@bulk-profile-1"));
+        User second = userRepository.save(User.initialize("@bulk-profile-2"));
+        userProfileRepository.save(UserProfile.initialize(first.getId(), "첫째"));
+        userProfileRepository.save(UserProfile.initialize(second.getId(), "둘째"));
+
+        assertThat(userProfileRepository.findAllByUserIds(List.of(first.getId(), second.getId(), Long.MAX_VALUE)))
+                .extracting(UserProfile::getUserId, profile -> profile.getDisplayName().value())
+                .containsExactlyInAnyOrder(
+                        tuple(first.getId(), "첫째"),
+                        tuple(second.getId(), "둘째")
+                );
+        assertThat(userProfileRepository.findAllByUserIds(List.of())).isEmpty();
     }
 
     @Test
