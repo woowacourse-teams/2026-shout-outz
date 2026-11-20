@@ -1,7 +1,7 @@
-# 매일 새벽 3시(한국 시각)에 수집기를 띄운다(08 문서 C10).
+# 매일 새벽 3시(한국 시각)에 수집기를 띄우고, 수집이 끝나면 이어서 정제한다(08 문서 C10, 09 문서 R20-1).
 # 켜기: sudo systemctl enable --now data-pipeline.timer
 [Unit]
-Description=샤라웃 원본 수집기 매일 실행
+Description=샤라웃 원본 수집과 정제 매일 실행
 
 [Timer]
 OnCalendar=*-*-* 03:00:00 Asia/Seoul
