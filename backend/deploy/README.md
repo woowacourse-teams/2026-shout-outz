@@ -21,6 +21,7 @@ app.jar
 appspec.yml
 deploy/
 ├── scripts/
+│   ├── preflight.sh        # 사전 검사, stop.sh(앱을 끄기 전)와 before_install.sh가 호출
 │   ├── before_install.sh
 │   ├── after_install.sh
 │   ├── stop.sh
