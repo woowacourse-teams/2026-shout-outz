@@ -38,17 +38,12 @@ afterAll(() => server.close());
  * fallback도 `<main>`을 그려서 여기서 기다리면 내용이 오기 전에 통과한다.
  * 실제 내용은 호출부가 `findBy*`로 기다려야 한다.
  */
-export function renderRoute(
-  entry: string,
-  {
-    // 서버 렌더처럼 데이터를 미리 채운 캐시로 그릴 때 넘긴다.
-    queryClient = new QueryClient({
-      defaultOptions: { queries: { retry: false, gcTime: 0 } },
-    }),
-  }: { queryClient?: QueryClient } = {},
-) {
+export function renderRoute(entry: string) {
   // 일반 화면 테스트는 재방문자로 실행합니다. 첫 방문 안내는 전용 테스트에서 검증합니다.
   localStorage.setItem('shoutoutz:about-guide-seen', 'true');
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false, gcTime: 0 } },
+  });
   const router = createRouter({
     routeTree,
     defaultErrorComponent: RouteError,

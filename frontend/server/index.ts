@@ -40,8 +40,8 @@ function countPathSegments(pathname: string): number {
 // 라우터는 /community/123/extra처럼 뒤가 남는 경로도 가장 깊게 맞은 라우트(/community/$feedId)까지
 // 매치해 돌려주므로, 그 매치가 요청 경로의 세그먼트를 모두 덮었는지 비교합니다.
 // 맞는 라우트가 하나도 없으면 루트 라우트만 남습니다.
-function matchPage(pathname: string, search: Record<string, unknown>) {
-  const matches = router.matchRoutes(pathname, search);
+function matchPage(pathname: string) {
+  const matches = router.matchRoutes(pathname);
   const deepest = matches.at(-1);
 
   if (matches.length <= 1 || !deepest) return null;
@@ -83,9 +83,7 @@ if (process.env.SERVE_STATIC === 'true') {
 }
 
 app.get('/{*path}', async (req, res) => {
-  // 브라우저 라우터와 같은 방식으로 주소의 ?를 읽어, 매치마다 validateSearch를 거친 search를 받습니다.
-  const search = router.options.parseSearch(new URL(req.originalUrl, 'http://localhost').search);
-  const matches = matchPage(req.path, search);
+  const matches = matchPage(req.path);
 
   // 라우트 목록에 없는 경로: 오타 주소, 뒤에 세그먼트가 더 붙은 주소, 서버로 잘못 들어온 파일 요청(/main.abc.js)
   // 본문은 CSR 셸을 그대로 줘서 브라우저가 "없는 페이지" 화면을 그리게 하고, 상태 코드만 404로 알립니다.
@@ -104,11 +102,7 @@ app.get('/{*path}', async (req, res) => {
           matches.map((match) => match.routeId),
         ),
         queries: matches.flatMap(
-          (match) =>
-            match.staticData?.ssrQueries?.(
-              match.params as Record<string, string>,
-              match.search as Record<string, unknown>,
-            ) ?? [],
+          (match) => match.staticData?.ssrQueries?.(match.params as Record<string, string>) ?? [],
         ),
       });
     } catch (error) {

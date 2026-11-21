@@ -1,13 +1,4 @@
-import { createFileRoute, type StaticDataRouteOption } from '@tanstack/react-router';
-
-import {
-  popularKeywordsQuery,
-  popularTopicsQuery,
-  recentMaterialsQuery,
-  topicFieldsQuery,
-} from '@/apis/explore';
-import { jobPostingsQuery } from '@/apis/job-posting';
-import { exploreProjectsQuery, projectTopicsQuery } from '@/apis/project-explore';
+import { createFileRoute } from '@tanstack/react-router';
 
 import type { ExploreTab } from '@/components/explore/ExploreHero';
 import type { SearchResultKind } from '@/components/explore/ExploreSearchResult';
@@ -31,41 +22,13 @@ const isMaterialKind = (value: unknown): value is SearchResultKind =>
 
 const text = (value: unknown) => (typeof value === 'string' ? value.trim() : '');
 
-// 서버 렌더 전에 받아 둘 쿼리. 페이지가 쓰는 것과 같은 쿼리 함수·인자여야 서버 렌더가 캐시를 찾는다.
-// 서버 렌더 중에 useSuspenseQuery가 받은 데이터는 $_TSR에 담기지 않아 브라우저가 다시 받으므로, 미리 받아 셸과 $_TSR에 싣는다.
-// 미리 받는 동안 첫 바이트가 늦어지므로 빠른 탭 첫 화면만 받는다. 검색어·기술 주제로 거른 화면은 검색 API가
-// 느릴 수 있고 색인하지 않는 화면이라, 지금처럼 서버 렌더 중에 받아 스트리밍으로 이어 보낸다.
-type SsrQueries = ReturnType<NonNullable<StaticDataRouteOption['ssrQueries']>>;
-
-export function exploreSsrQueries({ tab, q, topic, sort }: ExploreSearch): SsrQueries {
-  if (q || topic) return [];
-  if (tab === 'job') return [jobPostingsQuery('', sort === 'DEADLINE' ? 'DEADLINE' : 'LATEST')];
-  if (tab === 'project') {
-    return [
-      projectTopicsQuery(),
-      exploreProjectsQuery({
-        keyword: '',
-        topicId: null,
-        sort: sort === 'POPULAR' ? 'POPULAR' : 'LATEST',
-      }),
-    ];
-  }
-  return [
-    recentMaterialsQuery('BLOG', 4),
-    recentMaterialsQuery('TALK', 2),
-    popularTopicsQuery(),
-    topicFieldsQuery(),
-    popularKeywordsQuery(),
-  ];
-}
-
 // 탐색 화면이 홈이다. 검색어·탭이 주소마다 달라 빌드 때 미리 만들지 않고 요청마다 서버 렌더한다.
 // 채용 공고 탭(?tab=job)과 프로젝트 탭도 같은 라우트라 함께 서버 렌더된다.
+// 셸에 미리 채울 데이터는 없다. 목록은 페이지의 useSuspenseQuery가 서버 렌더 중에 받아 스트리밍으로 이어 보낸다.
 export const Route = createFileRoute('/')({
   staticData: {
     ssr: true,
     sitemap: true,
-    ssrQueries: (_params, search) => exploreSsrQueries(search as ExploreSearch),
   },
   validateSearch: (search: Record<string, unknown>): ExploreSearch => {
     const tab = search.tab === 'job' || search.tab === 'project' ? search.tab : undefined;
