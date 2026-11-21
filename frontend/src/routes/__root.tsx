@@ -106,7 +106,8 @@ function ExploreOpenGraph({
         pathname={head.canonicalPath ?? undefined}
         noindex={!head.canonicalPath}
       />
-      {/* 검색 결과에 사이트 이름을 shout-outz로 보여 주도록 구글에 알린다. */}
+      {head.keywords.length > 0 && <meta name="keywords" content={head.keywords.join(', ')} />}
+      {/* 검색 결과에 사이트 이름을 shout-outz로 보여 주고, 우아한테크코스(우테코)를 다루는 사이트임을 구글에 알린다. */}
       {head.canonicalPath === '/' && (
         <script
           type="application/ld+json"
@@ -117,6 +118,15 @@ function ExploreOpenGraph({
               name: 'shout-outz',
               alternateName: '샤라웃',
               url: `${SITE_ORIGIN}/`,
+              description: head.description,
+              inLanguage: 'ko',
+              keywords: head.keywords.join(', '),
+              about: {
+                '@type': 'EducationalOrganization',
+                name: '우아한테크코스',
+                alternateName: '우테코',
+                url: 'https://www.woowacourse.io/',
+              },
             }),
           }}
         />
