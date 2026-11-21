@@ -170,10 +170,19 @@ describe('ExplorePage', () => {
       renderRoute('/');
 
       await waitFor(() =>
-        expect(document.title).toBe('shout-outz | 우테코 크루들의 프로젝트 경험과 취업 과정'),
+        expect(document.title).toBe('shout-outz | 우테코 크루들의 프로젝트, 블로그, 테코톡 모음'),
       );
-      expect(meta('meta[name="description"]')).toMatch(
-        /^우테코 크루들의 프로젝트 경험과 취업 과정/,
+      expect(meta('meta[name="description"]')).toMatch(/^우테코\(우아한테크코스\) 크루들의/);
+      expect(meta('meta[name="keywords"]')?.split(', ')).toEqual(
+        expect.arrayContaining([
+          '우테코',
+          '우테코 프로젝트',
+          '우테코 블로그',
+          '우테코 테코톡',
+          '우테코 프론트엔드',
+          '우테코 백엔드',
+          '우테코 안드로이드',
+        ]),
       );
       expect(meta('meta[property="og:title"]')).toBe(document.title);
       expect(canonical()).toBe('https://shout-ou.tz/');
@@ -183,6 +192,7 @@ describe('ExplorePage', () => {
         '@type': 'WebSite',
         name: 'shout-outz',
         url: 'https://shout-ou.tz/',
+        about: { name: '우아한테크코스', alternateName: '우테코' },
       });
     });
 
@@ -200,6 +210,7 @@ describe('ExplorePage', () => {
       await waitFor(() => expect(document.title).toBe('동시성 검색 결과 | shout-outz'));
       expect(meta('meta[name="robots"]')).toBe('noindex');
       expect(canonical()).toBeUndefined();
+      expect(document.querySelector('meta[name="keywords"]')).toBeNull();
     });
   });
 
