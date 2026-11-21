@@ -1,6 +1,5 @@
 /// <reference types="node" />
-import { Readable, Transform } from 'node:stream';
-import { StringDecoder } from 'node:string_decoder';
+import { Readable } from 'node:stream';
 import type { ReadableStream as NodeReadableStream } from 'node:stream/web';
 import { QueryClient } from '@tanstack/react-query';
 import type { StaticDataRouteOption } from '@tanstack/react-router';
@@ -8,6 +7,8 @@ import { createRequestHandler, renderRouterToStream } from '@tanstack/react-rout
 import { preinit, preload } from 'react-dom';
 import type { BuildAssets, PreloadFiles } from '../ssg/assets';
 import { createAppRouter } from '../ssg/router';
+import { toQueryStateScript } from '../ssg/query-state';
+import { insertBeforeBodyEnd } from './body-end';
 import { App } from '@/App';
 import { Document } from '@/Document';
 
@@ -41,38 +42,6 @@ function ServerAssets({ buildAssets, preloadFiles }: ServerAssetsProps) {
   return null;
 }
 
-const BODY_END = '</body>';
-
-// main script를 </body> 직전에 끼워 넣습니다. React의 bootstrapModules는 async를 붙여, 스트림 끝에 오는
-// $_TSR보다 main이 먼저 실행될 수 있습니다. async가 없는 module script는 문서를 다 읽은 뒤 실행됩니다.
-// </body>가 두 조각에 걸쳐 올 수 있어 마지막 몇 글자는 다음 조각과 이어 붙여 찾습니다.
-function insertBeforeBodyEnd(html: string): Transform {
-  const decoder = new StringDecoder('utf-8');
-  let pending = '';
-  let inserted = false;
-
-  return new Transform({
-    transform(chunk: Buffer, _encoding, callback) {
-      const text = pending + decoder.write(chunk);
-      if (inserted) return callback(null, text);
-
-      const index = text.indexOf(BODY_END);
-      if (index !== -1) {
-        inserted = true;
-        pending = '';
-        return callback(null, text.slice(0, index) + html + text.slice(index));
-      }
-
-      const keep = BODY_END.length - 1;
-      pending = text.slice(-keep);
-      callback(null, text.slice(0, -keep));
-    },
-    flush(callback) {
-      callback(null, pending + decoder.end());
-    },
-  });
-}
-
 // 요청마다 TanStack Router의 요청 핸들러로 페이지를 스트리밍 서버 렌더합니다.
 // 핸들러가 라우트 매치(router.load), $_TSR 직렬화, 크롤러 판별(크롤러에게는 Suspense가 다 풀린 뒤 전송),
 // 요청이 끊겼을 때의 중단을 맡고, 여기서는 우리 빌드의 CSS·script를 넣는 일만 합니다.
@@ -88,6 +57,13 @@ export async function renderStreamingPage(
   // 페이지의 useSuspenseQuery는 서버 렌더 중에 이 캐시를 그대로 씁니다.
   // 요청이 실패하면(없는 글의 404 등) reject해 호출자가 셸 대신 다른 응답을 보내게 합니다.
   await Promise.all(queries.map((query) => queryClient.ensureQueryData(query)));
+  // 여기까지 받은 쿼리는 $_TSR에 담기므로 스트림 끝 스크립트에 다시 싣지 않습니다.
+  const inRouterState = new Set(
+    queryClient
+      .getQueryCache()
+      .getAll()
+      .map((query) => query.queryHash),
+  );
 
   const handler = createRequestHandler({
     request,
@@ -111,15 +87,21 @@ export async function renderStreamingPage(
   return {
     status: response.status,
     headers: response.headers,
-    body: response.body ? withScripts(response.body, buildAssets.scripts) : null,
+    body: response.body
+      ? withScripts(
+          response.body,
+          () => toQueryStateScript(queryClient, inRouterState) + toScriptTags(buildAssets.scripts),
+        )
+      : null,
   };
 }
 
-function withScripts(body: ReadableStream<Uint8Array>, scripts: string[]): Readable {
+const toScriptTags = (scripts: string[]) =>
+  scripts.map((file) => `<script type="module" src="${file}"></script>`).join('');
+
+function withScripts(body: ReadableStream<Uint8Array>, html: () => string): Readable {
   const source = Readable.fromWeb(body as NodeReadableStream<Uint8Array>);
-  const output = insertBeforeBodyEnd(
-    scripts.map((file) => `<script type="module" src="${file}"></script>`).join(''),
-  );
+  const output = insertBeforeBodyEnd(html);
   // pipe는 앞 스트림의 에러를 넘기지 않아, 응답을 보내는 쪽이 output 하나만 보고 끊김을 알 수 있게 넘겨 줍니다.
   source.on('error', (error) => output.destroy(error));
   return source.pipe(output);

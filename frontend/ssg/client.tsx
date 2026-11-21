@@ -6,6 +6,7 @@ import { Document } from '@/Document';
 import { getApiOrigin } from '@/utils/auth';
 import { App } from '@/App';
 import { createAppRouter } from './router';
+import { hydrateServerQueries } from './query-state';
 import { analytics } from '@/utils/analytics';
 import { connectRouterPageViews } from '@/utils/analytics/connect';
 import * as Sentry from '@sentry/react';
@@ -61,6 +62,8 @@ async function bootstrap() {
 
   // Router 매치 상태와 React Query 캐시를 복원한 뒤 React 트리를 하이드레이트합니다.
   await hydrate(router).finally(() => routerHydrationState.h());
+  // 서버 렌더 중에 받은 쿼리는 $_TSR이 아니라 스트림 끝의 스크립트로 옵니다(server/render.tsx).
+  hydrateServerQueries(queryClient, window.__SSR_QUERY_STATE__);
   hydrateRoot(document, tree, errorHandlers);
 }
 
