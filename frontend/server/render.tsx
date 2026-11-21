@@ -7,6 +7,7 @@ import type { StaticDataRouteOption } from '@tanstack/react-router';
 import { createRequestHandler, renderRouterToStream } from '@tanstack/react-router/ssr/server';
 import { preinit, preload } from 'react-dom';
 import type { BuildAssets, PreloadFiles } from '../ssg/assets';
+import { ensureSsrQueries } from '@/utils/ssr-queries';
 import { createAppRouter } from '../ssg/router';
 import { App } from '@/App';
 import { Document } from '@/Document';
@@ -87,7 +88,7 @@ export async function renderStreamingPage(
   // 핸들러는 콜백( 서버 렌더)을 부르기 전에 $_TSR에 담을 상태를 dehydrate하므로, 그보다 먼저 캐시를 채웁니다.
   // 페이지의 useSuspenseQuery는 서버 렌더 중에 이 캐시를 그대로 씁니다.
   // 요청이 실패하면(없는 글의 404 등) reject해 호출자가 셸 대신 다른 응답을 보내게 합니다.
-  await Promise.all(queries.map((query) => queryClient.ensureQueryData(query)));
+  await ensureSsrQueries(queryClient, queries);
 
   const handler = createRequestHandler({
     request,
