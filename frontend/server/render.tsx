@@ -45,6 +45,7 @@ const BODY_END = '</body>';
 
 // main script를 </body> 직전에 끼워 넣습니다. React의 bootstrapModules는 async를 붙여, 스트림 끝에 오는
 // $_TSR보다 main이 먼저 실행될 수 있습니다. async가 없는 module script는 문서를 다 읽은 뒤 실행됩니다.
+// 브라우저 쪽도 문서를 다 읽은 뒤에 $_TSR을 읽어(ssg/hydration-state.ts) 스크립트 위치에 기대지 않습니다.
 // </body>가 두 조각에 걸쳐 올 수 있어 마지막 몇 글자는 다음 조각과 이어 붙여 찾습니다.
 function insertBeforeBodyEnd(html: string): Transform {
   const decoder = new StringDecoder('utf-8');

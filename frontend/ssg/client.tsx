@@ -6,6 +6,7 @@ import { Document } from '@/Document';
 import { getApiOrigin } from '@/utils/auth';
 import { App } from '@/App';
 import { createAppRouter } from './router';
+import { getMountMode, hasServerRenderedMarkup, readHydrationState } from './hydration-state';
 import { analytics } from '@/utils/analytics';
 import { connectRouterPageViews } from '@/utils/analytics/connect';
 import * as Sentry from '@sentry/react';
@@ -46,13 +47,23 @@ async function bootstrap() {
   // 라우터가 첫 경로를 해석하는 렌더보다 먼저 연결해야 최초 진입도 페이지뷰로 잡히기 때문에 순서 주의해야 함
   connectRouterPageViews(router, analytics);
 
-  const routerHydrationState = window.$_TSR;
+  const routerHydrationState = await readHydrationState();
   const tree = (
     <Document>
       <App router={router} queryClient={queryClient} />
     </Document>
   );
 
+  const mode = getMountMode(Boolean(routerHydrationState), hasServerRenderedMarkup());
+  if (mode === 'render-without-hydration-state') {
+    // 서버가 그린 HTML을 버리고 새로 그립니다. 에러 없이 화면은 정상이라, 스트림이 $_TSR 전에 끊기는 등
+    // 서버 렌더가 무력화된 것을 알 수 있도록 기록합니다.
+    Sentry.captureMessage('서버 렌더 HTML에 하이드레이션 데이터($_TSR)가 없어 새로 그립니다.', {
+      level: 'warning',
+      tags: { render: 'hydration-skipped' },
+      extra: { path: window.location.pathname },
+    });
+  }
   if (!routerHydrationState) {
     // $_TSR이 없는 순수 CSR(dev 서버 등)에서는 하이드레이션 없이 새로 그립니다.
     createRoot(document, errorHandlers).render(tree);
