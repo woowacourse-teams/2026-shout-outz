@@ -1,8 +1,8 @@
 # data-pipeline
 
-샤라웃 매일 데이터 파이프라인. 지금은 ① 원본 수집기(`collector/`)만 있다.
+샤라웃 매일 데이터 파이프라인. ① 원본 수집기(`collector/`)와 ② 정제(`refine/`)가 있다.
 
-- 설계 문서(작업 폴더): `01-pipeline-overview.md`(전체 단계), `03`(블로그), `04`(테코톡), `06`(팀 문서), `07`(PR), `08-collect-component.md`(수집 컴포넌트)
+- 설계 문서(작업 폴더): `01-pipeline-overview.md`(전체 단계), `03`(블로그), `04`(테코톡), `06`(팀 문서), `07`(PR), `08-collect-component.md`(수집 컴포넌트), `09-refine.md`(정제)
 - 하나의 수집기로 첫 실행과 매일 실행을 함께 맡는다. 원본 저장소가 비어 있으면 모든 문서가 새 문서가 되어 전체를 받고, 그 뒤에는 새 문서와 바뀐 문서만 받는다.
 
 ## 저장소 모양
@@ -36,11 +36,49 @@ uv run python -m collector bundle import blog-1_7-bundle.jsonl.gz               
 - 환경 변수: `deploy/data-pipeline.env.example`
 - 끝나면 표준 출력에 실행 id, 상태, 원천별 숫자가 나오고, 자세한 것은 `reports/{run_id}.json` 에 남는다.
 
+## 정제(②)
+
+원본 저장소의 원본을 읽어 원천과 상관없이 같은 모양의 정제 문서로 바꾸고, 서비스에 쓸 가치가 없는 문서를 LLM 전에 규칙으로
+거르며, 문서마다 내용 해시를 붙인다(설계: 작업 폴더 `09-refine.md`, 결정 항목 R1~R21). 수집기와 같은 `PIPELINE_STORE`,
+같은 잠금(`state/lock.json`)을 쓴다. 원본은 읽기만 한다.
+
+```
+{PIPELINE_STORE}/refine/
+├─ docs/{source}/{키의 sha1}.json   정제 문서 한 건. 다시 정제하면 덮어쓰고 이력(history)은 문서 안에 쌓는다
+├─ index/{source}.jsonl            정제 색인(키마다 한 줄: 원본 버전, 규칙 버전, 내용 해시, 대표 제외 규칙, 실패, 사라짐)
+├─ changes/{run_id}.jsonl          실행마다 변경 기록(새 문서, 바뀐 문서와 그 전후, 무시한 변경, 사라짐, 돌아옴, 옮겨짐, 새로 제외, 제외 풀림)
+├─ reports/{run_id}.json           정제 실행 보고서(15초마다 저장)
+└─ previews/{source}-{시각}.json    규칙을 고치기 전 미리 보기
+```
+
+```bash
+uv run python -m refine run                                    # 고른 문서만 정제. 한 번에 최대 1만 건
+uv run python -m refine run --source github-pr --limit 500     # 원천 하나, 건수 제한(나눠 돌리기)
+uv run python -m refine run --source github-pr --only 'woowacourse-teams/2026-Chalkak#912'   # 그 문서만 다시(아침 다시 돌리기)
+uv run python -m refine run --after-collect                    # 가장 최근 수집 실행과 같은 run_id 로 묶기(수집 뒤 이어 돌릴 때 쓴다)
+uv run python -m refine preview --source github-teamdoc        # 지금 규칙으로 정제만 해 본 결과. 정제 문서는 건드리지 않는다
+```
+
+- 고르는 것: 처음 보는 키, 원본 버전이 오른 키, 지난번 실패한 키, 규칙 버전이 바뀐 원천의 키. 원본 파일을 열지 않고 색인끼리 견준다.
+  사라진 문서는 정제하지 않고 `gone` 만 고친다. 1~7기 블로그(원본 `origin` 이 `archive-`)는 처음 한 번 정제한 뒤 고정한다.
+  자막을 아직 받지 않은 테코톡은 정제하지 않고 기다린다(보고서 `waiting`)
+- 순서: 테코톡 → 블로그 → 디스커션 → 위키 → 코드 마크다운 → PR(작은 원천부터). 같은 레포 사본은 팀 문서 세 원천을 다 정제한 뒤와
+  PR 다음에, 이번에 문서가 바뀐 레포만 다시 정한다
+- `--only` 는 `--source` 하나와 함께 쓴다(코드 마크다운과 위키의 키 모양이 겹칠 수 있다)
+- `--after-collect`: 12시간 안에 시작했고 아직 정제 보고서가 없는 가장 최근 수집 실행의 run_id 를 쓴다. 잠금 때문에 건너뛴 수집 실행은 넘기고,
+  정제가 잠금 때문에 건너뛰면 건너뜀 보고서는 새 run_id 로 남긴다(잠금이 풀린 뒤의 정제가 그 수집 실행에 붙을 수 있게)
+- 끝나면 표준 출력에 실행 id, 상태, 원천별 숫자가 나온다. `remaining` 은 1만 건 상한 때문에 다음 실행으로 넘긴 수다
+- 규칙을 고칠 때: 고친 원천만 `refine/config.py` 의 `RULES_VERSION` 을 올린다. 올리기 전에 `preview` 로 새로 제외될 문서,
+  제외가 풀릴 문서, 해시가 바뀔 문서를 본다. 라이브러리 판(`trafilatura`, `markdownify`, `lxml`)을 바꾸는 것도 같다
+- 로컬 측정(2026-11-10, 받아 둔 공개 자료를 원본 모양으로 바꿔 넣음): 9,278건(테코톡 717, 디스커션 1,056, 위키 1,835,
+  코드 마크다운 4,207, PR 1,463) 40초, 최대 메모리 109MB
+
 ## 로컬 시험
 
 ```bash
 GITHUB_TOKEN=$(gh auth token) PIPELINE_STORE=./local-store \
   uv run python -m collector collect --source github-teamdoc --repos 2026-Harudle
+PIPELINE_STORE=./local-store uv run python -m refine run --source github-teamdoc
 uv run --group dev pytest -q
 ```
 
@@ -175,6 +213,23 @@ systemctl list-timers data-pipeline.timer                          # 다음 실�
 - 첫 실행이 다음 날 새벽 3시까지 이어지면 그날 실행은 잠금(`state/lock.json`)을 보고 `skipped` 로 끝난다. 겹쳐 돌지 않는다.
 - 서비스 설정: 메모리 상한 700MB(`MemoryMax`), 최대 13시간(`TimeoutStartSec`), 낮은 우선순위(`Nice=10`). `deploy/data-pipeline.service` 참고.
 
+### 7-1. 첫 정제
+
+원본이 약 5만 3천 건이라 1만 건씩 몇 번 이어 돌린다(09 문서 R20-6). 작은 원천부터 하면 빨리 끝나는 원천의 결과를 먼저 본다.
+수집이 도는 동안에는 잠금 때문에 `skipped` 로 끝나므로, 수집이 끝난 뒤에 돌린다.
+
+```bash
+cd ~/2026-shout-outz/data-pipeline
+set -a && . /etc/shout-outz/data-pipeline.env && set +a
+export PIPELINE_HOST=ec2
+.venv/bin/python -m refine run --source youtube-tekotalk blog-post github-discussion github-wiki
+.venv/bin/python -m refine run --source github-teamdoc
+.venv/bin/python -m refine run --source github-pr     # 끝 줄의 remaining 이 0 이 될 때까지 되풀이한다
+```
+
+- 매일 실행(systemd)은 수집이 끝나면 `refine run --after-collect` 로 이어서 정제한다. 첫 정제를 매일 실행에 맡겨도 하루 1만 건씩 줄어든다.
+- 정제 보고서 보기: `aws s3 ls "$PIPELINE_STORE/refine/reports/"`, `aws s3 cp "$PIPELINE_STORE/refine/reports/<run_id>.json" - | head -80`
+
 ### 8. 코드 고친 뒤 올리기
 
 고친 코드가 `main` 에 배포된 뒤 EC2 에서 받는다.
@@ -183,7 +238,7 @@ systemctl list-timers data-pipeline.timer                          # 다음 실�
 cd ~/2026-shout-outz && git switch main && git pull && cd data-pipeline && ~/.local/bin/uv sync --no-dev
 # .venv 의 Python 이 3.12 가 아니면 가상 환경을 다시 만든다
 .venv/bin/python --version | grep -q ' 3\.12' || { rm -rf .venv && ~/.local/bin/uv sync --no-dev; }
-# systemd 파일이 바뀌었을 때만
+# systemd 파일이 바뀌었을 때만(정제를 더한 판부터 매일 실행이 수집 뒤 정제까지 돈다)
 sudo cp deploy/data-pipeline.service deploy/data-pipeline.timer /etc/systemd/system/ && sudo systemctl daemon-reload
 ```
 

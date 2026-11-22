@@ -1,12 +1,16 @@
 [project]
 name = "shout-outz-data-pipeline"
 version = "0.1.0"
-description = "샤라웃 매일 데이터 파이프라인(① 원본 수집부터)"
+description = "샤라웃 매일 데이터 파이프라인(① 원본 수집, ② 정제)"
 requires-python = ">=3.12"
 dependencies = [
     "boto3>=1.35",       # S3(원본 저장소). 조건부 쓰기(IfNoneMatch)는 1.35 부터
     "requests>=2.32",    # REST, raw, 블로그, YouTube Data API
     "psycopg[binary]>=3.2",  # 서비스 DB 읽기(블로그 대상)
+    # ② 정제 블로그 본문 뽑기(09 문서 R5). 판이 바뀌면 뽑힌 글이 달라져 다시 판정되므로 판을 고정한다(4-6)
+    "trafilatura==2.3.1",  # 범용 블로그 본문 추출
+    "markdownify==1.2.3",  # tistory 본문 자리 HTML 을 마크다운으로
+    "lxml==6.1.3",         # 블로그 HTML 읽기(trafilatura 도 쓴다)
 ]
 
 [dependency-groups]
