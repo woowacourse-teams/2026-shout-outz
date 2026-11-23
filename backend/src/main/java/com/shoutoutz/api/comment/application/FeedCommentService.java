@@ -31,6 +31,7 @@ import com.shoutoutz.api.feed.application.FeedLinkPreviewService;
 import com.shoutoutz.api.feed.application.dto.LinkPreview;
 import com.shoutoutz.api.notification.application.NotificationService;
 import com.shoutoutz.api.user.application.UserAvatarUrlResolver;
+import com.shoutoutz.api.user.domain.account.User;
 import com.shoutoutz.api.user.domain.account.UserRepository;
 import com.shoutoutz.api.user.domain.profile.Track;
 import com.shoutoutz.api.user.domain.profile.UserProfile;
@@ -39,10 +40,13 @@ import com.shoutoutz.api.user.domain.profile.UserProfileRepository;
 import com.shoutoutz.api.user.domain.profile.UserType;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -261,18 +265,14 @@ public class FeedCommentService {
                 ));
 
         // 3. 작성자 조회 후 응답 객체 생성
-        Map<Long, UserProfile> authors = new HashMap<>();
         List<FeedComment> orderedComments = new ArrayList<>();
-
         for (FeedComment root : page.items()) {
-            authors.computeIfAbsent(root.getAuthorId(), this::findAuthor);
             orderedComments.add(root);
-            for (FeedComment reply : repliesByParentId.getOrDefault(root.getId(), List.of())) {
-                authors.computeIfAbsent(reply.getAuthorId(), this::findAuthor);
-                orderedComments.add(reply);
-            }
+            orderedComments.addAll(repliesByParentId.getOrDefault(root.getId(), List.of()));
         }
 
+        // 작성자 수만큼 프로필과 핸들을 따로 읽지 않도록 한 번에 읽는다
+        Map<Long, UserProfile> authors = findAuthors(orderedComments);
         Map<Long, String> avatarUrls = resolveAvatarUrls(authors.values());
         Map<Long, String> handles = resolveHandles(authors.keySet());
         Map<Long, FeedCommentReactionCounts> reactionCounts = findReactionCounts(orderedComments, loginUserId);
@@ -383,6 +383,18 @@ public class FeedCommentService {
         return parent;
     }
 
+    private Map<Long, UserProfile> findAuthors(List<FeedComment> comments) {
+        Set<Long> authorIds = comments.stream()
+                .map(FeedComment::getAuthorId)
+                .collect(Collectors.toSet());
+        Map<Long, UserProfile> authors = userProfileRepository.findAllByUserIds(authorIds).stream()
+                .collect(Collectors.toMap(UserProfile::getUserId, Function.identity()));
+        if (authors.size() != authorIds.size()) {
+            throw new EntityNotFoundException(UserProfileErrorCode.USER_PROFILE_NOT_FOUND);
+        }
+        return authors;
+    }
+
     private UserProfile findAuthor(long authorId) {
         return userProfileRepository.findByUserId(authorId)
                 .orElseThrow(() -> new EntityNotFoundException(UserProfileErrorCode.USER_PROFILE_NOT_FOUND));
@@ -420,10 +432,13 @@ public class FeedCommentService {
                 .orElse(null);
     }
 
-    private Map<Long, String> resolveHandles(Iterable<Long> userIds) {
+    private Map<Long, String> resolveHandles(Collection<Long> userIds) {
+        if (userRepository == null || userIds.isEmpty()) {
+            return Map.of();
+        }
         Map<Long, String> handles = new HashMap<>();
-        for (Long userId : userIds) {
-            handles.put(userId, handleValue(userId));
+        for (User user : userRepository.findAllByIds(userIds)) {
+            handles.put(user.getId(), user.getHandle().value());
         }
         return handles;
     }
@@ -452,7 +467,7 @@ public class FeedCommentService {
             Map<Long, FeedCommentReactionCounts> reactionCounts,
             Map<Long, LinkPreview> linkPreviews
     ) {
-        UserProfile author = authors.computeIfAbsent(comment.getAuthorId(), this::findAuthor);
+        UserProfile author = authors.get(comment.getAuthorId());
         // 삭제된 댓글이 아니며, 작성자가 본인인 경우 수정 가능
         boolean editable = !comment.isDeleted()
                 && Objects.equals(comment.getAuthorId(), loginUserId);

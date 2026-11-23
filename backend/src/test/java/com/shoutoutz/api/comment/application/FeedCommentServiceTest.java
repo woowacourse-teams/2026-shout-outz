@@ -5,10 +5,13 @@ import static com.shoutoutz.api.comment.domain.CommentErrorCode.COMMENT_NOT_FOUN
 import static com.shoutoutz.api.comment.domain.CommentErrorCode.MISMATCHED_COMMENT_SORT_AND_CURSOR_SORT;
 import static com.shoutoutz.api.common.exception.code.CommonErrorCode.FORBIDDEN;
 import static com.shoutoutz.api.feed.domain.FeedErrorCode.FEED_NOT_FOUND;
+import static com.shoutoutz.api.user.domain.profile.UserProfileErrorCode.USER_PROFILE_NOT_FOUND;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -41,6 +44,8 @@ import com.shoutoutz.api.media.application.MediaUrlResolver;
 import com.shoutoutz.api.notification.application.NotificationService;
 import com.shoutoutz.api.user.domain.account.User;
 import com.shoutoutz.api.user.domain.account.UserRepository;
+import com.shoutoutz.api.user.domain.account.UserRole;
+import com.shoutoutz.api.user.domain.account.UserStatus;
 import com.shoutoutz.api.user.application.UserAvatarUrlResolver;
 import com.shoutoutz.api.user.domain.profile.Track;
 import com.shoutoutz.api.user.domain.profile.UserProfile;
@@ -48,8 +53,11 @@ import com.shoutoutz.api.user.domain.profile.UserProfileRepository;
 import com.shoutoutz.api.user.domain.profile.UserType;
 import java.net.URI;
 import java.time.Instant;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -98,6 +106,10 @@ class FeedCommentServiceTest {
 
     private FeedCommentService feedCommentService;
 
+    private final Map<Long, UserProfile> profiles = new HashMap<>();
+
+    private final Map<Long, User> users = new HashMap<>();
+
     @BeforeEach
     void setUp() {
         feedCommentService = new FeedCommentService(
@@ -110,6 +122,15 @@ class FeedCommentServiceTest {
                 userRepository,
                 notificationService
         );
+        // 목록 조회는 작성자 여러 명을 한 번에 읽으므로, givenAuthor 로 등록한 작성자 중 요청한 것만 돌려준다
+        lenient().when(userProfileRepository.findAllByUserIds(any())).thenAnswer(invocation -> {
+            Collection<Long> userIds = invocation.getArgument(0);
+            return userIds.stream().map(profiles::get).filter(Objects::nonNull).toList();
+        });
+        lenient().when(userRepository.findAllByIds(any())).thenAnswer(invocation -> {
+            Collection<Long> userIds = invocation.getArgument(0);
+            return userIds.stream().map(users::get).filter(Objects::nonNull).toList();
+        });
         lenient().when(mediaUrlResolver.resolve(10L))
                 .thenReturn(URI.create("https://cdn.example.com/media/10/display"));
     }
@@ -420,6 +441,61 @@ class FeedCommentServiceTest {
         assertThat(result.meta().hasNext()).isTrue();
         assertThat(FeedCommentCursorCodec.decode(result.meta().nextCursor()))
                 .isEqualTo(new FeedCommentCursor(NOW, COMMENT_ID, FeedCommentSort.OLDEST));
+    }
+
+    @Test
+    @DisplayName("작성자가 여럿이어도 프로필과 핸들을 한 번씩만 읽고, 댓글마다 자기 작성자 정보를 루트와 답글 순서대로 담는다.")
+    void findsAuthorsOfAllCommentsAtOnce() {
+        givenActiveFeed();
+        FeedComment firstRoot = comment(COMMENT_ID, AUTHOR_ID, "첫 루트", NOW, NOW, null);
+        FeedComment secondRoot = comment(503L, AUTHOR_ID + 2, "둘째 루트", NOW.plusSeconds(120), NOW.plusSeconds(120), null);
+        FeedComment firstReply = FeedComment.reconstitute(
+                502L, FEED_ID, AUTHOR_ID + 1, COMMENT_ID, "첫 답글", NOW.plusSeconds(60), NOW.plusSeconds(60), null);
+        FeedComment secondReply = FeedComment.reconstitute(
+                504L, FEED_ID, AUTHOR_ID, COMMENT_ID, "둘째 답글", NOW.plusSeconds(90), NOW.plusSeconds(90), null);
+        FeedComment replyOfSecondRoot = FeedComment.reconstitute(
+                505L, FEED_ID, AUTHOR_ID + 1, 503L, "셋째 답글", NOW.plusSeconds(150), NOW.plusSeconds(150), null);
+        when(feedCommentQueryRepository.findRootCommentsPage(
+                FEED_ID,
+                null,
+                FeedCommentSort.OLDEST,
+                5
+        )).thenReturn(new FeedCommentPage(List.of(firstRoot, secondRoot), false, 5L));
+        when(feedCommentQueryRepository.findReplies(FEED_ID, List.of(COMMENT_ID, 503L)))
+                .thenReturn(List.of(firstReply, secondReply, replyOfSecondRoot));
+        givenAuthor(AUTHOR_ID, "작성자", 10L);
+        givenAuthor(AUTHOR_ID + 1, "답글 작성자", 11L);
+        givenAuthor(AUTHOR_ID + 2, "둘째 작성자", 12L);
+
+        FeedCommentFindResponse result = feedCommentService.findAll(
+                FEED_ID,
+                new FeedCommentFindRequest(null, 5, "OLDEST"),
+                null
+        );
+
+        assertThat(result.comments()).extracting(Comment::id)
+                .containsExactly(COMMENT_ID, 502L, 504L, 503L, 505L);
+        assertThat(result.comments()).extracting(comment -> comment.author().userId())
+                .containsExactly(AUTHOR_ID, AUTHOR_ID + 1, AUTHOR_ID, AUTHOR_ID + 2, AUTHOR_ID + 1);
+        assertThat(result.comments()).extracting(comment -> comment.author().handle())
+                .containsExactly("@author7", "@author8", "@author7", "@author9", "@author8");
+        assertThat(result.comments()).extracting(comment -> comment.author().displayName())
+                .containsExactly("작성자", "답글 작성자", "작성자", "둘째 작성자", "답글 작성자");
+        verify(userProfileRepository, times(1)).findAllByUserIds(any());
+        verify(userRepository, times(1)).findAllByIds(any());
+        verify(userProfileRepository, never()).findByUserId(anyLong());
+        verify(userRepository, never()).findById(anyLong());
+    }
+
+    @Test
+    @DisplayName("댓글 작성자 중 프로필이 없는 사용자가 있으면 404를 던진다.")
+    void rejectsFindAllWhenAuthorProfileIsMissing() {
+        givenActiveFeed();
+        givenCommentPage(false);
+
+        assertThatThrownBy(() -> findFirstCommentAs(null))
+                .isInstanceOfSatisfying(EntityNotFoundException.class,
+                        error -> assertThat(error.getErrorCode()).isEqualTo(USER_PROFILE_NOT_FOUND));
     }
 
     @Test
@@ -862,8 +938,17 @@ class FeedCommentServiceTest {
 
     private void givenAuthor(UserProfile profile) {
         long userId = profile.getUserId();
-        when(userProfileRepository.findByUserId(userId)).thenReturn(Optional.of(profile));
-        when(userRepository.findById(userId)).thenReturn(Optional.of(User.initialize("@author" + userId)));
+        User user = User.builder()
+                .id(userId)
+                .handle("@author" + userId)
+                .status(UserStatus.ACTIVE)
+                .role(UserRole.USER)
+                .build();
+        profiles.put(userId, profile);
+        users.put(userId, user);
+        // 생성, 수정만 작성자 한 명을 따로 읽으므로 목록 조회 테스트에서는 불리지 않는다
+        lenient().when(userProfileRepository.findByUserId(userId)).thenReturn(Optional.of(profile));
+        lenient().when(userRepository.findById(userId)).thenReturn(Optional.of(user));
     }
 
     private void givenAnonymousCommentPage() {
