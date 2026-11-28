@@ -57,7 +57,10 @@ function getPackageName(modulePath) {
 
 // 청크 분리 기준(프로덕션 전용)
 // - framework: React 등 모든 페이지가 쓰고 거의 바뀌지 않는 코드. 앱 코드가 바뀌어도 캐시가 유지됩니다.
-// - lib: 160KB가 넘는 외부 라이브러리 모듈. 패키지별로 따로 캐싱합니다.
+// - lib: 첫 화면 이후에 받는 청크(import(), 라우트 청크) 안에서 원본이 160KB가 넘는 외부 라이브러리 모듈.
+//   패키지별로 떼어 페이지 코드가 바뀌어도 캐시가 유지됩니다. 첫 화면 청크에는 적용하지 않습니다.
+//   첫 방문이 대부분이라, 첫 화면에서 파일을 나눠 요청을 늘리는 것보다 한 파일로 받는 편이 빠르기 때문입니다.
+//   크기는 tree shaking 전 원본 기준이라, 첫 화면에 쓰면 원본 450KB·결과물 1KB인 @sentry/conventions 같은 모듈도 떨어져 나옵니다.
 // - commons: 모든 페이지 청크가 쓰는 모듈.
 // - shared: 2개 이상 페이지 청크가 쓰는 모듈. 쓰는 페이지 조합마다 청크가 따로 생겨 필요한 페이지끼리만 받습니다.
 // - page: 그 외 페이지 전용 코드는 라우트 청크(autoCodeSplitting)에 남습니다.
@@ -76,6 +79,7 @@ const splitChunks = {
       enforce: true,
     },
     lib: {
+      chunks: 'async',
       test: (module) =>
         module.size() > LIB_MIN_SIZE && NODE_MODULES_PATTERN.test(module.nameForCondition() ?? ''),
       name: (module) => `lib-${getPackageName(module.nameForCondition() ?? '') ?? 'unknown'}`,
